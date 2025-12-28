@@ -147,6 +147,49 @@ type MyFormData = z.infer<typeof myFormSchema>;
 
 ## Key Capabilities
 
+### Client-Side File URLs
+
+**Generate File URL:**
+
+```typescript
+import { useDrive } from "@muhgholy/next-drive/client";
+import type { TDriveFile } from "@muhgholy/next-drive/client";
+
+function MyComponent() {
+	const { createUrl } = useDrive();
+
+	// Basic URL generation
+	const url = createUrl(driveFile);
+	// Returns: /api/drive?action=serve&id={fileId}
+
+	// With image quality and format
+	const url = createUrl(driveFile, {
+		quality: "medium",
+		format: "webp",
+	});
+	// Returns: /api/drive?action=serve&id={fileId}&q=medium&format=webp
+
+	// Use in Next.js Image component
+	return <Image src={createUrl(driveFile)} alt={driveFile.file.name} />;
+}
+```
+
+**Responsive Image SrcSet:**
+
+```typescript
+import { useDrive } from "@muhgholy/next-drive/client";
+
+function ResponsiveImage({ driveFile }: { driveFile: TDriveFile }) {
+	const { createUrl, createSrcSet } = useDrive();
+
+	// Generate responsive srcSet for optimal image loading
+	const { srcSet, sizes } = createSrcSet(driveFile, "webp");
+
+	// Use in img tag
+	return <img src={createUrl(driveFile, { quality: "medium" })} srcSet={srcSet} sizes={sizes} alt={driveFile.file.name} />;
+}
+```
+
 ### Server-Side File Access
 
 **Get File URL:**

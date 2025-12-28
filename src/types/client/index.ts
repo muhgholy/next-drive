@@ -7,6 +7,10 @@ export type TDriveFile = {
     file: { name: string; mime: string; size: number };
 };
 
+// ** Image Options
+export type TImageQuality = 'ultralow' | 'low' | 'medium' | 'high' | 'normal';
+export type TImageFormat = 'webp' | 'jpeg' | 'png';
+
 // ** Drive File Schema (for validation)
 export const driveFileSchemaZod = z.object({
     id: z.string(),

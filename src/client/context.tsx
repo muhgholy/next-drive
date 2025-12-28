@@ -3,7 +3,8 @@
 
 import React, { createContext, useContext, useState, useCallback, useMemo, type ReactNode } from 'react';
 import type { TDatabaseDrive, TDriveAPIResponse } from '@/types/server';
-import type { TDrivePathItem, TDriveQuota } from '@/types/client';
+import type { TDrivePathItem, TDriveQuota, TDriveFile, TImageQuality, TImageFormat } from '@/types/client';
+import { driveCreateUrl, driveCreateSrcSet } from '@/client/utils';
 
 // ** Context Types
 export type TDriveContext = {
@@ -40,6 +41,10 @@ export type TDriveContext = {
     selectionMode: { type: 'SINGLE' } | { type: 'MULTIPLE'; maxFile?: number };
     selectedFileIds: string[];
     setSelectedFileIds: React.Dispatch<React.SetStateAction<string[]>>;
+
+    // ** Utilities
+    createUrl: (driveFile: TDriveFile, options?: { quality?: TImageQuality; format?: TImageFormat }) => string;
+    createSrcSet: (driveFile: TDriveFile, format?: TImageFormat) => { srcSet: string; sizes: string };
 
     // ** Actions
     navigateToFolder: (item: { id: string | null; name: string } | null) => void;
@@ -352,6 +357,15 @@ export const DriveProvider = (props: Readonly<{
     React.useEffect(() => { refreshQuota(); }, [refreshQuota, activeAccountId]);
     React.useEffect(() => { refreshAccounts(); }, [refreshAccounts]);
 
+    // ** Utility methods
+    const createUrl = useCallback((driveFile: TDriveFile, options?: { quality?: TImageQuality; format?: TImageFormat }) => {
+        return driveCreateUrl(driveFile, apiEndpoint, options);
+    }, [apiEndpoint]);
+
+    const createSrcSet = useCallback((driveFile: TDriveFile, format?: TImageFormat) => {
+        return driveCreateSrcSet(driveFile, apiEndpoint, format);
+    }, [apiEndpoint]);
+
     return (
         <DriveContext.Provider value={{
             apiEndpoint, currentFolderId, path, items, allItems, setItems, setAllItems, isLoading, error, quota, refreshQuota,
@@ -359,6 +373,7 @@ export const DriveProvider = (props: Readonly<{
             viewMode, setViewMode, groupBy, setGroupBy, sortBy, setSortBy,
             currentView, setCurrentView, searchQuery, setSearchQuery, searchScope, setSearchScope,
             selectionMode, selectedFileIds, setSelectedFileIds,
+            createUrl, createSrcSet,
             navigateToFolder, navigateUp, refreshItems, callAPI, moveItem, deleteItems,
             loadMore, hasMore, isLoadingMore
         }}>
