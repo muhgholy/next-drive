@@ -1,0 +1,639 @@
+// ** Server Entry Point
+import type { NextApiRequest, NextApiResponse } from 'next';
+import formidable from 'formidable';
+import path from 'path';
+import fs from 'fs';
+import { z } from 'zod';
+
+import { getDriveConfig, getDriveInformation, driveConfiguration } from '@/server/config';
+import Drive from '@/server/database/mongoose/schema/drive';
+import StorageAccount from '@/server/database/mongoose/schema/storage/account';
+import { validateMimeType } from '@/server/utils';
+import * as schemas from '@/server/zod/schemas';
+import { getSafeErrorMessage, sanitizeContentDispositionFilename } from '@/server/security/cryptoUtils';
+import type { TDatabaseDrive } from '@/types/server';
+
+// ** Providers
+import { LocalStorageProvider } from '@/server/providers/local';
+import { GoogleDriveProvider } from '@/server/providers/google';
+import type { TStorageProvider } from '@/types/server/storage';
+
+// ** Helper to get Provider
+const getProvider = async (req: NextApiRequest, owner: Record<string, unknown> | null): Promise<{ provider: TStorageProvider, accountId?: string }> => {
+    // Check header for account ID
+    const accountId = req.headers['x-drive-account'] as string;
+
+    if (!accountId || accountId === 'LOCAL') {
+        return { provider: LocalStorageProvider };
+    }
+
+    // Validate account belongs to owner
+    const account = await StorageAccount.findOne({ _id: accountId, owner });
+    if (!account) {
+        throw new Error('Invalid Storage Account');
+    }
+
+    if (account.metadata.provider === 'GOOGLE') return { provider: GoogleDriveProvider, accountId: account._id.toString() };
+
+    // Fallback
+    return { provider: LocalStorageProvider };
+};
+
+// ** Main API handler for all drive operations
+export const driveAPIHandler = async (req: NextApiRequest, res: NextApiResponse): Promise<void> => {
+    const action = req.query.action as string;
+
+    // ** Ensure Config
+    try {
+        getDriveConfig();
+    } catch (error) {
+        console.error('[next-file-manager] Configuration error:', error);
+        res.status(500).json({ status: 500, message: 'Failed to initialize drive configuration' });
+        return;
+    }
+
+    if (!action) {
+        res.status(400).json({ status: 400, message: 'Missing action query parameter' });
+        return;
+    }
+
+    try {
+        const config = getDriveConfig();
+        const information = await getDriveInformation(req);
+        const { key: owner } = information;
+        const STORAGE_PATH = config.storage.path;
+
+        // ** OAuth & Account Actions (No Provider Resolution Needed)
+        if (['getAuthUrl', 'callback', 'listAccounts', 'removeAccount'].includes(action)) {
+            switch (action) {
+                case 'getAuthUrl': {
+                    const { provider } = req.query;
+                    if (provider === 'GOOGLE') {
+                        const { clientId, clientSecret, redirectUri } = config.storage?.google || {};
+                        if (!clientId || !clientSecret) return res.status(500).json({ status: 500, message: 'Google not configured' });
+
+                        const { google } = require('googleapis');
+                        const oAuth2Client = new google.auth.OAuth2(clientId, clientSecret, redirectUri);
+                        // Generate state to identify user
+                        // For security, should sign state. Simple base64 for now.
+                        const state = Buffer.from(JSON.stringify({ owner })).toString('base64');
+                        const url = oAuth2Client.generateAuthUrl({
+                            access_type: 'offline',
+                            scope: ['https://www.googleapis.com/auth/drive', 'https://www.googleapis.com/auth/userinfo.email'],
+                            state,
+                            prompt: 'consent' // force refresh token
+                        });
+                        return res.status(200).json({ status: 200, message: 'Auth URL generated', data: { url } });
+                    }
+                    return res.status(400).json({ status: 400, message: 'Unknown provider' });
+                }
+                case 'callback': {
+                    const { code, state } = req.query;
+                    if (!code) return res.status(400).json({ status: 400, message: 'Missing code' });
+
+                    // Verify state if possible, though 'owner' is derived from session/request usually.
+                    // Assuming 'owner' from getDriveInformation is the source of truth for current session.
+
+                    const { clientId, clientSecret, redirectUri } = config.storage?.google || {};
+                    const { google } = require('googleapis');
+                    const oAuth2Client = new google.auth.OAuth2(clientId, clientSecret, redirectUri);
+
+                    const { tokens } = await oAuth2Client.getToken(code as string);
+                    oAuth2Client.setCredentials(tokens);
+
+                    // Get User Info
+                    const oauth2 = google.oauth2({ version: 'v2', auth: oAuth2Client });
+                    const userInfo = await oauth2.userinfo.get();
+
+                    // Save Account
+                    const existing = await StorageAccount.findOne({ owner, 'metadata.google.email': userInfo.data.email, 'metadata.provider': 'GOOGLE' });
+                    if (existing) {
+                        existing.metadata.google.credentials = tokens;
+                        existing.markModified('metadata');
+                        await existing.save();
+                    } else {
+                        await StorageAccount.create({
+                            owner,
+                            name: userInfo.data.name || 'Google Drive',
+                            metadata: {
+                                provider: 'GOOGLE',
+                                google: {
+                                    email: userInfo.data.email,
+                                    credentials: tokens
+                                }
+                            }
+                        });
+                    }
+
+                    // Helper: Return HTML that closes popup
+                    res.setHeader('Content-Type', 'text/html');
+                    return res.send('<script>window.opener.postMessage("oauth-success", "*"); window.close();</script>');
+                }
+                case 'listAccounts': {
+                    const accounts = await StorageAccount.find({ owner });
+                    return res.status(200).json({
+                        status: 200,
+                        data: {
+                            accounts: accounts.map(a => ({
+                                id: a._id.toString(),
+                                name: a.name,
+                                email: a.metadata.google?.email || '',
+                                provider: a.metadata.provider
+                            }))
+                        }
+                    });
+                }
+                case 'removeAccount': {
+                    const { id } = req.query;
+                    const account = await StorageAccount.findOne({ _id: id, owner });
+                    if (!account) return res.status(404).json({ status: 404, message: 'Account not found' });
+
+                    // Revoke Token if Google
+                    if (account.metadata.provider === 'GOOGLE') {
+                        try {
+                            await GoogleDriveProvider.revokeToken(owner, account._id.toString());
+                        } catch (e) {
+                            console.error('Failed to revoke Google token:', e);
+                            // Proceed to delete anyway
+                        }
+                    }
+
+                    await StorageAccount.deleteOne({ _id: id, owner });
+                    await Drive.deleteMany({ owner, storageAccountId: id });
+                    return res.status(200).json({ status: 200, message: 'Account removed' });
+                }
+            }
+        }
+
+        // ** Provider Actions
+        const { provider, accountId } = await getProvider(req, owner);
+
+        switch (action) {
+            // ** 1. LIST **
+            case 'list': {
+                if (req.method !== 'GET') return res.status(405).json({ status: 405, message: 'Only GET allowed' });
+                const listQuery = schemas.listQuerySchema.safeParse(req.query);
+                if (!listQuery.success) return res.status(400).json({ status: 400, message: 'Invalid parameters' });
+
+                const { folderId, limit, afterId } = listQuery.data;
+
+                // Sync Trigger: If viewing a folder, try to sync it first if provider supports it
+                // Only sync if we are browsing a specific folder or root
+                try {
+                    await provider.sync(folderId || 'root', owner, accountId);
+                } catch (e) {
+                    console.error('Sync failed', e);
+                    // Continue to list what we have in DB
+                }
+
+                // Query DB
+                const query: Record<string, unknown> = {
+                    owner,
+                    'provider.type': provider.name,
+                    storageAccountId: accountId || null,
+                    parentId: folderId === 'root' || !folderId ? null : folderId,
+                    trashedAt: null
+                };
+                if (afterId) query._id = { $lt: afterId }; // Pagination
+
+                const items = await Drive.find(query, {}, { sort: { order: 1, _id: -1 }, limit });
+                const plainItems = await Promise.all(items.map(item => item.toClient()));
+
+                res.status(200).json({ status: 200, message: 'Items retrieved', data: { items: plainItems, hasMore: items.length === limit } });
+                return;
+            }
+
+            // ** 2. SEARCH **
+            case 'search': {
+                const searchData = schemas.searchQuerySchema.safeParse(req.query);
+                if (!searchData.success) return res.status(400).json({ status: 400, message: 'Invalid params' });
+                const { q, folderId, limit, trashed } = searchData.data;
+
+                // Sync Search
+                if (!trashed) {
+                    try { await provider.search(q, owner, accountId); } catch (e) { console.error('Search sync failed', e); }
+                }
+
+                // Query DB
+                const query: Record<string, unknown> = {
+                    owner,
+                    'provider.type': provider.name,
+                    storageAccountId: accountId || null,
+                    trashedAt: trashed ? { $ne: null } : null,
+                    name: { $regex: q, $options: 'i' },
+                };
+                if (folderId && folderId !== 'root') query.parentId = folderId;
+
+                const items = await Drive.find(query, {}, { limit, sort: { createdAt: -1 } });
+                const plainItems = await Promise.all(items.map(i => i.toClient()));
+
+                return res.status(200).json({ status: 200, message: 'Results', data: { items: plainItems } });
+            }
+
+            // ** 3. UPLOAD **
+            case 'upload': {
+                if (req.method !== 'POST') return res.status(405).json({ status: 405, message: 'Only POST allowed' });
+                const form = formidable({
+                    multiples: false,
+                    maxFileSize: config.security.maxUploadSizeInBytes * 2,
+                    uploadDir: path.join(STORAGE_PATH, 'temp'),
+                    keepExtensions: true,
+                });
+                if (!fs.existsSync(path.join(STORAGE_PATH, 'temp'))) fs.mkdirSync(path.join(STORAGE_PATH, 'temp'), { recursive: true });
+
+                const [fields, files] = await new Promise<[formidable.Fields, formidable.Files]>((resolve, reject) => {
+                    form.parse(req, (err, fields, files) => {
+                        if (err) reject(err); else resolve([fields, files]);
+                    });
+                });
+
+                const cleanupTempFiles = (files: formidable.Files) => {
+                    Object.values(files).flat().forEach(file => {
+                        if (file && fs.existsSync(file.filepath)) fs.rmSync(file.filepath, { force: true });
+                    });
+                };
+
+                const getString = (f: string[] | string | undefined) => (Array.isArray(f) ? f[0] : f || '');
+                const getInt = (f: string[] | string | undefined) => parseInt(getString(f) || '0', 10);
+
+                const uploadData = schemas.uploadChunkSchema.safeParse({
+                    chunkIndex: getInt(fields.chunkIndex),
+                    totalChunks: getInt(fields.totalChunks),
+                    driveId: getString(fields.driveId) || undefined,
+                    fileName: getString(fields.fileName),
+                    fileSize: getInt(fields.fileSize),
+                    fileType: getString(fields.fileType),
+                    folderId: getString(fields.folderId) || undefined,
+                });
+
+                if (!uploadData.success) {
+                    cleanupTempFiles(files);
+                    return res.status(400).json({ status: 400, message: uploadData.error.errors[0].message });
+                }
+
+                const { chunkIndex, totalChunks, driveId, fileName, fileSize: fileSizeInBytes, fileType, folderId } = uploadData.data;
+
+                let currentUploadId = driveId;
+
+                // Ensure temp directory for this upload exists
+                const tempBaseDir = path.join(STORAGE_PATH, 'temp', 'uploads');
+
+                if (!currentUploadId) {
+                    // Start of new upload (usually Chunk 0, but could be adapted)
+                    if (chunkIndex !== 0) return res.status(400).json({ message: 'Missing upload ID for non-zero chunk' });
+
+                    if (fileType && !validateMimeType(fileType, config.security.allowedMimeTypes)) {
+                        cleanupTempFiles(files);
+                        return res.status(400).json({ status: 400, message: `File type ${fileType} not allowed` });
+                    }
+
+                    // Quota Check
+                    const quota = await provider.getQuota(owner, accountId);
+                    if (quota.usedInBytes + fileSizeInBytes > quota.quotaInBytes) {
+                        cleanupTempFiles(files);
+                        return res.status(413).json({ status: 413, message: 'Storage quota exceeded' });
+                    }
+
+                    // Generate Temp ID (Stateless)
+                    currentUploadId = crypto.randomUUID();
+                    const uploadDir = path.join(tempBaseDir, currentUploadId);
+                    fs.mkdirSync(uploadDir, { recursive: true });
+
+                    // Save Metadata
+                    const metadata = {
+                        owner,
+                        accountId,
+                        providerName: provider.name,
+                        name: fileName,
+                        parentId: folderId === 'root' || !folderId ? null : folderId,
+                        fileSize: fileSizeInBytes,
+                        mimeType: fileType,
+                        totalChunks
+                    };
+                    fs.writeFileSync(path.join(uploadDir, 'metadata.json'), JSON.stringify(metadata));
+                }
+
+                // Handle Chunk Save
+                if (currentUploadId) {
+                    const uploadDir = path.join(tempBaseDir, currentUploadId);
+
+                    if (!fs.existsSync(uploadDir)) {
+                        cleanupTempFiles(files);
+                        // If dir missing, maybe upload expired or finished?
+                        return res.status(404).json({ status: 404, message: 'Upload session not found or expired' });
+                    }
+
+                    try {
+                        const chunkFile = Array.isArray(files.chunk) ? files.chunk[0] : files.chunk;
+                        if (!chunkFile) throw new Error('No chunk file received');
+
+                        // Save part file: part_0, part_1...
+                        const partPath = path.join(uploadDir, `part_${chunkIndex}`);
+                        fs.renameSync(chunkFile.filepath, partPath);
+
+                        // Check Completion
+                        // We count files starting with 'part_'
+                        const uploadedParts = fs.readdirSync(uploadDir).filter(f => f.startsWith('part_'));
+
+                        // Merge if all parts present
+                        if (uploadedParts.length === totalChunks) {
+                            // 1. Read Metadata
+                            const metaPath = path.join(uploadDir, 'metadata.json');
+                            const meta = JSON.parse(fs.readFileSync(metaPath, 'utf-8'));
+
+                            // 2. Merge Parts
+                            const finalTempPath = path.join(uploadDir, 'final.bin');
+                            const writeStream = fs.createWriteStream(finalTempPath);
+
+                            for (let i = 0; i < totalChunks; i++) {
+                                const pPath = path.join(uploadDir, `part_${i}`);
+                                const data = fs.readFileSync(pPath);
+                                writeStream.write(data);
+                                // Optional: delete part immediately to save space? 
+                                // fs.unlinkSync(pPath); 
+                            }
+                            writeStream.end();
+
+                            // Wait for stream finish? Sync write above is blocking so it's fine.
+
+                            // 3. Create DB Record (Delayed)
+                            const drive = new Drive({
+                                owner: meta.owner,
+                                storageAccountId: meta.accountId || null,
+                                provider: { type: meta.providerName },
+                                name: meta.name,
+                                parentId: meta.parentId,
+                                order: 0,
+                                information: { type: 'FILE', sizeInBytes: meta.fileSize, mime: meta.mimeType, path: '' }, // path set by provider
+                                status: 'UPLOADING',
+                                currentChunk: totalChunks,
+                                totalChunks: totalChunks,
+                            });
+
+                            // Set initial path based on ID - providers will resolve final path/ID
+                            if (meta.providerName === 'LOCAL' && drive.information.type === 'FILE') {
+                                drive.information.path = path.join('drive', String(drive._id), 'data.bin');
+                            }
+
+                            await drive.save();
+
+                            // 4. Provider Upload
+                            try {
+                                const item = await provider.uploadFile(drive, finalTempPath, meta.accountId);
+
+                                // Cleanup
+                                fs.rmSync(uploadDir, { recursive: true, force: true });
+
+                                const newQuota = await provider.getQuota(meta.owner, meta.accountId);
+                                res.status(200).json({ status: 200, message: 'Upload complete', data: { type: 'UPLOAD_COMPLETE', driveId: String(drive._id), item }, statistic: { storage: newQuota } });
+
+                            } catch (err) {
+                                // Upload to provider failed
+                                await Drive.deleteOne({ _id: drive._id });
+                                throw err;
+                            }
+
+                        } else {
+                            // Chunk received, wait for others
+                            const newQuota = await provider.getQuota(owner, accountId);
+                            // If this was chunk 0, we send UPLOAD_STARTED with the new ID
+                            if (chunkIndex === 0) {
+                                res.status(200).json({ status: 200, message: 'Upload started', data: { type: 'UPLOAD_STARTED', driveId: currentUploadId }, statistic: { storage: newQuota } });
+                            } else {
+                                res.status(200).json({ status: 200, message: 'Chunk received', data: { type: 'CHUNK_RECEIVED', driveId: currentUploadId, chunkIndex }, statistic: { storage: newQuota } });
+                            }
+                        }
+
+                    } catch (e) {
+                        cleanupTempFiles(files);
+                        // Don't delete entire dir on one chunk fail, might be retryable?
+                        // For now, if fatal error, maybe we should?
+                        // Let's just throw for now.
+                        throw e;
+                    }
+                    return;
+                }
+
+                // Should not happen if logic holds
+                cleanupTempFiles(files);
+                return res.status(400).json({ status: 400, message: 'Invalid upload request' });
+            }
+
+            // ** 4. CREATE FOLDER **
+            case 'createFolder': {
+                const folderData = schemas.createFolderBodySchema.safeParse(req.body);
+                if (!folderData.success) return res.status(400).json({ status: 400, message: folderData.error.errors[0].message });
+                const { name, parentId } = folderData.data;
+
+                const item = await provider.createFolder(name, parentId ?? null, owner, accountId);
+                return res.status(201).json({ status: 201, message: 'Folder created', data: { item } });
+            }
+
+            // ** 5. DELETE **
+            case 'delete': {
+                const deleteData = schemas.deleteQuerySchema.safeParse(req.query);
+                if (!deleteData.success) return res.status(400).json({ status: 400, message: 'Invalid ID' });
+                // We use generic delete (trash)
+                const { id } = deleteData.data;
+                const drive = await Drive.findById(id);
+                if (!drive) return res.status(404).json({ status: 404, message: 'Not found' });
+
+                // Call Provider Trash
+                const itemProvider = drive.provider?.type === 'GOOGLE' ? GoogleDriveProvider : LocalStorageProvider;
+                const itemAccountId = drive.storageAccountId ? drive.storageAccountId.toString() : undefined;
+
+                try {
+                    await itemProvider.trash([id], owner, itemAccountId);
+                } catch (e) {
+                    console.error('Provider trash failed:', e);
+                }
+
+                drive.trashedAt = new Date();
+                await drive.save();
+                return res.status(200).json({ status: 200, message: 'Moved to trash', data: null });
+            }
+
+            // ** 6. HARD DELETE **
+            case 'deletePermanent': {
+                const deleteData = schemas.deleteQuerySchema.safeParse(req.query);
+                if (!deleteData.success) return res.status(400).json({ status: 400, message: 'Invalid ID' });
+                const { id } = deleteData.data;
+                // Provider Delete
+                await provider.delete([id], owner, accountId);
+                const quota = await provider.getQuota(owner, accountId);
+                return res.status(200).json({ status: 200, message: 'Deleted', statistic: { storage: quota } });
+            }
+
+            // ** 7. QUOTA **
+            case 'quota': {
+                const quota = await provider.getQuota(owner, accountId);
+                return res.status(200).json({
+                    status: 200,
+                    message: 'Quota retrieved',
+                    data: { usedInBytes: quota.usedInBytes, totalInBytes: quota.quotaInBytes, availableInBytes: Math.max(0, quota.quotaInBytes - quota.usedInBytes), percentage: quota.quotaInBytes > 0 ? Math.round((quota.usedInBytes / quota.quotaInBytes) * 100) : 0 },
+                    statistic: { storage: quota },
+                });
+            }
+
+            // ** 7B. TRASH **
+            case 'trash': {
+                // Try to sync trash first
+                try {
+                    const { provider: trashProvider, accountId: trashAccountId } = await getProvider(req, owner);
+                    await trashProvider.syncTrash(owner, trashAccountId);
+                } catch (e) {
+                    console.error('Trash sync failed', e);
+                }
+
+                // Return items that are in trash
+                const query: Record<string, unknown> = {
+                    owner,
+                    'provider.type': provider.name,
+                    storageAccountId: accountId || null,
+                    trashedAt: { $ne: null }
+                };
+
+                const items = await Drive.find(query, {}, { sort: { trashedAt: -1 } });
+                const plainItems = await Promise.all(items.map(item => item.toClient()));
+
+                return res.status(200).json({
+                    status: 200,
+                    message: 'Trash items',
+                    data: { items: plainItems, hasMore: false }
+                });
+            }
+
+            // ** 7C. RESTORE **
+            case 'restore': {
+                const restoreData = schemas.deleteQuerySchema.safeParse(req.query);
+                if (!restoreData.success) return res.status(400).json({ status: 400, message: 'Invalid ID' });
+                const { id } = restoreData.data;
+                const drive = await Drive.findById(id);
+                if (!drive) return res.status(404).json({ status: 404, message: 'Not found' });
+
+                // Check if parent folder is trashed - if so, move to root
+                let targetParentId = drive.parentId;
+                if (targetParentId) {
+                    const parent = await Drive.findById(targetParentId);
+                    if (parent?.trashedAt) {
+                        targetParentId = null; // Move to root instead
+                    }
+                }
+
+                // Call Provider Untrash
+                const itemProvider = drive.provider?.type === 'GOOGLE' ? GoogleDriveProvider : LocalStorageProvider;
+                const itemAccountId = drive.storageAccountId ? drive.storageAccountId.toString() : undefined;
+
+                try {
+                    await itemProvider.untrash([id], owner, itemAccountId);
+                    // If moving to root due to trashed parent, update location in provider
+                    if (targetParentId !== drive.parentId) {
+                        await itemProvider.move(id, targetParentId?.toString() ?? null, owner, itemAccountId);
+                    }
+                } catch (e) {
+                    console.error('Provider restore failed:', e);
+                }
+
+                // Restore item in database
+                drive.trashedAt = null;
+                drive.parentId = targetParentId;
+                await drive.save();
+
+                return res.status(200).json({
+                    status: 200,
+                    message: targetParentId === null && drive.parentId !== null
+                        ? 'Restored to root (parent folder was trashed)'
+                        : 'Restored',
+                    data: null
+                });
+            }
+
+            // ** 7D. MOVE **
+            case 'move': {
+                const moveData = schemas.moveBodySchema.safeParse(req.body);
+                if (!moveData.success) return res.status(400).json({ status: 400, message: 'Invalid data' });
+                const { ids, targetFolderId } = moveData.data;
+
+                const items: TDatabaseDrive[] = [];
+                // Target folder ID for provider (null for root)
+                const effectiveTargetId = targetFolderId === 'root' || !targetFolderId ? null : targetFolderId;
+
+                for (const id of ids) {
+                    try {
+                        const item = await provider.move(id, effectiveTargetId, owner, accountId);
+                        items.push(item);
+                    } catch (e) {
+                        console.error(`Failed to move item ${id}`, e);
+                        // Continue moving other items
+                    }
+                }
+
+                return res.status(200).json({ status: 200, message: 'Moved', data: { items } });
+            }
+
+            // ** 8. RENAME **
+            case 'rename': {
+                const renameData = schemas.renameBodySchema.safeParse({ id: req.query.id, ...req.body });
+                if (!renameData.success) return res.status(400).json({ status: 400, message: 'Invalid data' });
+                const { id, newName } = renameData.data;
+                const item = await provider.rename(id, newName, owner, accountId);
+                return res.status(200).json({ status: 200, message: 'Renamed', data: { item } });
+            }
+
+            // ** 9. THUMBNAIL **
+            case 'thumbnail': {
+                const thumbQuery = schemas.thumbnailQuerySchema.safeParse(req.query);
+                if (!thumbQuery.success) return res.status(400).json({ status: 400, message: 'Invalid params' });
+                const { id } = thumbQuery.data;
+                const drive = await Drive.findById(id);
+                if (!drive) return res.status(404).json({ status: 404, message: 'Not found' });
+
+                // Resolve Correct Provider
+                const itemProvider = drive.provider?.type === 'GOOGLE' ? GoogleDriveProvider : LocalStorageProvider;
+                const itemAccountId = drive.storageAccountId ? drive.storageAccountId.toString() : undefined;
+
+                const stream = await itemProvider.getThumbnail(drive, itemAccountId);
+                res.setHeader('Content-Type', 'image/webp');
+                stream.pipe(res);
+                return;
+            }
+
+            // ** 10. SERVE / DOWNLOAD **
+            case 'serve': {
+                const serveQuery = schemas.serveQuerySchema.safeParse(req.query);
+                if (!serveQuery.success) return res.status(400).json({ status: 400, message: 'Invalid params' });
+                const { id } = serveQuery.data;
+                const drive = await Drive.findById(id);
+                if (!drive) return res.status(404).json({ status: 404, message: 'Not found' });
+
+                // Resolve Correct Provider
+                const itemProvider = drive.provider?.type === 'GOOGLE' ? GoogleDriveProvider : LocalStorageProvider;
+                const itemAccountId = drive.storageAccountId ? drive.storageAccountId.toString() : undefined;
+
+                const { stream, mime, size } = await itemProvider.openStream(drive, itemAccountId);
+
+                const safeFilename = sanitizeContentDispositionFilename(drive.name);
+                res.setHeader('Content-Disposition', `inline; filename="${safeFilename}"`);
+                res.setHeader('Content-Type', mime);
+                // Google streams might not give exact size, but we have IT in DB?
+                if (size) res.setHeader('Content-Length', size);
+
+                stream.pipe(res);
+                return;
+            }
+
+            default:
+                res.status(400).json({ status: 400, message: `Unknown action: ${action}` });
+        }
+    } catch (error: unknown) {
+        console.error(`[next-file-manager] Error handling action ${action}:`, error);
+        // FOR DEBUGGING: Return the actual error message
+        res.status(500).json({ status: 500, message: error instanceof Error ? error.message : 'Unknown error' });
+    }
+};
+
+// ** Exports
+export { driveConfiguration, getDriveConfig, getDriveInformation };
+export { driveGetUrl, driveReadFile, driveFilePath } from '@/server/controllers/drive';
+export type { TDriveFile } from '@/types/client';
+export type * from '@/types/server';
