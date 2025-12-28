@@ -1,3 +1,10 @@
+# [1.1.0](https://github.com/muhgholy/next-drive/compare/v1.0.2...v1.1.0) (2025-12-28)
+
+
+### Features
+
+* add client-side URL utilities and image quality types ([a793277](https://github.com/muhgholy/next-drive/commit/a7932776c07769c8e77824b79717908ac38644c8))
+
 ## [1.0.2](https://github.com/muhgholy/next-drive/compare/v1.0.1...v1.0.2) (2025-12-28)
 
 
