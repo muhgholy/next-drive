@@ -1,3 +1,10 @@
+# [1.2.0](https://github.com/muhgholy/next-drive/compare/v1.1.6...v1.2.0) (2025-12-28)
+
+
+### Features
+
+* add image preview to file chooser component ([b69c7b3](https://github.com/muhgholy/next-drive/commit/b69c7b3d856910fe6da3f193ba6973ec0760a8e1))
+
 ## [1.1.6](https://github.com/muhgholy/next-drive/compare/v1.1.5...v1.1.6) (2025-12-28)
 
 
