@@ -7,6 +7,7 @@ import { extractImageMetadata, computeFileHash } from '@/server/utils';
 import type { TStorageProvider } from '@/types/server/storage';
 import type { IDatabaseDriveDocument } from '@/server/database/mongoose/schema/drive';
 import ffmpeg from 'fluent-ffmpeg';
+import sharp from 'sharp';
 
 const STORAGE_PATH = path.join(process.cwd(), 'storage');
 
