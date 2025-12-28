@@ -203,13 +203,7 @@ type MyFormData = z.infer<typeof myFormSchema>;
 
 // Use in your form schema
 const myFormSchema = z.object({
-	asset: driveFileSchemaZod,
-	title: z.string(),
-	description: z.string().optional(),
-});
-
-type MyFormData = z.infer<typeof myFormSchema>;
-```
+````
 
 ## Key Capabilities
 
@@ -238,7 +232,7 @@ function MyComponent() {
 	// Use in Next.js Image component
 	return <Image src={createUrl(driveFile)} alt={driveFile.file.name} />;
 }
-```
+````
 
 **Responsive Image SrcSet:**
 
