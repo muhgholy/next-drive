@@ -1,10 +1,21 @@
 // ** Client Types
+import { z } from 'zod';
 
 // ** Drive File (Public)
 export type TDriveFile = {
     id: string;
     file: { name: string; mime: string; size: number };
 };
+
+// ** Drive File Schema (for validation)
+export const driveFileSchemaZod = z.object({
+    id: z.string(),
+    file: z.object({
+        name: z.string(),
+        mime: z.string(),
+        size: z.number(),
+    }),
+});
 
 // ** Context Types
 export type TDrivePathItem = {

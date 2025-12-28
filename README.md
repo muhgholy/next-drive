@@ -61,8 +61,9 @@ export const drive = driveConfiguration({
 	information: async (req): Promise<TDriveConfigInformation> => {
 		// Implement your auth verification here
 		const auth = await verifyAuth(req);
+		if (!auth) throw new Error("Unauthenticated");
 		return {
-			key: auth ? { userId: auth.userId } : null,
+			key: { userId: auth.userId },
 			storage: { quotaInBytes: 1024 * 1024 * 1024 }, // 1GB limit
 		};
 	},
@@ -132,7 +133,7 @@ You can use the exported `driveFileSchemaZod` to validate file data in your form
 
 ```typescript
 import { z } from "zod";
-import { driveFileSchemaZod } from "@muhgholy/next-drive/server";
+import { driveFileSchemaZod } from "@muhgholy/next-drive/client";
 
 // Use in your form schema
 const myFormSchema = z.object({
