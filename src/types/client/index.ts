@@ -1,5 +1,4 @@
 // ** Client Types
-import { z } from 'zod';
 
 // ** Drive File (Public)
 export type TDriveFile = {
@@ -11,15 +10,8 @@ export type TDriveFile = {
 export type TImageQuality = 'ultralow' | 'low' | 'medium' | 'high' | 'normal';
 export type TImageFormat = 'webp' | 'jpeg' | 'png';
 
-// ** Drive File Schema (for validation)
-export const driveFileSchemaZod = z.object({
-    id: z.string(),
-    file: z.object({
-        name: z.string(),
-        mime: z.string(),
-        size: z.number(),
-    }),
-});
+// ** Re-export schema from universal location
+export { driveFileSchemaZod } from '@/schemas';
 
 // ** Context Types
 export type TDrivePathItem = {
