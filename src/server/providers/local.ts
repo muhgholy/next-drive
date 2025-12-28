@@ -72,7 +72,6 @@ export const LocalStorageProvider: TStorageProvider = {
         if (!fs.existsSync(path.dirname(thumbPath))) fs.mkdirSync(path.dirname(thumbPath), { recursive: true });
 
         if (item.information.mime.startsWith('image/')) {
-            const sharp = require('sharp'); // Dynamic import to avoid issues if not installed, though it is
             await sharp(originalPath)
                 .resize(300, 300, { fit: 'inside' })
                 .toFormat('webp', { quality: 80 })

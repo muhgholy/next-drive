@@ -24,6 +24,7 @@ npm install @muhgholy/next-drive
 -    React >= 18
 -    Mongoose >= 7
 -    Tailwind CSS >= 3
+-    Sharp >= 0.33 (for image processing)
 
 **System Requirements:**
 

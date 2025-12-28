@@ -12,7 +12,7 @@ export default defineConfig({
     splitting: false,
     sourcemap: true,
     clean: true,
-    external: ['react', 'react-dom', 'next', 'mongoose', 'fluent-ffmpeg', 'sharp'],
+    external: ['react', 'react-dom', 'next', 'mongoose', 'fluent-ffmpeg', 'sharp', 'googleapis'],
     esbuildOptions(options) {
         options.jsx = 'automatic';
     },
