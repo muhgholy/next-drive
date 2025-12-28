@@ -192,7 +192,7 @@ export const useUpload = (apiEndpoint: string, activeAccountId: string | null, o
                 processItem(queued, file, meta?.folderId || null);
             }
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line
     }, [uploads]);
 
     return { uploads, uploadFiles, cancelUpload, cancelAllUploads };

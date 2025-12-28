@@ -72,6 +72,7 @@ export const driveAPIHandler = async (req: NextApiRequest, res: NextApiResponse)
                         const { clientId, clientSecret, redirectUri } = config.storage?.google || {};
                         if (!clientId || !clientSecret) return res.status(500).json({ status: 500, message: 'Google not configured' });
 
+                        // eslint-disable-next-line @typescript-eslint/no-require-imports
                         const { google } = require('googleapis');
                         const oAuth2Client = new google.auth.OAuth2(clientId, clientSecret, redirectUri);
                         // Generate state to identify user
@@ -95,6 +96,7 @@ export const driveAPIHandler = async (req: NextApiRequest, res: NextApiResponse)
                     // Assuming 'owner' from getDriveInformation is the source of truth for current session.
 
                     const { clientId, clientSecret, redirectUri } = config.storage?.google || {};
+                    // eslint-disable-next-line @typescript-eslint/no-require-imports
                     const { google } = require('googleapis');
                     const oAuth2Client = new google.auth.OAuth2(clientId, clientSecret, redirectUri);
 
