@@ -1,3 +1,10 @@
+## [1.1.6](https://github.com/muhgholy/next-drive/compare/v1.1.5...v1.1.6) (2025-12-28)
+
+
+### Bug Fixes
+
+* add ESLint configuration for TypeScript ([7cfaac2](https://github.com/muhgholy/next-drive/commit/7cfaac2e52947a4de9021f400df95661491f12bc))
+
 ## [1.1.5](https://github.com/muhgholy/next-drive/compare/v1.1.4...v1.1.5) (2025-12-28)
 
 
