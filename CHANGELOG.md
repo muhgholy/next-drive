@@ -1,3 +1,10 @@
+## [1.0.2](https://github.com/muhgholy/next-drive/compare/v1.0.1...v1.0.2) (2025-12-28)
+
+
+### Bug Fixes
+
+* move driveFileSchemaZod to client package to avoid bundling server modules ([33b4f75](https://github.com/muhgholy/next-drive/commit/33b4f75f762ea8b160f1d607fb5cc0d8ea0ee75f))
+
 ## [1.0.1](https://github.com/muhgholy/next-drive/compare/v1.0.0...v1.0.1) (2025-12-28)
 
 
