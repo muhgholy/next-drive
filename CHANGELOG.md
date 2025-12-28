@@ -1,3 +1,10 @@
+## [1.1.1](https://github.com/muhgholy/next-drive/compare/v1.1.0...v1.1.1) (2025-12-28)
+
+
+### Bug Fixes
+
+* add Tailwind CSS configuration and fix upload bodyParser issue ([27c332c](https://github.com/muhgholy/next-drive/commit/27c332c3387b6772da51b778a41891dfdde363e4))
+
 # [1.1.0](https://github.com/muhgholy/next-drive/compare/v1.0.2...v1.1.0) (2025-12-28)
 
 
