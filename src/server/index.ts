@@ -635,5 +635,6 @@ export const driveAPIHandler = async (req: NextApiRequest, res: NextApiResponse)
 // ** Exports
 export { driveConfiguration, getDriveConfig, getDriveInformation };
 export { driveGetUrl, driveReadFile, driveFilePath } from '@/server/controllers/drive';
+export { driveFileSchemaZod } from '@/server/zod/schemas';
 export type { TDriveFile } from '@/types/client';
 export type * from '@/types/server';

@@ -3,12 +3,10 @@
 
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import type { TDriveFile } from '@/types/client';
-import type { TDatabaseDrive } from '@/types/server';
 import { useDrive } from '@/client/context';
 import { cn, getFileIcon } from '@/client/utils';
 import { DriveExplorer } from '@/client/components/drive/explorer';
 import { DriveHeader } from '@/client/components/drive/header';
-import { DriveFilePreview } from '@/client/components/drive/file/preview';
 import { DriveSidebar } from '@/client/components/drive/sidebar';
 import { Upload as UploadIcon, X } from 'lucide-react';
 import { Button } from '@/client/components/ui/button';
@@ -39,7 +37,6 @@ export const DriveFileChooser = (props: Readonly<{
     };
     const { items, selectedFileIds, setSelectedFileIds } = useDrive();
     const [isOpen, setIsOpen] = useState(false);
-    const [previewFile, setPreviewFile] = useState<TDatabaseDrive | null>(null);
 
     // ** Sync Selection when Open
     useEffect(() => {
@@ -229,12 +226,6 @@ export const DriveFileChooser = (props: Readonly<{
                             <DriveHeader />
                             <DriveExplorer
                                 mimeFilter={accept}
-                                onItemDoubleClick={(item) => {
-                                    // Quick select on double click if file
-                                    if (item.information.type === 'FILE') {
-                                        setPreviewFile(item);
-                                    }
-                                }}
                             />
                         </div>
                     </div>
@@ -253,8 +244,6 @@ export const DriveFileChooser = (props: Readonly<{
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
-
-            {previewFile && <DriveFilePreview item={previewFile} onClose={() => setPreviewFile(null)} />}
         </div>
     );
 };

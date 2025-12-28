@@ -73,15 +73,16 @@ export const drive = driveConfiguration({
 
 Set up the API route handler that `next-drive` will use to communicate with the client.
 
+**Important:** The API route must be in the `pages` folder (Pages Router) for Next.js to handle the request properly.
+
 ```typescript
-// pages/api/drive.ts (Pages Router)
-// or app/api/drive/route.ts (App Router)
-
-import { drive } from "@/lib/drive";
+// pages/api/drive.ts
+import "@/lib/drive";
 import { driveAPIHandler } from "@muhgholy/next-drive/server";
+import type { NextApiRequest, NextApiResponse } from "next";
 
-export default function handler(req, res) {
-	return driveAPIHandler(drive, req, res);
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+	return driveAPIHandler(req, res);
 }
 ```
 
@@ -123,6 +124,24 @@ function MyForm() {
 
 	return <DriveFileChooser value={file} onChange={setFile} accept="image/*" />;
 }
+```
+
+**Zod Validation:**
+
+You can use the exported `driveFileSchemaZod` to validate file data in your forms or API routes.
+
+```typescript
+import { z } from "zod";
+import { driveFileSchemaZod } from "@muhgholy/next-drive/server";
+
+// Use in your form schema
+const myFormSchema = z.object({
+	asset: driveFileSchemaZod,
+	title: z.string(),
+	description: z.string().optional(),
+});
+
+type MyFormData = z.infer<typeof myFormSchema>;
 ```
 
 ## Key Capabilities

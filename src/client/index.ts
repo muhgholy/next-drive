@@ -6,7 +6,6 @@ export * from '@/client/file-chooser';
 export * from '@/client/components/drive/explorer';
 export * from '@/client/components/drive/path-bar';
 export * from '@/client/components/drive/upload';
-export * from '@/client/components/drive/file/preview';
 export * from '@/client/components/drive/storage/indicator';
 export * from '@/client/components/drive/header';
 export * from '@/client/components/drive/sidebar';

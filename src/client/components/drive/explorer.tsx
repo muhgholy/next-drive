@@ -5,12 +5,11 @@ import React, { useMemo, useEffect, useRef } from 'react';
 import type { TDatabaseDrive } from '@/types/server';
 import { useDrive } from '@/client/context';
 import { formatBytes, getFileIcon, matchesMimeFilter, cn } from '@/client/utils';
-import { Folder, Loader2, Info, RotateCcw, ChevronRight } from 'lucide-react';
+import { Folder, Loader2, RotateCcw, ChevronRight } from 'lucide-react';
 import { isToday, isYesterday, startOfWeek, subWeeks, isAfter } from 'date-fns';
 import { ContextMenu, ContextMenuTrigger, ContextMenuContent, ContextMenuItem, ContextMenuSeparator, ContextMenuShortcut } from "@/client/components/ui/context-menu";
 import { DialogConfirmation } from '@/client/components/dialog';
 import { Pencil, Trash2, FolderPlus } from "lucide-react";
-import { DriveFileDetails } from '@/client/components/drive/file/details';
 import { DrivePathBar } from '@/client/components/drive/path-bar';
 import { DriveUpload } from '@/client/components/drive/upload';
 import { DriveSidebar } from '@/client/components/drive/sidebar';
@@ -88,7 +87,6 @@ export const DriveExplorer = (props: Readonly<{
 
     // ** Item State
     const [renameItem, setRenameItem] = React.useState<TDatabaseDrive | null>(null);
-    const [detailsItem, setDetailsItem] = React.useState<TDatabaseDrive | null>(null);
 
     // ** Drag & Drop State
     const [dragOverFolderId, setDragOverFolderId] = React.useState<string | null>(null);
@@ -546,9 +544,6 @@ export const DriveExplorer = (props: Readonly<{
                                                                             </>
                                                                         ) : (
                                                                             <>
-                                                                                <ContextMenuItem onClick={() => setDetailsItem(item)}>
-                                                                                    <Info className="mr-2 size-4" /> Details
-                                                                                </ContextMenuItem>
                                                                                 <ContextMenuItem onClick={() => {
                                                                                     setRenameItem(item);
                                                                                     setDialogs(prev => ({ ...prev, rename: true }));
@@ -581,14 +576,6 @@ export const DriveExplorer = (props: Readonly<{
                                         {!isLoadingMore && <div className="h-4 w-full" />}
                                     </div>
                                 )}
-
-                                {/* Components */}
-                                <DriveFileDetails
-                                    item={detailsItem}
-                                    isOpen={!!detailsItem}
-                                    onClose={() => setDetailsItem(null)}
-                                    apiEndpoint={apiEndpoint}
-                                />
 
                                 {/* Dialogs */}
                                 <DialogConfirmation
