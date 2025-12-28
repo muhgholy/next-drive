@@ -1,3 +1,10 @@
+## [1.1.2](https://github.com/muhgholy/next-drive/compare/v1.1.1...v1.1.2) (2025-12-28)
+
+
+### Bug Fixes
+
+* remove [@tailwind](https://github.com/tailwind) directives from styles.css ([aa8caf8](https://github.com/muhgholy/next-drive/commit/aa8caf857e4fb7fd59dec8c030c79f33afd7dc08))
+
 ## [1.1.1](https://github.com/muhgholy/next-drive/compare/v1.1.0...v1.1.1) (2025-12-28)
 
 
