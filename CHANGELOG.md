@@ -1,3 +1,10 @@
+## [1.1.3](https://github.com/muhgholy/next-drive/compare/v1.1.2...v1.1.3) (2025-12-28)
+
+
+### Bug Fixes
+
+* resolve sharp dynamic require error and move to peerDependencies ([92b53b4](https://github.com/muhgholy/next-drive/commit/92b53b44e8efb7a4e807a28ea28bde2a69213cce))
+
 ## [1.1.2](https://github.com/muhgholy/next-drive/compare/v1.1.1...v1.1.2) (2025-12-28)
 
 
