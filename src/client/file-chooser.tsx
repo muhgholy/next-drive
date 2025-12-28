@@ -35,7 +35,7 @@ export const DriveFileChooser = (props: Readonly<{
         disabled: false,
         ...props
     };
-    const { items, selectedFileIds, setSelectedFileIds } = useDrive();
+    const { items, selectedFileIds, setSelectedFileIds, createUrl } = useDrive();
     const [isOpen, setIsOpen] = useState(false);
 
     // ** Sync Selection when Open
@@ -86,16 +86,14 @@ export const DriveFileChooser = (props: Readonly<{
         <div className={cn("space-y-1.5", className)}>
             {/* Empty State / Trigger */}
             {!hasSelection && (
-                <button
+                <Button
                     type="button"
-                    onClick={() => !disabled && setIsOpen(true)}
+                    variant="outline"
+                    onClick={() => setIsOpen(true)}
                     disabled={disabled}
                     className={cn(
-                        "w-full flex items-center gap-3 px-3 py-2.5 rounded-md border border-dashed text-left transition-colors",
-                        "hover:bg-accent hover:border-accent-foreground/20",
-                        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                        error && "border-destructive bg-destructive/5 hover:bg-destructive/10",
-                        disabled && "opacity-50 cursor-not-allowed hover:bg-transparent"
+                        "w-full h-auto justify-start gap-3 px-3 py-2.5 border-dashed",
+                        error && "border-destructive"
                     )}
                 >
                     <div className={cn(
@@ -110,7 +108,7 @@ export const DriveFileChooser = (props: Readonly<{
                         </p>
                         <p className="text-xs text-muted-foreground">{placeholder}</p>
                     </div>
-                </button>
+                </Button>
             )}
 
             {/* Selected File Display (Single) */}
@@ -121,7 +119,15 @@ export const DriveFileChooser = (props: Readonly<{
                     disabled && "opacity-50"
                 )}>
                     <div className="size-10 shrink-0 rounded overflow-hidden bg-muted flex items-center justify-center">
-                        {getFileIcon(displayFiles[0].file.mime, false, "size-5 text-muted-foreground")}
+                        {displayFiles[0].file.mime.startsWith('image/') ? (
+                            <img
+                                src={createUrl({ id: displayFiles[0].id, file: displayFiles[0].file }, { quality: 'low', format: 'webp' })}
+                                alt={displayFiles[0].file.name}
+                                className="size-full object-cover"
+                            />
+                        ) : (
+                            getFileIcon(displayFiles[0].file.mime, false, "size-5 text-muted-foreground")
+                        )}
                     </div>
                     <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">{displayFiles[0].file.name}</p>
@@ -188,7 +194,15 @@ export const DriveFileChooser = (props: Readonly<{
                         {displayFiles.map((file) => (
                             <div key={file.id} className="flex items-center gap-2 px-2.5 py-1.5 hover:bg-muted/30">
                                 <div className="size-7 shrink-0 rounded overflow-hidden bg-muted flex items-center justify-center">
-                                    {getFileIcon(file.file.mime, false, "size-3.5 text-muted-foreground")}
+                                    {file.file.mime.startsWith('image/') ? (
+                                        <img
+                                            src={createUrl({ id: file.id, file: file.file }, { quality: 'ultralow', format: 'webp' })}
+                                            alt={file.file.name}
+                                            className="size-full object-cover"
+                                        />
+                                    ) : (
+                                        getFileIcon(file.file.mime, false, "size-3.5 text-muted-foreground")
+                                    )}
                                 </div>
                                 <span className="flex-1 text-sm truncate">{file.file.name}</span>
                                 {!disabled && (
