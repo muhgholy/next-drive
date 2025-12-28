@@ -1,3 +1,10 @@
+# [1.3.0](https://github.com/muhgholy/next-drive/compare/v1.2.0...v1.3.0) (2025-12-28)
+
+
+### Features
+
+* add universal schema export path ([48aebd1](https://github.com/muhgholy/next-drive/commit/48aebd1fa3f999ca87095cc5f1dd913e86135497))
+
 # [1.2.0](https://github.com/muhgholy/next-drive/compare/v1.1.6...v1.2.0) (2025-12-28)
 
 
