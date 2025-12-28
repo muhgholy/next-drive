@@ -185,7 +185,25 @@ function MyForm() {
 
 You can use the exported `driveFileSchemaZod` to validate file data in your forms or API routes.
 
+> **Important**: Import from `@muhgholy/next-drive/server` for server-side code (Server Actions, API routes) and from `@muhgholy/next-drive/client` for client components.
+
 ```typescript
+// ✅ Server-side (Server Actions, API routes, server components)
+import { z } from "zod";
+import { driveFileSchemaZod } from "@muhgholy/next-drive/server";
+
+// Use in your form schema
+const myFormSchema = z.object({
+	asset: driveFileSchemaZod,
+	title: z.string(),
+	description: z.string().optional(),
+});
+
+type MyFormData = z.infer<typeof myFormSchema>;
+```
+
+```typescript
+// ✅ Client-side (client components)
 import { z } from "zod";
 import { driveFileSchemaZod } from "@muhgholy/next-drive/client";
 
