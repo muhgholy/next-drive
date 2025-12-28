@@ -1,3 +1,10 @@
+## [1.1.4](https://github.com/muhgholy/next-drive/compare/v1.1.3...v1.1.4) (2025-12-28)
+
+
+### Bug Fixes
+
+* add missing sharp import in local.ts provider ([313b6fe](https://github.com/muhgholy/next-drive/commit/313b6fe54cf96c26ca681abec2e8c272db1e3d34))
+
 ## [1.1.3](https://github.com/muhgholy/next-drive/compare/v1.1.2...v1.1.3) (2025-12-28)
 
 
