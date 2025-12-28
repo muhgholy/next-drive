@@ -1,3 +1,10 @@
+## [1.0.1](https://github.com/muhgholy/next-drive/compare/v1.0.0...v1.0.1) (2025-12-28)
+
+
+### Bug Fixes
+
+* remove NPM_TOKEN for trusted publisher authentication ([ce20a91](https://github.com/muhgholy/next-drive/commit/ce20a919ccfde43c9f3f034bbdb1258dc289d3b6))
+
 # 1.0.0 (2025-12-28)
 
 
