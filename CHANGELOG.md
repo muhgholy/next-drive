@@ -1,3 +1,10 @@
+## [1.1.5](https://github.com/muhgholy/next-drive/compare/v1.1.4...v1.1.5) (2025-12-28)
+
+
+### Bug Fixes
+
+* move sharp back to dependencies for better DX ([c54a775](https://github.com/muhgholy/next-drive/commit/c54a77533ed8bdf10461d2b638a5d422880fdd9a))
+
 ## [1.1.4](https://github.com/muhgholy/next-drive/compare/v1.1.3...v1.1.4) (2025-12-28)
 
 
