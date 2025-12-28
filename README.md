@@ -23,6 +23,7 @@ npm install @muhgholy/next-drive
 -    Next.js >= 14
 -    React >= 18
 -    Mongoose >= 7
+-    Tailwind CSS >= 3
 
 **System Requirements:**
 
@@ -30,6 +31,29 @@ npm install @muhgholy/next-drive
      -    MacOS: `brew install ffmpeg`
      -    Ubuntu: `sudo apt install ffmpeg`
      -    Windows: Download from official site and add to PATH.
+
+### Tailwind CSS Configuration
+
+Since this package uses Tailwind CSS for styling, you **must** configure Tailwind to scan the package's files:
+
+```js
+// tailwind.config.js
+export default {
+	content: [
+		"./app/**/*.{js,ts,jsx,tsx,mdx}",
+		"./pages/**/*.{js,ts,jsx,tsx,mdx}",
+		"./components/**/*.{js,ts,jsx,tsx,mdx}",
+		// Add the next-drive package
+		"./node_modules/@muhgholy/next-drive/dist/**/*.{js,mjs}",
+	],
+	theme: {
+		extend: {},
+	},
+	plugins: [],
+};
+```
+
+> **Note**: The CSS is automatically injected when you import from `@muhgholy/next-drive/client` - no need to manually import stylesheets.
 
 ## Quick Start
 
@@ -74,7 +98,10 @@ export const drive = driveConfiguration({
 
 Set up the API route handler that `next-drive` will use to communicate with the client.
 
-**Important:** The API route must be in the `pages` folder (Pages Router) for Next.js to handle the request properly.
+**Important:**
+
+-    The API route must be in the `pages` folder (Pages Router)
+-    **You MUST disable Next.js body parser** for uploads to work properly
 
 ```typescript
 // pages/api/drive.ts
@@ -83,8 +110,35 @@ import { driveAPIHandler } from "@muhgholy/next-drive/server";
 import type { NextApiRequest, NextApiResponse } from "next";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+	// Manually parse JSON body for non-upload requests
+	if (!req.body) req.body = {};
+
+	if (req.headers["content-type"]?.includes("application/json")) {
+		try {
+			const buffer = await new Promise<Buffer>((resolve, reject) => {
+				const chunks: Buffer[] = [];
+				req.on("data", (chunk) => chunks.push(chunk));
+				req.on("end", () => resolve(Buffer.concat(chunks)));
+				req.on("error", reject);
+			});
+
+			if (buffer.length > 0) {
+				req.body = JSON.parse(buffer.toString());
+			}
+		} catch (e) {
+			console.error("Failed to parse JSON body", e);
+		}
+	}
+
 	return driveAPIHandler(req, res);
 }
+
+// ⚠️ CRITICAL: Disable body parser for file uploads
+export const config = {
+	api: {
+		bodyParser: false,
+	},
+};
 ```
 
 ### 3. Add Provider

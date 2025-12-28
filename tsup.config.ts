@@ -1,4 +1,6 @@
 import { defineConfig } from 'tsup';
+import { copyFileSync, mkdirSync } from 'fs';
+import { dirname } from 'path';
 
 export default defineConfig({
     entry: {
@@ -13,5 +15,13 @@ export default defineConfig({
     external: ['react', 'react-dom', 'next', 'mongoose', 'fluent-ffmpeg', 'sharp'],
     esbuildOptions(options) {
         options.jsx = 'automatic';
+    },
+    onSuccess: async () => {
+        // Copy CSS file to dist
+        const cssSource = 'src/client/styles.css';
+        const cssTarget = 'dist/client/styles.css';
+        mkdirSync(dirname(cssTarget), { recursive: true });
+        copyFileSync(cssSource, cssTarget);
+        console.log('✓ Copied styles.css to dist');
     },
 });
