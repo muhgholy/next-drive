@@ -1,4 +1,4 @@
-# next-file-manager
+# @muhgholy/next-drive
 
 Robust file storage and management solution for Next.js applications, featuring a responsive UI, advanced search, trash management, and secure file handling.
 
@@ -15,7 +15,7 @@ Robust file storage and management solution for Next.js applications, featuring 
 ## Installation
 
 ```bash
-npm install next-file-manager
+npm install @muhgholy/next-drive
 ```
 
 **Peer Dependencies:**
@@ -39,8 +39,8 @@ Create a configuration file (e.g., `lib/drive.ts`) to set up storage paths, data
 
 ```typescript
 // lib/drive.ts
-import { driveConfiguration } from "next-file-manager/server";
-import type { TDriveConfigInformation } from "next-file-manager/server";
+import { driveConfiguration } from "@muhgholy/next-drive/server";
+import type { TDriveConfigInformation } from "@muhgholy/next-drive/server";
 
 export const drive = driveConfiguration({
 	database: "MONGOOSE",
@@ -71,14 +71,14 @@ export const drive = driveConfiguration({
 
 ### 2. Create API Route
 
-Set up the API route handler that `next-file-manager` will use to communicate with the client.
+Set up the API route handler that `next-drive` will use to communicate with the client.
 
 ```typescript
 // pages/api/drive.ts (Pages Router)
 // or app/api/drive/route.ts (App Router)
 
 import { drive } from "@/lib/drive";
-import { driveAPIHandler } from "next-file-manager/server";
+import { driveAPIHandler } from "@muhgholy/next-drive/server";
 
 export default function handler(req, res) {
 	return driveAPIHandler(drive, req, res);
@@ -91,7 +91,7 @@ Wrap your application or the specific route with `DriveProvider`.
 
 ```typescript
 // app/layout.tsx
-import { DriveProvider } from "next-file-manager/client";
+import { DriveProvider } from "@muhgholy/next-drive/client";
 
 export default function RootLayout({ children }) {
 	return <DriveProvider apiEndpoint="/api/drive">{children}</DriveProvider>;
@@ -105,7 +105,7 @@ You can use the built-in `DriveExplorer` for a full file manager experience or `
 **Full File Explorer:**
 
 ```typescript
-import { DriveExplorer } from "next-file-manager/client";
+import { DriveExplorer } from "@muhgholy/next-drive/client";
 
 export default function DrivePage() {
 	return <DriveExplorer />;
@@ -115,8 +115,8 @@ export default function DrivePage() {
 **File Picker:**
 
 ```typescript
-import { DriveFileChooser } from "next-file-manager/client";
-import type { TDriveFile } from "next-file-manager/client";
+import { DriveFileChooser } from "@muhgholy/next-drive/client";
+import type { TDriveFile } from "@muhgholy/next-drive/client";
 
 function MyForm() {
 	const [file, setFile] = useState<TDriveFile | null>(null);
@@ -132,7 +132,7 @@ function MyForm() {
 **Get File URL:**
 
 ```typescript
-import { driveGetUrl } from "next-file-manager/server";
+import { driveGetUrl } from "@muhgholy/next-drive/server";
 
 // Generate a secure URL
 const url = driveGetUrl(fileId);
@@ -148,7 +148,7 @@ const url = driveGetUrl(fileId, { expiry: new Date("2025-12-31") });
 **Read File Stream:**
 
 ```typescript
-import { driveReadFile } from "next-file-manager/server";
+import { driveReadFile } from "@muhgholy/next-drive/server";
 
 // Using file ID
 const { stream, mime, size } = await driveReadFile(fileId);
@@ -178,7 +178,7 @@ const buffer = Buffer.concat(chunks);
 For scenarios requiring direct file system access, `driveFilePath()` provides the absolute path. Google Drive files are automatically downloaded to a local cache.
 
 ```typescript
-import { driveFilePath } from "next-file-manager/server";
+import { driveFilePath } from "@muhgholy/next-drive/server";
 import fs from "fs";
 
 // Get local path (downloads Google Drive files automatically)

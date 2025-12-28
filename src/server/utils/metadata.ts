@@ -44,7 +44,7 @@ export async function extractImageMetadata(
             exif: metadata.exif ? parseExif(metadata.exif) : undefined,
         };
     } catch (error) {
-        console.error('[next-file-manager] Image metadata error:', error);
+        console.error('[next-drive] Image metadata error:', error);
         return null;
     }
 }
@@ -84,7 +84,7 @@ export async function extractVideoMetadata(
         const { getVideoMetadata } = await import('./ffmpeg');
         return await getVideoMetadata(filePath);
     } catch (error) {
-        console.error('[next-file-manager] Video metadata error:', error);
+        console.error('[next-drive] Video metadata error:', error);
         return null;
     }
 }

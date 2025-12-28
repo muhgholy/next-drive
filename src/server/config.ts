@@ -9,7 +9,7 @@ let globalConfig: TDriveConfiguration | null = null;
 export const driveConfiguration = (config: TDriveConfiguration): TDriveConfiguration => {
     // Check database connection
     if (mongoose.connection.readyState !== 1) {
-        throw new Error('Database not connected. Please connect to Mongoose before initializing next-file-manager.');
+        throw new Error('Database not connected. Please connect to Mongoose before initializing next-drive.');
     }
 
     // Apply default values if not provided in the config

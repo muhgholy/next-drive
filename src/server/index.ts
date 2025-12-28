@@ -47,7 +47,7 @@ export const driveAPIHandler = async (req: NextApiRequest, res: NextApiResponse)
     try {
         getDriveConfig();
     } catch (error) {
-        console.error('[next-file-manager] Configuration error:', error);
+        console.error('[next-drive] Configuration error:', error);
         res.status(500).json({ status: 500, message: 'Failed to initialize drive configuration' });
         return;
     }
@@ -626,7 +626,7 @@ export const driveAPIHandler = async (req: NextApiRequest, res: NextApiResponse)
                 res.status(400).json({ status: 400, message: `Unknown action: ${action}` });
         }
     } catch (error: unknown) {
-        console.error(`[next-file-manager] Error handling action ${action}:`, error);
+        console.error(`[next-drive] Error handling action ${action}:`, error);
         // FOR DEBUGGING: Return the actual error message
         res.status(500).json({ status: 500, message: error instanceof Error ? error.message : 'Unknown error' });
     }

@@ -37,7 +37,7 @@ export async function extractVideoFrame(
                 }
             })
             .on('error', (err) => {
-                console.error('[next-file-manager] ffmpeg error:', err);
+                console.error('[next-drive] ffmpeg error:', err);
                 resolve(false);
             });
     });
@@ -62,7 +62,7 @@ export async function getVideoMetadata(
     return new Promise((resolve) => {
         ffmpeg.ffprobe(filePath, (err, data) => {
             if (err) {
-                console.error('[next-file-manager] ffprobe error:', err);
+                console.error('[next-drive] ffprobe error:', err);
                 resolve(null);
                 return;
             }

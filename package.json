@@ -1,5 +1,5 @@
 {
-	"name": "next-file-manager",
+	"name": "@muhgholy/next-drive",
 	"version": "0.1.0",
 	"description": "File storage and management for Next.js applications",
 	"type": "module",
@@ -84,6 +84,6 @@
 	"license": "MIT",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/your-org/next-file-manager"
+		"url": "https://github.com/your-org/next-drive"
 	}
 }

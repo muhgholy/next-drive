@@ -96,7 +96,7 @@ export async function convertAndServeImage(
         res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
         fs.createReadStream(cachePath).pipe(res);
     } catch (error) {
-        console.error('[next-file-manager] Image conversion error:', error);
+        console.error('[next-drive] Image conversion error:', error);
         // Fallback to original
         const stats = fs.statSync(sourcePath);
         res.setHeader('Content-Type', sourceMime);
@@ -133,7 +133,7 @@ export async function generateThumbnail(
                 .toFile(outputPath);
             return true;
         } catch (error) {
-            console.error('[next-file-manager] Image thumbnail error:', error);
+            console.error('[next-drive] Image thumbnail error:', error);
             return false;
         }
     }
@@ -145,7 +145,7 @@ export async function generateThumbnail(
             const { extractVideoFrame } = await import('./ffmpeg');
             return await extractVideoFrame(sourcePath, outputPath, size);
         } catch (error) {
-            console.error('[next-file-manager] Video thumbnail error:', error);
+            console.error('[next-drive] Video thumbnail error:', error);
             return false;
         }
     }
