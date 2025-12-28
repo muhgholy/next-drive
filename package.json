@@ -1,6 +1,6 @@
 {
 	"name": "@muhgholy/next-drive",
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"description": "File storage and management for Next.js applications",
 	"type": "module",
 	"exports": {
@@ -84,6 +84,6 @@
 	"license": "MIT",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/your-org/next-drive"
+		"url": "https://github.com/@muhgholy/next-drive"
 	}
 }
