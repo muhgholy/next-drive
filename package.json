@@ -26,7 +26,7 @@
           "dist"
      ],
      "scripts": {
-          "build": "tsup",
+          "build": "tsup && tsc -p tsconfig.build.json && tsc-alias -p tsconfig.build.json",
           "dev": "tsup --watch",
           "lint": "eslint \"src/**/*.{ts,tsx}\"",
           "typecheck": "tsc --noEmit",
@@ -80,6 +80,7 @@
           "jsdom": "^27.3.0",
           "mongoose": ">=7.0.0",
           "semantic-release": "^24.2.9",
+          "tsc-alias": "^1.8.16",
           "tsup": "^8.0.0",
           "typescript": "^5.0.0",
           "typescript-eslint": "^8.50.1",

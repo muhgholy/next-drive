@@ -10,11 +10,12 @@ export default defineConfig({
 		schemas: 'src/schemas.ts',
 	},
 	format: ['esm'],
-	dts: true,
+	dts: false, // Use tsc separately - tsup's DTS uses too much memory
 	splitting: false,
 	sourcemap: true,
 	clean: true,
-	external: ['react', 'react-dom', 'next', 'mongoose', 'fluent-ffmpeg', 'sharp', 'googleapis'],
+	treeshake: true,
+	external: ['react', 'react-dom', 'next', 'mongoose', 'fluent-ffmpeg', 'sharp', 'googleapis', 'express'],
 	esbuildOptions(options) {
 		options.jsx = 'automatic';
 	},
