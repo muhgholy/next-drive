@@ -1,16 +1,16 @@
 # @muhgholy/next-drive
 
-Robust file storage and management solution for Next.js applications, featuring a responsive UI, advanced search, trash management, and secure file handling.
+Robust file storage and management solution for Next.js and Express applications, featuring a responsive UI, advanced search, trash management, and secure file handling.
 
 ## Features
 
--    **File Management**: Upload, rename, move, and organize files and folders.
--    **Advanced Search**: Search both active files and the trash bin with real-time filtering.
--    **Trash System**: specialized trash view with soft delete, restore, and empty trash capabilities.
--    **Responsive UI**: optimized layouts for both desktop (single toolbar) and mobile (search-focused header).
--    **Video Support**: Auto-generates thumbnails for video files (requires FFmpeg).
--    **Security**: Signed URLs for secure file access and configurable upload limits.
--    **View Modes**: Toggle between Grid and List views with custom sorting and grouping.
+- **File Management**: Upload, rename, move, and organize files and folders.
+- **Advanced Search**: Search both active files and the trash bin with real-time filtering.
+- **Trash System**: specialized trash view with soft delete, restore, and empty trash capabilities.
+- **Responsive UI**: optimized layouts for both desktop (single toolbar) and mobile (search-focused header).
+- **Video Support**: Auto-generates thumbnails for video files (requires FFmpeg).
+- **Security**: Signed URLs for secure file access and configurable upload limits.
+- **View Modes**: Toggle between Grid and List views with custom sorting and grouping.
 
 ## Installation
 
@@ -20,17 +20,17 @@ npm install @muhgholy/next-drive
 
 **Peer Dependencies:**
 
--    Next.js >= 14
--    React >= 18
--    Mongoose >= 7
--    Tailwind CSS >= 3
+- Next.js >= 14
+- React >= 18
+- Mongoose >= 7
+- Tailwind CSS >= 3
 
 **System Requirements:**
 
--    **FFmpeg**: Required for generating thumbnails from video files.
-     -    MacOS: `brew install ffmpeg`
-     -    Ubuntu: `sudo apt install ffmpeg`
-     -    Windows: Download from official site and add to PATH.
+- **FFmpeg**: Required for generating thumbnails from video files.
+     - MacOS: `brew install ffmpeg`
+     - Ubuntu: `sudo apt install ffmpeg`
+     - Windows: Download from official site and add to PATH.
 
 ### Tailwind CSS Configuration
 
@@ -40,11 +40,11 @@ Since this package uses Tailwind CSS for styling, you **must** configure Tailwin
 // tailwind.config.js
 export default {
 	content: [
-		"./app/**/*.{js,ts,jsx,tsx,mdx}",
-		"./pages/**/*.{js,ts,jsx,tsx,mdx}",
-		"./components/**/*.{js,ts,jsx,tsx,mdx}",
+		'./app/**/*.{js,ts,jsx,tsx,mdx}',
+		'./pages/**/*.{js,ts,jsx,tsx,mdx}',
+		'./components/**/*.{js,ts,jsx,tsx,mdx}',
 		// Add the next-drive package
-		"./node_modules/@muhgholy/next-drive/dist/**/*.{js,mjs}",
+		'./node_modules/@muhgholy/next-drive/dist/**/*.{js,mjs}',
 	],
 	theme: {
 		extend: {},
@@ -63,15 +63,15 @@ Create a configuration file (e.g., `lib/drive.ts`) to set up storage paths, data
 
 ```typescript
 // lib/drive.ts
-import { driveConfiguration } from "@muhgholy/next-drive/server";
-import type { TDriveConfigInformation } from "@muhgholy/next-drive/server";
+import { driveConfiguration } from '@muhgholy/next-drive/server';
+import type { TDriveConfigInformation } from '@muhgholy/next-drive/server';
 
 export const drive = driveConfiguration({
-	database: "MONGOOSE",
-	storage: { path: "/var/data/drive" },
+	database: 'MONGOOSE',
+	storage: { path: '/var/data/drive' },
 	security: {
 		maxUploadSize: 50 * 1024 * 1024, // 50MB
-		allowedMimeTypes: ["image/*", "video/*", "application/pdf"],
+		allowedMimeTypes: ['image/*', 'video/*', 'application/pdf'],
 		signedUrls: {
 			enabled: true,
 			secret: process.env.DRIVE_SECRET!,
@@ -79,13 +79,13 @@ export const drive = driveConfiguration({
 		},
 	},
 	image: {
-		formats: ["webp", "jpeg", "png"],
-		qualities: ["ultralow", "low", "medium", "high", "normal"],
+		formats: ['webp', 'jpeg', 'png'],
+		qualities: ['ultralow', 'low', 'medium', 'high', 'normal'],
 	},
 	information: async (req): Promise<TDriveConfigInformation> => {
 		// Implement your auth verification here
 		const auth = await verifyAuth(req);
-		if (!auth) throw new Error("Unauthenticated");
+		if (!auth) throw new Error('Unauthenticated');
 		return {
 			key: { userId: auth.userId },
 			storage: { quotaInBytes: 1024 * 1024 * 1024 }, // 1GB limit
@@ -100,33 +100,33 @@ Set up the API route handler that `next-drive` will use to communicate with the 
 
 **Important:**
 
--    The API route must be in the `pages` folder (Pages Router)
--    **You MUST disable Next.js body parser** for uploads to work properly
+- The API route must be in the `pages` folder (Pages Router)
+- **You MUST disable Next.js body parser** for uploads to work properly
 
 ```typescript
 // pages/api/drive.ts
-import "@/lib/drive";
-import { driveAPIHandler } from "@muhgholy/next-drive/server";
-import type { NextApiRequest, NextApiResponse } from "next";
+import '@/lib/drive';
+import { driveAPIHandler } from '@muhgholy/next-drive/server';
+import type { NextApiRequest, NextApiResponse } from 'next';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
 	// Manually parse JSON body for non-upload requests
 	if (!req.body) req.body = {};
 
-	if (req.headers["content-type"]?.includes("application/json")) {
+	if (req.headers['content-type']?.includes('application/json')) {
 		try {
 			const buffer = await new Promise<Buffer>((resolve, reject) => {
 				const chunks: Buffer[] = [];
-				req.on("data", (chunk) => chunks.push(chunk));
-				req.on("end", () => resolve(Buffer.concat(chunks)));
-				req.on("error", reject);
+				req.on('data', chunk => chunks.push(chunk));
+				req.on('end', () => resolve(Buffer.concat(chunks)));
+				req.on('error', reject);
 			});
 
 			if (buffer.length > 0) {
 				req.body = JSON.parse(buffer.toString());
 			}
 		} catch (e) {
-			console.error("Failed to parse JSON body", e);
+			console.error('Failed to parse JSON body', e);
 		}
 	}
 
@@ -140,6 +140,59 @@ export const config = {
 	},
 };
 ```
+
+### 2b. Express Integration (Alternative)
+
+If you're using Express instead of Next.js API Routes, use the Express adapter:
+
+```typescript
+// lib/drive.ts
+import { driveConfigurationExpress } from '@muhgholy/next-drive/server/express';
+import type { TDriveConfigInformation } from '@muhgholy/next-drive/server/express';
+
+export const drive = driveConfigurationExpress({
+	database: 'MONGOOSE',
+	storage: { path: '/var/data/drive' },
+	security: {
+		maxUploadSizeInBytes: 50 * 1024 * 1024, // 50MB
+		allowedMimeTypes: ['image/*', 'video/*', 'application/pdf'],
+		signedUrls: {
+			enabled: true,
+			secret: process.env.DRIVE_SECRET!,
+			expiresIn: 3600,
+		},
+	},
+	apiUrl: '/api/drive',
+	information: async (req): Promise<TDriveConfigInformation> => {
+		// req is Express Request type
+		const auth = await verifyAuth(req);
+		if (!auth) throw new Error('Unauthenticated');
+		return {
+			key: { userId: auth.userId },
+			storage: { quotaInBytes: 1024 * 1024 * 1024 },
+		};
+	},
+});
+```
+
+```typescript
+// routes/drive.ts
+import './lib/drive'; // Initialize configuration
+import express from 'express';
+import { driveAPIHandlerExpress } from '@muhgholy/next-drive/server/express';
+
+const router = express.Router();
+
+// Handle all drive API requests
+router.all('/drive', driveAPIHandlerExpress);
+
+export default router;
+```
+
+**Important for Express:**
+
+- Do NOT use `express.json()` middleware on the drive route (file uploads need raw body)
+- The handler supports all HTTP methods (GET, POST, PATCH, DELETE)
 
 ### 3. Add Provider
 
@@ -186,8 +239,8 @@ function MyForm() {
 You can use the exported `driveFileSchemaZod` to validate file data in your forms or API routes.
 
 ```typescript
-import { z } from "zod";
-import { driveFileSchemaZod } from "@muhgholy/next-drive/schemas";
+import { z } from 'zod';
+import { driveFileSchemaZod } from '@muhgholy/next-drive/schemas';
 
 // Use in your form schema (works in both client and server)
 const myFormSchema = z.object({
@@ -203,6 +256,7 @@ type MyFormData = z.infer<typeof myFormSchema>;
 
 // Use in your form schema
 const myFormSchema = z.object({
+
 ````
 
 ## Key Capabilities
@@ -255,7 +309,7 @@ function ResponsiveImage({ driveFile }: { driveFile: TDriveFile }) {
 **Get File URL:**
 
 ```typescript
-import { driveGetUrl } from "@muhgholy/next-drive/server";
+import { driveGetUrl } from '@muhgholy/next-drive/server';
 
 // Generate a secure URL
 const url = driveGetUrl(fileId);
@@ -265,13 +319,13 @@ const url = driveGetUrl(fileId);
 const url = driveGetUrl(fileId, { expiry: 7200 }); // 2 hours
 
 // With specific expiry date
-const url = driveGetUrl(fileId, { expiry: new Date("2025-12-31") });
+const url = driveGetUrl(fileId, { expiry: new Date('2025-12-31') });
 ```
 
 **Read File Stream:**
 
 ```typescript
-import { driveReadFile } from "@muhgholy/next-drive/server";
+import { driveReadFile } from '@muhgholy/next-drive/server';
 
 // Using file ID
 const { stream, mime, size } = await driveReadFile(fileId);
@@ -284,7 +338,7 @@ const { stream, mime, size } = await driveReadFile(drive);
 // Example: Send file via email
 const { stream } = await driveReadFile(fileId);
 await sendEmail({
-	attachments: [{ filename: "report.pdf", content: stream }],
+	attachments: [{ filename: 'report.pdf', content: stream }],
 });
 
 // Example: Process file contents
@@ -301,8 +355,8 @@ const buffer = Buffer.concat(chunks);
 For scenarios requiring direct file system access, `driveFilePath()` provides the absolute path. Google Drive files are automatically downloaded to a local cache.
 
 ```typescript
-import { driveFilePath } from "@muhgholy/next-drive/server";
-import fs from "fs";
+import { driveFilePath } from '@muhgholy/next-drive/server';
+import fs from 'fs';
 
 // Get local path (downloads Google Drive files automatically)
 const { path, mime, size, provider } = await driveFilePath(fileId);
@@ -311,8 +365,8 @@ const { path, mime, size, provider } = await driveFilePath(fileId);
 const buffer = fs.readFileSync(path);
 
 // Use with libraries requiring file paths
-await sharp(path).resize(800, 600).toFile("output.jpg");
-await ffmpeg(path).format("mp4").save("output.mp4");
+await sharp(path).resize(800, 600).toFile('output.jpg');
+await ffmpeg(path).format('mp4').save('output.mp4');
 
 // Google Drive files are cached at: storage/library/google/{fileId}.ext
 // Local files use their original location
@@ -320,13 +374,13 @@ await ffmpeg(path).format("mp4").save("output.mp4");
 
 ### Search & Trash
 
--    **Search Scope**: Search automatically adapts to your current view. If you are browsing the Trash, searches will query deleted items. In the main Browser, searches query active files.
--    **Trash Management**: "Delete" moves items to Trash. From Trash, you can "Restore" items or "Delete Forever". A dedicated "Empty Trash" button is available to clear all deleted items.
+- **Search Scope**: Search automatically adapts to your current view. If you are browsing the Trash, searches will query deleted items. In the main Browser, searches query active files.
+- **Trash Management**: "Delete" moves items to Trash. From Trash, you can "Restore" items or "Delete Forever". A dedicated "Empty Trash" button is available to clear all deleted items.
 
 ### Responsive Design
 
--    **Desktop**: Features a unified single-row header containing Search, Group, Delete, Sort, View, and Trash controls.
--    **Mobile**: Optimizes for small screens by separating the Search bar into a full-width top row and grouping action buttons in a scrollable toolbar below.
+- **Desktop**: Features a unified single-row header containing Search, Group, Delete, Sort, View, and Trash controls.
+- **Mobile**: Optimizes for small screens by separating the Search bar into a full-width top row and grouping action buttons in a scrollable toolbar below.
 
 ## API Endpoints
 
