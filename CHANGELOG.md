@@ -1,3 +1,15 @@
+# [1.4.0](https://github.com/muhgholy/next-drive/compare/v1.3.0...v1.4.0) (2025-12-30)
+
+
+### Bug Fixes
+
+* resolve memory issue in DTS generation ([453e637](https://github.com/muhgholy/next-drive/commit/453e6376e0f5a3ecf725dceaadabfc700569f573))
+
+
+### Features
+
+* add Express adapter for server-side integration ([862dee8](https://github.com/muhgholy/next-drive/commit/862dee826b3aa3bdaa8cebcf27c56995c393433b))
+
 # [1.3.0](https://github.com/muhgholy/next-drive/compare/v1.2.0...v1.3.0) (2025-12-28)
 
 
