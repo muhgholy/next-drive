@@ -1,3 +1,10 @@
+## [1.6.4](https://github.com/muhgholy/next-drive/compare/v1.6.3...v1.6.4) (2025-12-31)
+
+
+### Bug Fixes
+
+* **security:** sanitize file extension to prevent path injection ([1cf7372](https://github.com/muhgholy/next-drive/commit/1cf7372b3896a4421d38146a95ca2ab06c2e1450))
+
 ## [1.6.3](https://github.com/muhgholy/next-drive/compare/v1.6.2...v1.6.3) (2025-12-31)
 
 
