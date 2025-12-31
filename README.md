@@ -439,6 +439,90 @@ export const drive = driveConfiguration({
 
 > **Note**: When `credentials` is `true`, `origins` cannot be `'*'`. You must specify explicit origins.
 
+### Google Drive Integration
+
+To enable Google Drive as a storage provider, you need to set up OAuth 2.0 credentials.
+
+#### 1. Google Cloud Console Setup
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a new project or select an existing one
+3. Enable the **Google Drive API** from the API Library
+4. Go to **Credentials** → **Create Credentials** → **OAuth 2.0 Client ID**
+5. Select **Web application** as the application type
+6. Add your redirect URI (e.g., `http://localhost:3000/api/auth/google/callback`)
+7. Copy the **Client ID** and **Client Secret**
+
+#### 2. Configuration
+
+Add Google credentials to your drive configuration:
+
+```typescript
+// lib/drive.ts
+import { driveConfiguration } from '@muhgholy/next-drive/server';
+
+export const drive = driveConfiguration({
+	database: 'MONGOOSE',
+	storage: {
+		path: '/var/data/drive',
+		google: {
+			clientId: process.env.GOOGLE_CLIENT_ID!,
+			clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+			redirectUri: process.env.GOOGLE_REDIRECT_URI!,
+		},
+	},
+	// ... other config options
+});
+```
+
+#### 3. Environment Variables
+
+Add to your `.env` file:
+
+```env
+GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=your-client-secret
+GOOGLE_REDIRECT_URI=http://localhost:3000/api/auth/google/callback
+```
+
+#### 4. OAuth Scopes
+
+The following scopes are used depending on your needs:
+
+| Scope                                            | Description                                                      |
+| ------------------------------------------------ | ---------------------------------------------------------------- |
+| `https://www.googleapis.com/auth/drive`          | Full access to all Drive files (recommended for file management) |
+| `https://www.googleapis.com/auth/drive.file`     | Access only to files created/opened by your app                  |
+| `https://www.googleapis.com/auth/drive.readonly` | Read-only access to all Drive files                              |
+
+For full file management features (list, upload, download, delete), use:
+
+```typescript
+const SCOPES = ['https://www.googleapis.com/auth/drive'];
+```
+
+#### 5. User Authentication Flow
+
+After OAuth authentication, user credentials are stored in the `StorageAccount` collection:
+
+```typescript
+{
+  owner: { userId: 'user-id' },
+  metadata: {
+    provider: 'GOOGLE',
+    google: {
+      credentials: {
+        access_token: '...',
+        refresh_token: '...',
+        expiry_date: 1234567890
+      }
+    }
+  }
+}
+```
+
+The library automatically handles token refresh when tokens expire.
+
 ### Responsive Design
 
 - **Desktop**: Features a unified single-row header containing Search, Group, Delete, Sort, View, and Trash controls.

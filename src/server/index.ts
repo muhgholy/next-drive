@@ -99,7 +99,8 @@ const applyCorsHeaders = (req: NextApiRequest, res: NextApiResponse, config: Ret
 
 // ** Main API handler for all drive operations
 export const driveAPIHandler = async (req: NextApiRequest, res: NextApiResponse): Promise<void> => {
-	const action = req.query.action as string;
+	// ** Auto-detect OAuth callback when code & state are present but no action
+	const action = (req.query.action as string) || (req.query.code && req.query.state ? 'callback' : undefined);
 
 	// ** Ensure Config
 	let config: ReturnType<typeof getDriveConfig>;
