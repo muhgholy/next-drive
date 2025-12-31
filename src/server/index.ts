@@ -493,7 +493,26 @@ export const driveAPIHandler = async (req: NextApiRequest, res: NextApiResponse)
 				return res.status(400).json({ status: 400, message: 'Invalid upload request' });
 			}
 
-			// ** 4. CREATE FOLDER **
+			// ** 4. CANCEL UPLOAD **
+			case 'cancel': {
+				const cancelData = schemas.cancelQuerySchema.safeParse(req.query);
+				if (!cancelData.success) return res.status(400).json({ status: 400, message: 'Invalid ID' });
+				const { id } = cancelData.data;
+
+				// Try to clean up temp upload directory
+				const tempUploadDir = path.join(STORAGE_PATH, 'temp', 'uploads', id);
+				if (fs.existsSync(tempUploadDir)) {
+					try {
+						fs.rmSync(tempUploadDir, { recursive: true, force: true });
+					} catch (e) {
+						console.error('Failed to cleanup temp upload:', e);
+					}
+				}
+
+				return res.status(200).json({ status: 200, message: 'Upload cancelled', data: null });
+			}
+
+			// ** 5. CREATE FOLDER **
 			case 'createFolder': {
 				const folderData = schemas.createFolderBodySchema.safeParse(req.body);
 				if (!folderData.success) return res.status(400).json({ status: 400, message: folderData.error.errors[0].message });
