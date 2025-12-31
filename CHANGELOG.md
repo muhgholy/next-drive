@@ -1,3 +1,10 @@
+## [1.6.1](https://github.com/muhgholy/next-drive/compare/v1.6.0...v1.6.1) (2025-12-31)
+
+
+### Bug Fixes
+
+* **cors:** correctly reject requests from non-allowed origins ([56585ff](https://github.com/muhgholy/next-drive/commit/56585ff6c5a3739fc9a7c6877d09fe2edc4395ac))
+
 # [1.6.0](https://github.com/muhgholy/next-drive/compare/v1.5.0...v1.6.0) (2025-12-31)
 
 
