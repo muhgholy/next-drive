@@ -1,6 +1,6 @@
 {
      "name": "@muhgholy/next-drive",
-     "version": "1.4.1",
+     "version": "1.4.2",
      "description": "File storage and management for Next.js applications",
      "type": "module",
      "exports": {
