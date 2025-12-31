@@ -219,6 +219,22 @@ export default function RootLayout({ children }) {
 }
 ```
 
+**Cross-Origin Setup:**
+
+When your client runs on a different domain than the API, enable credentials:
+
+```typescript
+// Enable cookies/auth headers for cross-origin requests
+<DriveProvider
+    apiEndpoint="https://api.example.com/drive"
+    withCredentials={true}
+>
+    {children}
+</DriveProvider>
+```
+
+> **Note**: Requires matching CORS configuration on the server with `credentials: true`.
+
 ### 4. Implement UI Components
 
 You can use the built-in `DriveExplorer` for a full file manager experience or `DriveFileChooser` for form inputs.
