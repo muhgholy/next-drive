@@ -3,6 +3,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import formidable from 'formidable';
 import path from 'path';
 import fs from 'fs';
+import os from 'os';
 import { z } from 'zod';
 
 import { getDriveConfig, getDriveInformation, driveConfiguration } from '@/server/config';
@@ -133,11 +134,14 @@ export const driveAPIHandler = async (req: NextApiRequest, res: NextApiResponse)
 					const { provider } = req.query;
 					if (provider === 'GOOGLE') {
 						const { clientId, clientSecret, redirectUri } = config.storage?.google || {};
-						if (!clientId || !clientSecret) return res.status(500).json({ status: 500, message: 'Google not configured' });
+						if (!clientId || !clientSecret || !redirectUri) return res.status(500).json({ status: 500, message: 'Google not configured' });
 
 						// eslint-disable-next-line @typescript-eslint/no-require-imports
 						const { google } = require('googleapis');
-						const oAuth2Client = new google.auth.OAuth2(clientId, clientSecret, redirectUri);
+						// Append action=callback to redirectUri for explicit routing
+						const callbackUri = new URL(redirectUri);
+						callbackUri.searchParams.set('action', 'callback');
+						const oAuth2Client = new google.auth.OAuth2(clientId, clientSecret, callbackUri.toString());
 						// Generate state to identify user
 						// For security, should sign state. Simple base64 for now.
 						const state = Buffer.from(JSON.stringify({ owner })).toString('base64');
@@ -159,9 +163,13 @@ export const driveAPIHandler = async (req: NextApiRequest, res: NextApiResponse)
 					// Assuming 'owner' from getDriveInformation is the source of truth for current session.
 
 					const { clientId, clientSecret, redirectUri } = config.storage?.google || {};
+					if (!clientId || !clientSecret || !redirectUri) return res.status(500).json({ status: 500, message: 'Google not configured' });
 					// eslint-disable-next-line @typescript-eslint/no-require-imports
 					const { google } = require('googleapis');
-					const oAuth2Client = new google.auth.OAuth2(clientId, clientSecret, redirectUri);
+					// Must use the same redirect URI that was used in getAuthUrl (with action=callback)
+					const callbackUri = new URL(redirectUri);
+					callbackUri.searchParams.set('action', 'callback');
+					const oAuth2Client = new google.auth.OAuth2(clientId, clientSecret, callbackUri.toString());
 
 					const { tokens } = await oAuth2Client.getToken(code as string);
 					oAuth2Client.setCredentials(tokens);
@@ -190,9 +198,38 @@ export const driveAPIHandler = async (req: NextApiRequest, res: NextApiResponse)
 						});
 					}
 
-					// Helper: Return HTML that closes popup
+					// Helper: Return HTML that notifies parent and closes tab/popup
+					// Uses both postMessage (for popups) and localStorage (for new tabs in fullscreen macOS)
 					res.setHeader('Content-Type', 'text/html');
-					return res.send('<script>window.opener.postMessage("oauth-success", "*"); window.close();</script>');
+					return res.send(`<!DOCTYPE html>
+<html>
+<head><title>Authentication Complete</title></head>
+<body>
+<p>Authentication successful! This window will close automatically.</p>
+<script>
+(function() {
+	// Method 1: postMessage for popup windows
+	if (window.opener) {
+		try {
+			window.opener.postMessage('oauth-success', '*');
+		} catch (e) {}
+	}
+	// Method 2: localStorage event for new tabs (macOS fullscreen mode)
+	try {
+		localStorage.setItem('next-drive-oauth-success', Date.now().toString());
+		localStorage.removeItem('next-drive-oauth-success');
+	} catch (e) {}
+	// Close the window/tab
+	window.close();
+	// Fallback: If window.close() doesn't work (some browsers block it),
+	// show a message to manually close
+	setTimeout(function() {
+		document.body.innerHTML = '<p style="font-family: system-ui; text-align: center; margin-top: 50px;">Authentication successful!<br>You can close this tab now.</p>';
+	}, 500);
+})();
+</script>
+</body>
+</html>`);
 				}
 				case 'listAccounts': {
 					const accounts = await StorageAccount.find({ owner });
@@ -302,13 +339,14 @@ export const driveAPIHandler = async (req: NextApiRequest, res: NextApiResponse)
 			// ** 3. UPLOAD **
 			case 'upload': {
 				if (req.method !== 'POST') return res.status(405).json({ status: 405, message: 'Only POST allowed' });
+				const systemTmpDir = path.join(os.tmpdir(), 'next-drive-uploads');
+				if (!fs.existsSync(systemTmpDir)) fs.mkdirSync(systemTmpDir, { recursive: true });
 				const form = formidable({
 					multiples: false,
 					maxFileSize: config.security.maxUploadSizeInBytes * 2,
-					uploadDir: path.join(STORAGE_PATH, 'temp'),
+					uploadDir: systemTmpDir,
 					keepExtensions: true,
 				});
-				if (!fs.existsSync(path.join(STORAGE_PATH, 'temp'))) fs.mkdirSync(path.join(STORAGE_PATH, 'temp'), { recursive: true });
 
 				const [fields, files] = await new Promise<[formidable.Fields, formidable.Files]>((resolve, reject) => {
 					form.parse(req, (err, fields, files) => {
@@ -347,8 +385,8 @@ export const driveAPIHandler = async (req: NextApiRequest, res: NextApiResponse)
 
 				let currentUploadId = driveId;
 
-				// Ensure temp directory for this upload exists
-				const tempBaseDir = path.join(STORAGE_PATH, 'temp', 'uploads');
+				// Ensure temp directory for this upload exists (uses system tmp for auto-cleanup)
+				const tempBaseDir = path.join(os.tmpdir(), 'next-drive-uploads');
 
 				if (!currentUploadId) {
 					// Start of new upload (usually Chunk 0, but could be adapted)
@@ -499,8 +537,8 @@ export const driveAPIHandler = async (req: NextApiRequest, res: NextApiResponse)
 				if (!cancelData.success) return res.status(400).json({ status: 400, message: 'Invalid ID' });
 				const { id } = cancelData.data;
 
-				// Try to clean up temp upload directory
-				const tempUploadDir = path.join(STORAGE_PATH, 'temp', 'uploads', id);
+				// Try to clean up temp upload directory (in system tmp)
+				const tempUploadDir = path.join(os.tmpdir(), 'next-drive-uploads', id);
 				if (fs.existsSync(tempUploadDir)) {
 					try {
 						fs.rmSync(tempUploadDir, { recursive: true, force: true });
