@@ -190,9 +190,9 @@ export const DriveFileChooser = (props: Readonly<{
                                    )}
                               </div>
                          </div>
-                         <div className="divide-y max-h-40 overflow-y-auto">
+                         <div className="divide-y max-h-40 overflow-y-auto overflow-x-hidden">
                               {displayFiles.map((file) => (
-                                   <div key={file.id} className="flex items-center gap-2 px-2.5 py-1.5 hover:bg-muted/30">
+                                   <div key={file.id} className="flex items-center gap-2 px-2.5 py-1.5 hover:bg-muted/30 overflow-hidden">
                                         <div className="size-7 shrink-0 rounded overflow-hidden bg-muted flex items-center justify-center">
                                              {file.file.mime.startsWith('image/') ? (
                                                   <img
@@ -204,12 +204,15 @@ export const DriveFileChooser = (props: Readonly<{
                                                   getFileIcon(file.file.mime, false, "size-3.5 text-muted-foreground")
                                              )}
                                         </div>
-                                        <span className="flex-1 min-w-0 text-sm truncate">{file.file.name}</span>
+                                        <div className="flex-1 min-w-0 overflow-hidden">
+                                             <p className="text-sm truncate">{file.file.name}</p>
+                                        </div>
                                         {!disabled && (
                                              <Button
                                                   type="button"
                                                   variant="ghost"
                                                   size="icon"
+                                                  className="shrink-0"
                                                   onClick={() => handleRemove(file.id)}
                                              >
                                                   <X className="size-3" />
