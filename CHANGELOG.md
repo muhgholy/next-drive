@@ -1,3 +1,10 @@
+## [1.6.2](https://github.com/muhgholy/next-drive/compare/v1.6.1...v1.6.2) (2025-12-31)
+
+
+### Bug Fixes
+
+* **quota:** use configured quotaInBytes without fallback ([5f1828e](https://github.com/muhgholy/next-drive/commit/5f1828e0fd678a0f8d8645a88e98987f365a5421))
+
 ## [1.6.1](https://github.com/muhgholy/next-drive/compare/v1.6.0...v1.6.1) (2025-12-31)
 
 
