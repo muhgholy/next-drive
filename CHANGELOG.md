@@ -1,3 +1,10 @@
+## [2.0.1](https://github.com/muhgholy/next-drive/compare/v2.0.0...v2.0.1) (2025-12-31)
+
+
+### Bug Fixes
+
+* file name truncation in file chooser multiple selection ([08390e3](https://github.com/muhgholy/next-drive/commit/08390e3a43811c436f704a5b83e644f281e699f0))
+
 # [2.0.0](https://github.com/muhgholy/next-drive/compare/v1.7.1...v2.0.0) (2025-12-31)
 
 
