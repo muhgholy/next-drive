@@ -1,3 +1,15 @@
+# [2.0.0](https://github.com/muhgholy/next-drive/compare/v1.7.1...v2.0.0) (2025-12-31)
+
+
+### Bug Fixes
+
+* upload cancel validation and OAuth cross-tab communication ([4cb8dde](https://github.com/muhgholy/next-drive/commit/4cb8dde576f09b75fb32410dcd3c8abcbf90c589))
+
+
+### BREAKING CHANGES
+
+* None
+
 ## [1.6.4](https://github.com/muhgholy/next-drive/compare/v1.6.3...v1.6.4) (2025-12-31)
 
 
