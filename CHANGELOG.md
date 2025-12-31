@@ -1,3 +1,10 @@
+# [1.6.0](https://github.com/muhgholy/next-drive/compare/v1.5.0...v1.6.0) (2025-12-31)
+
+
+### Features
+
+* **client:** add withCredentials support for cross-origin cookies ([80505b3](https://github.com/muhgholy/next-drive/commit/80505b35bd7f968aa3ec6e6ddd07018ada82127f))
+
 # [1.5.0](https://github.com/muhgholy/next-drive/compare/v1.4.2...v1.5.0) (2025-12-31)
 
 
