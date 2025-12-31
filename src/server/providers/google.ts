@@ -1,5 +1,4 @@
 import fs from 'fs';
-import path from 'path';
 import { google } from 'googleapis';
 import { Readable } from 'stream';
 import mongoose from 'mongoose';
@@ -9,8 +8,6 @@ import { getDriveConfig } from '@/server/config';
 import type { TStorageProvider, TDriveQuota } from '@/types/server/storage';
 import type { IDatabaseDriveDocument } from '@/server/database/mongoose/schema/drive';
 import type { TDatabaseDrive } from '@/types/lib/database/drive';
-
-const STORAGE_PATH = path.join(process.cwd(), 'storage');
 
 const createAuthClient = async (owner: Record<string, unknown> | null, accountId?: string) => {
     // 1. Get credentials from StorageAccount

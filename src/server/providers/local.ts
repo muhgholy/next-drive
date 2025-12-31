@@ -9,8 +9,6 @@ import type { IDatabaseDriveDocument } from '@/server/database/mongoose/schema/d
 import ffmpeg from 'fluent-ffmpeg';
 import sharp from 'sharp';
 
-const STORAGE_PATH = path.join(process.cwd(), 'storage');
-
 export const LocalStorageProvider: TStorageProvider = {
     name: 'LOCAL',
 
@@ -41,7 +39,7 @@ export const LocalStorageProvider: TStorageProvider = {
 
     openStream: async (item: IDatabaseDriveDocument, accountId?: string) => {
         if (item.information.type !== 'FILE') throw new Error('Cannot stream folder');
-        const filePath = path.join(STORAGE_PATH, item.information.path);
+        const filePath = path.join(getDriveConfig().storage.path, item.information.path);
 
         if (!fs.existsSync(filePath)) {
             throw new Error('File not found on disk');
@@ -60,8 +58,9 @@ export const LocalStorageProvider: TStorageProvider = {
     getThumbnail: async (item: IDatabaseDriveDocument, accountId?: string) => {
         if (item.information.type !== 'FILE') throw new Error('No thumbnail for folder');
 
-        const originalPath = path.join(STORAGE_PATH, item.information.path);
-        const thumbPath = path.join(STORAGE_PATH, 'cache', 'thumbnails', `${item._id.toString()}.webp`);
+        const storagePath = getDriveConfig().storage.path;
+        const originalPath = path.join(storagePath, item.information.path);
+        const thumbPath = path.join(storagePath, 'cache', 'thumbnails', `${item._id.toString()}.webp`);
 
         if (!fs.existsSync(originalPath)) throw new Error('Original file not found');
 
@@ -120,7 +119,7 @@ export const LocalStorageProvider: TStorageProvider = {
         if (drive.information.type !== 'FILE') throw new Error('Invalid drive type');
 
         // Move temp file to final destination
-        const destPath = path.join(STORAGE_PATH, drive.information.path);
+        const destPath = path.join(getDriveConfig().storage.path, drive.information.path);
         const dirPath = path.dirname(destPath);
         if (!fs.existsSync(dirPath)) fs.mkdirSync(dirPath, { recursive: true });
 
@@ -167,7 +166,7 @@ export const LocalStorageProvider: TStorageProvider = {
             if (item.information.type === 'FILE' && item.information.path) {
                 // Check if any other file points to this path (shouldn't happen in simple model but good hygiene)
                 // Actually in this model, path is unique per file
-                const fullPath = path.join(STORAGE_PATH, item.information.path);
+                const fullPath = path.join(getDriveConfig().storage.path, item.information.path);
                 const dirPath = path.dirname(fullPath); // .../drive/ID/
                 if (fs.existsSync(dirPath)) {
                     fs.rmSync(dirPath, { recursive: true, force: true });

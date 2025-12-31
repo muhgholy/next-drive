@@ -71,7 +71,7 @@ const applyCorsHeaders = (req: NextApiRequest, res: NextApiResponse, config: Ret
     res.setHeader('Access-Control-Allow-Headers', allowedHeaders.join(', '));
     res.setHeader('Access-Control-Expose-Headers', exposedHeaders.join(', '));
     res.setHeader('Access-Control-Max-Age', maxAge.toString());
-    
+
     if (credentials) {
         res.setHeader('Access-Control-Allow-Credentials', 'true');
     }
