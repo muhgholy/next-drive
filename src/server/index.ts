@@ -39,18 +39,69 @@ const getProvider = async (req: NextApiRequest, owner: Record<string, unknown> |
     return { provider: LocalStorageProvider };
 };
 
+// ** Helper to apply CORS headers
+const applyCorsHeaders = (req: NextApiRequest, res: NextApiResponse, config: ReturnType<typeof getDriveConfig>): boolean => {
+    const cors = config.cors;
+    if (!cors?.enabled) return false;
+
+    const origin = req.headers.origin;
+    const allowedOrigins = cors.origins ?? '*';
+    const methods = cors.methods ?? ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'];
+    const allowedHeaders = cors.allowedHeaders ?? ['Content-Type', 'Authorization', 'X-Drive-Account'];
+    const exposedHeaders = cors.exposedHeaders ?? ['Content-Length', 'Content-Type', 'Content-Disposition'];
+    const credentials = cors.credentials ?? false;
+    const maxAge = cors.maxAge ?? 86400; // 24 hours default
+
+    // Determine if origin is allowed
+    let allowOrigin = '*';
+    if (origin) {
+        if (allowedOrigins === '*') {
+            allowOrigin = origin;
+        } else if (Array.isArray(allowedOrigins)) {
+            if (allowedOrigins.includes(origin)) {
+                allowOrigin = origin;
+            }
+        } else if (allowedOrigins === origin) {
+            allowOrigin = origin;
+        }
+    }
+
+    res.setHeader('Access-Control-Allow-Origin', allowOrigin);
+    res.setHeader('Access-Control-Allow-Methods', methods.join(', '));
+    res.setHeader('Access-Control-Allow-Headers', allowedHeaders.join(', '));
+    res.setHeader('Access-Control-Expose-Headers', exposedHeaders.join(', '));
+    res.setHeader('Access-Control-Max-Age', maxAge.toString());
+    
+    if (credentials) {
+        res.setHeader('Access-Control-Allow-Credentials', 'true');
+    }
+
+    // Handle preflight
+    if (req.method === 'OPTIONS') {
+        res.status(204).end();
+        return true;
+    }
+
+    return false;
+};
+
 // ** Main API handler for all drive operations
 export const driveAPIHandler = async (req: NextApiRequest, res: NextApiResponse): Promise<void> => {
     const action = req.query.action as string;
 
     // ** Ensure Config
+    let config: ReturnType<typeof getDriveConfig>;
     try {
-        getDriveConfig();
+        config = getDriveConfig();
     } catch (error) {
         console.error('[next-drive] Configuration error:', error);
         res.status(500).json({ status: 500, message: 'Failed to initialize drive configuration' });
         return;
     }
+
+    // ** Apply CORS headers
+    const isPreflightHandled = applyCorsHeaders(req, res, config);
+    if (isPreflightHandled) return;
 
     if (!action) {
         res.status(400).json({ status: 400, message: 'Missing action query parameter' });
@@ -58,7 +109,6 @@ export const driveAPIHandler = async (req: NextApiRequest, res: NextApiResponse)
     }
 
     try {
-        const config = getDriveConfig();
         const information = await getDriveInformation(req);
         const { key: owner } = information;
         const STORAGE_PATH = config.storage.path;
@@ -596,6 +646,10 @@ export const driveAPIHandler = async (req: NextApiRequest, res: NextApiResponse)
 
                 const stream = await itemProvider.getThumbnail(drive, itemAccountId);
                 res.setHeader('Content-Type', 'image/webp');
+                // Allow cross-origin resource sharing for images
+                if (config.cors?.enabled) {
+                    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+                }
                 stream.pipe(res);
                 return;
             }
@@ -617,6 +671,10 @@ export const driveAPIHandler = async (req: NextApiRequest, res: NextApiResponse)
                 const safeFilename = sanitizeContentDispositionFilename(drive.name);
                 res.setHeader('Content-Disposition', `inline; filename="${safeFilename}"`);
                 res.setHeader('Content-Type', mime);
+                // Allow cross-origin resource sharing for files
+                if (config.cors?.enabled) {
+                    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+                }
                 // Google streams might not give exact size, but we have IT in DB?
                 if (size) res.setHeader('Content-Length', size);
 

@@ -38,12 +38,24 @@ export type TDriveStorageConfig = {
     };
 };
 
+// ** CORS configuration
+export type TDriveCorsConfig = {
+    enabled: boolean;
+    origins?: string | string[]; // Allowed origins (default: '*')
+    methods?: string[]; // Allowed methods (default: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'])
+    allowedHeaders?: string[]; // Allowed headers
+    exposedHeaders?: string[]; // Headers to expose
+    credentials?: boolean; // Allow credentials
+    maxAge?: number; // Preflight cache duration in seconds
+};
+
 // ** Main configuration type
 export type TDriveConfiguration = {
     database: TDriveDatabase;
     storage: TDriveStorageConfig;
     security: TDriveSecurityConfig;
     image?: TDriveImageConfig;
+    cors?: TDriveCorsConfig;
     information: (request: NextApiRequest) => Promise<TDriveConfigInformation>;
     apiUrl: string;
 };
