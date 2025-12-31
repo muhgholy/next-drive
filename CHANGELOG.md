@@ -1,3 +1,10 @@
+## [2.0.2](https://github.com/muhgholy/next-drive/compare/v2.0.1...v2.0.2) (2025-12-31)
+
+
+### Bug Fixes
+
+* resolve JSON body parsing for createFolder API request ([54b67e7](https://github.com/muhgholy/next-drive/commit/54b67e7aa08fcb9f5ae7171b29d87e20d8d0b368))
+
 ## [2.0.1](https://github.com/muhgholy/next-drive/compare/v2.0.0...v2.0.1) (2025-12-31)
 
 
