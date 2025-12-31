@@ -1,3 +1,10 @@
+## [1.6.3](https://github.com/muhgholy/next-drive/compare/v1.6.2...v1.6.3) (2025-12-31)
+
+
+### Bug Fixes
+
+* **upload:** preserve original file extension when saving to disk ([2102cd1](https://github.com/muhgholy/next-drive/commit/2102cd13695be10ab9ec330050096af50893d066))
+
 ## [1.6.2](https://github.com/muhgholy/next-drive/compare/v1.6.1...v1.6.2) (2025-12-31)
 
 
