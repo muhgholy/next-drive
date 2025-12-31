@@ -1,3 +1,10 @@
+# [1.5.0](https://github.com/muhgholy/next-drive/compare/v1.4.2...v1.5.0) (2025-12-31)
+
+
+### Features
+
+* add CORS configuration support for Express ([2476c95](https://github.com/muhgholy/next-drive/commit/2476c95cf625af36d0d4715276236c31d5a99658))
+
 ## [1.4.1](https://github.com/muhgholy/next-drive/compare/v1.4.0...v1.4.1) (2025-12-31)
 
 
