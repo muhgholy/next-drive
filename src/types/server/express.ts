@@ -2,7 +2,7 @@
 import type { Request } from 'express';
 
 // ** Re-export common types
-export type { TDriveConfigInformation, TDriveSecurityConfig, TDriveImageConfig, TDriveStorageConfig, TDriveDatabase } from './config';
+export type { TDriveConfigInformation, TDriveSecurityConfig, TDriveImageConfig, TDriveStorageConfig, TDriveDatabase, TDriveCorsConfig } from './config';
 
 // ** Express-specific configuration type
 export type TDriveConfigurationExpress = {
@@ -28,6 +28,15 @@ export type TDriveConfigurationExpress = {
 	image?: {
 		formats: Array<'webp' | 'jpeg' | 'png'>;
 		qualities: Array<'ultralow' | 'low' | 'medium' | 'high' | 'normal'>;
+	};
+	cors?: {
+		enabled: boolean;
+		origins?: string | string[];
+		methods?: string[];
+		allowedHeaders?: string[];
+		exposedHeaders?: string[];
+		credentials?: boolean;
+		maxAge?: number;
 	};
 	information: (request: Request) => Promise<{
 		key: Record<string, unknown> | null;

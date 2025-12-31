@@ -82,6 +82,12 @@ export const drive = driveConfiguration({
 		formats: ['webp', 'jpeg', 'png'],
 		qualities: ['ultralow', 'low', 'medium', 'high', 'normal'],
 	},
+	// Optional: Enable CORS for cross-origin requests
+	cors: {
+		enabled: true,
+		origins: ['https://example.com', 'https://app.example.com'],
+		credentials: true,
+	},
 	information: async (req): Promise<TDriveConfigInformation> => {
 		// Implement your auth verification here
 		const auth = await verifyAuth(req);
@@ -161,6 +167,12 @@ export const drive = driveConfigurationExpress({
 			secret: process.env.DRIVE_SECRET!,
 			expiresIn: 3600,
 		},
+	},
+	// Optional: Enable CORS for cross-origin requests
+	cors: {
+		enabled: true,
+		origins: ['https://example.com'],
+		credentials: true,
 	},
 	apiUrl: '/api/drive',
 	information: async (req): Promise<TDriveConfigInformation> => {
@@ -376,6 +388,40 @@ await ffmpeg(path).format('mp4').save('output.mp4');
 
 - **Search Scope**: Search automatically adapts to your current view. If you are browsing the Trash, searches will query deleted items. In the main Browser, searches query active files.
 - **Trash Management**: "Delete" moves items to Trash. From Trash, you can "Restore" items or "Delete Forever". A dedicated "Empty Trash" button is available to clear all deleted items.
+
+### CORS Configuration
+
+When your client application runs on a different domain than your API server, you need to enable CORS (Cross-Origin Resource Sharing):
+
+```typescript
+// lib/drive.ts
+export const drive = driveConfiguration({
+	// ... other config
+	cors: {
+		enabled: true,
+		origins: ['https://app.example.com', 'https://admin.example.com'], // or '*' for all origins
+		methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // default
+		allowedHeaders: ['Content-Type', 'Authorization', 'X-Drive-Account'], // default
+		exposedHeaders: ['Content-Length', 'Content-Type', 'Content-Disposition'], // default
+		credentials: true, // Allow cookies/auth headers
+		maxAge: 86400, // Preflight cache duration in seconds (default: 24 hours)
+	},
+});
+```
+
+**CORS Options:**
+
+| Option           | Type                 | Default                                                     | Description                                 |
+| ---------------- | -------------------- | ----------------------------------------------------------- | ------------------------------------------- |
+| `enabled`        | `boolean`            | `false`                                                     | Enable/disable CORS headers                 |
+| `origins`        | `string \| string[]` | `'*'`                                                       | Allowed origins (use array for multiple)    |
+| `methods`        | `string[]`           | `['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']`               | Allowed HTTP methods                        |
+| `allowedHeaders` | `string[]`           | `['Content-Type', 'Authorization', 'X-Drive-Account']`      | Headers clients can send                    |
+| `exposedHeaders` | `string[]`           | `['Content-Length', 'Content-Type', 'Content-Disposition']` | Headers exposed to client                   |
+| `credentials`    | `boolean`            | `false`                                                     | Allow credentials (cookies, auth headers)   |
+| `maxAge`         | `number`             | `86400`                                                     | Preflight response cache duration (seconds) |
+
+> **Note**: When `credentials` is `true`, `origins` cannot be `'*'`. You must specify explicit origins.
 
 ### Responsive Design
 
