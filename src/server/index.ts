@@ -443,7 +443,9 @@ export const driveAPIHandler = async (req: NextApiRequest, res: NextApiResponse)
 
 							// Set initial path based on ID - providers will resolve final path/ID
 							if (meta.providerName === 'LOCAL' && drive.information.type === 'FILE') {
-								drive.information.path = path.join('drive', String(drive._id), 'data.bin');
+								// Preserve original file extension
+								const ext = path.extname(meta.name) || '.bin';
+								drive.information.path = path.join('drive', String(drive._id), `data${ext}`);
 							}
 
 							await drive.save();
