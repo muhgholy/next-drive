@@ -359,7 +359,7 @@ export const driveAPIHandler = async (req: NextApiRequest, res: NextApiResponse)
 					}
 
 					// Quota Check
-					const quota = await provider.getQuota(owner, accountId);
+					const quota = await provider.getQuota(owner, accountId, information.storage.quotaInBytes);
 					if (quota.usedInBytes + fileSizeInBytes > quota.quotaInBytes) {
 						cleanupTempFiles(files);
 						return res.status(413).json({ status: 413, message: 'Storage quota exceeded' });
@@ -455,7 +455,7 @@ export const driveAPIHandler = async (req: NextApiRequest, res: NextApiResponse)
 								// Cleanup
 								fs.rmSync(uploadDir, { recursive: true, force: true });
 
-								const newQuota = await provider.getQuota(meta.owner, meta.accountId);
+								const newQuota = await provider.getQuota(meta.owner, meta.accountId, information.storage.quotaInBytes);
 								res.status(200).json({ status: 200, message: 'Upload complete', data: { type: 'UPLOAD_COMPLETE', driveId: String(drive._id), item }, statistic: { storage: newQuota } });
 							} catch (err) {
 								// Upload to provider failed
@@ -464,7 +464,7 @@ export const driveAPIHandler = async (req: NextApiRequest, res: NextApiResponse)
 							}
 						} else {
 							// Chunk received, wait for others
-							const newQuota = await provider.getQuota(owner, accountId);
+							const newQuota = await provider.getQuota(owner, accountId, information.storage.quotaInBytes);
 							// If this was chunk 0, we send UPLOAD_STARTED with the new ID
 							if (chunkIndex === 0) {
 								res.status(200).json({ status: 200, message: 'Upload started', data: { type: 'UPLOAD_STARTED', driveId: currentUploadId }, statistic: { storage: newQuota } });
@@ -528,13 +528,13 @@ export const driveAPIHandler = async (req: NextApiRequest, res: NextApiResponse)
 				const { id } = deleteData.data;
 				// Provider Delete
 				await provider.delete([id], owner, accountId);
-				const quota = await provider.getQuota(owner, accountId);
+				const quota = await provider.getQuota(owner, accountId, information.storage.quotaInBytes);
 				return res.status(200).json({ status: 200, message: 'Deleted', statistic: { storage: quota } });
 			}
 
 			// ** 7. QUOTA **
 			case 'quota': {
-				const quota = await provider.getQuota(owner, accountId);
+				const quota = await provider.getQuota(owner, accountId, information.storage.quotaInBytes);
 				return res.status(200).json({
 					status: 200,
 					message: 'Quota retrieved',
