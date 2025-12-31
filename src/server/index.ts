@@ -53,7 +53,7 @@ const applyCorsHeaders = (req: NextApiRequest, res: NextApiResponse, config: Ret
 	const maxAge = cors.maxAge ?? 86400; // 24 hours default
 
 	// Determine if origin is allowed
-	let allowOrigin = '*';
+	let allowOrigin: string | null = null;
 	if (origin) {
 		if (allowedOrigins === '*') {
 			allowOrigin = origin;
@@ -64,6 +64,18 @@ const applyCorsHeaders = (req: NextApiRequest, res: NextApiResponse, config: Ret
 		} else if (allowedOrigins === origin) {
 			allowOrigin = origin;
 		}
+	} else if (allowedOrigins === '*') {
+		// No origin header (same-origin request), allow if wildcard
+		allowOrigin = '*';
+	}
+
+	// If origin not allowed, don't set CORS headers (request will fail CORS check)
+	if (!allowOrigin) {
+		if (req.method === 'OPTIONS') {
+			res.status(403).end();
+			return true;
+		}
+		return false;
 	}
 
 	res.setHeader('Access-Control-Allow-Origin', allowOrigin);
