@@ -1,3 +1,10 @@
+## [1.4.1](https://github.com/muhgholy/next-drive/compare/v1.4.0...v1.4.1) (2025-12-31)
+
+
+### Bug Fixes
+
+* enable code splitting to share globalConfig state across entry points ([2cab34d](https://github.com/muhgholy/next-drive/commit/2cab34d2a37e14febeb0b426c505bf08e221e400))
+
 # [1.4.0](https://github.com/muhgholy/next-drive/compare/v1.3.0...v1.4.0) (2025-12-30)
 
 
