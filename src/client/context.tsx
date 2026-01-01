@@ -1,395 +1,449 @@
-// ** Client Context
+// ** Client Context - Simplified & Optimistic
 'use client';
 
-import React, { createContext, useContext, useState, useCallback, useMemo, type ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
 import type { TDatabaseDrive, TDriveAPIResponse } from '@/types/server';
 import type { TDrivePathItem, TDriveQuota, TDriveFile, TImageQuality, TImageFormat } from '@/types/client';
 import { driveCreateUrl, driveCreateSrcSet } from '@/client/utils';
 
 // ** Context Types
 export type TDriveContext = {
-     apiEndpoint: string; withCredentials: boolean; currentFolderId: string | null;
-     path: TDrivePathItem[];
-     items: TDatabaseDrive[];
-     allItems: Record<string, TDatabaseDrive[]>;
-     isLoading: boolean;
-     error: string | null;
-     quota: TDriveQuota | null;
+    apiEndpoint: string;
+    withCredentials: boolean;
 
-     // ** Accounts
-     accounts: { id: string; name: string; email: string; provider: 'GOOGLE' }[];
-     activeAccountId: string | null;
-     setActiveAccountId: (id: string | null) => void;
-     refreshAccounts: () => Promise<void>;
+    // ** Navigation
+    currentFolderId: string | null;
+    path: TDrivePathItem[];
+    navigateToFolder: (item: { id: string | null; name: string } | null) => void;
+    navigateUp: () => void;
 
-     // ** UI State
-     viewMode: 'GRID' | 'LIST';
-     setViewMode: (mode: 'GRID' | 'LIST') => void;
-     currentView: 'BROWSE' | 'TRASH' | 'SEARCH';
-     setCurrentView: (view: 'BROWSE' | 'TRASH' | 'SEARCH') => void;
-     searchQuery: string;
-     setSearchQuery: (query: string) => void;
-     searchScope: 'ACTIVE' | 'TRASH';
-     setSearchScope: (scope: 'ACTIVE' | 'TRASH') => void;
-     groupBy: 'NONE' | 'CREATED_AT';
-     setGroupBy: (group: 'NONE' | 'CREATED_AT') => void;
-     sortBy: { field: string; order: number };
-     setSortBy: (sort: { field: string; order: number }) => void;
+    // ** Items
+    items: TDatabaseDrive[];
+    setItems: React.Dispatch<React.SetStateAction<TDatabaseDrive[]>>;
+    isLoading: boolean;
+    error: string | null;
 
-     // ** Selection
-     selectionMode: { type: 'SINGLE' } | { type: 'MULTIPLE'; maxFile?: number };
-     selectedFileIds: string[];
-     setSelectedFileIds: React.Dispatch<React.SetStateAction<string[]>>;
+    // ** Accounts
+    accounts: { id: string; name: string; email: string; provider: 'GOOGLE' }[];
+    activeAccountId: string | null;
+    setActiveAccountId: (id: string | null) => void;
+    refreshAccounts: () => Promise<void>;
 
-     // ** Utilities
-     createUrl: (driveFile: TDriveFile, options?: { quality?: TImageQuality; format?: TImageFormat }) => string;
-     createSrcSet: (driveFile: TDriveFile, format?: TImageFormat) => { srcSet: string; sizes: string };
+    // ** Storage
+    quota: TDriveQuota | null;
+    refreshQuota: () => Promise<void>;
 
-     // ** Actions
-     navigateToFolder: (item: { id: string | null; name: string } | null) => void;
-     navigateUp: () => void;
-     refreshItems: () => Promise<void>;
-     refreshQuota: () => Promise<void>;
-     moveItem: (itemId: string, targetFolderId: string) => Promise<void>;
-     deleteItems: (ids: string[]) => Promise<void>;
-     callAPI: <T>(action: string, options?: RequestInit & { query?: Record<string, string> }) => Promise<TDriveAPIResponse<T>>;
-     setItems: (updater: React.SetStateAction<TDatabaseDrive[]>) => void; // Kept signature but implements differently
-     setAllItems: React.Dispatch<React.SetStateAction<Record<string, TDatabaseDrive[]>>>;
+    // ** UI State
+    viewMode: 'GRID' | 'LIST';
+    setViewMode: (mode: 'GRID' | 'LIST') => void;
+    currentView: 'BROWSE' | 'TRASH' | 'SEARCH';
+    setCurrentView: (view: 'BROWSE' | 'TRASH' | 'SEARCH') => void;
+    searchQuery: string;
+    setSearchQuery: (query: string) => void;
+    searchScope: 'ACTIVE' | 'TRASH';
+    setSearchScope: (scope: 'ACTIVE' | 'TRASH') => void;
+    groupBy: 'NONE' | 'CREATED_AT';
+    setGroupBy: (group: 'NONE' | 'CREATED_AT') => void;
+    sortBy: { field: string; order: number };
+    setSortBy: (sort: { field: string; order: number }) => void;
 
-     // ** Pagination
-     loadMore: () => Promise<void>;
-     hasMore: boolean;
-     isLoadingMore: boolean;
+    // ** Selection
+    selectionMode: { type: 'SINGLE' } | { type: 'MULTIPLE'; maxFile?: number };
+    selectedFileIds: string[];
+    setSelectedFileIds: React.Dispatch<React.SetStateAction<string[]>>;
+
+    // ** Pagination
+    hasMore: boolean;
+    isLoadingMore: boolean;
+    loadMore: () => Promise<void>;
+
+    // ** Utilities
+    createUrl: (driveFile: TDriveFile, options?: { quality?: TImageQuality; format?: TImageFormat }) => string;
+    createSrcSet: (driveFile: TDriveFile, format?: TImageFormat) => { srcSet: string; sizes: string };
+    callAPI: <T>(action: string, options?: RequestInit & { query?: Record<string, string> }) => Promise<TDriveAPIResponse<T>>;
+
+    // ** Actions (Optimistic)
+    createFolder: (name: string) => Promise<void>;
+    renameItem: (id: string, newName: string) => Promise<void>;
+    deleteItem: (id: string) => Promise<void>;
+    moveItem: (id: string, targetFolderId: string) => Promise<void>;
+    restoreItem: (id: string) => Promise<void>;
 };
 
 const DriveContext = createContext<TDriveContext | null>(null);
 
-// ** Drive Provider Component
+// ** Provider
 export const DriveProvider = (props: Readonly<{
-     children: ReactNode;
-     apiEndpoint: string;
-     initialActiveAccountId?: string | null;
-     initialSelectionMode?: { type: 'SINGLE' } | { type: 'MULTIPLE'; maxFile?: number };
-     defaultSelectedFileIds?: string[];
-     withCredentials?: boolean;
+    children: ReactNode;
+    apiEndpoint: string;
+    initialActiveAccountId?: string | null;
+    initialSelectionMode?: { type: 'SINGLE' } | { type: 'MULTIPLE'; maxFile?: number };
+    defaultSelectedFileIds?: string[];
+    withCredentials?: boolean;
 }>) => {
-     const { children, apiEndpoint, initialActiveAccountId = null, initialSelectionMode = { type: 'SINGLE' }, defaultSelectedFileIds = [], withCredentials = false } = props;
+    const {
+        children,
+        apiEndpoint,
+        initialActiveAccountId = null,
+        initialSelectionMode = { type: 'SINGLE' },
+        defaultSelectedFileIds = [],
+        withCredentials = false
+    } = props;
 
-     // ** Account State
-     const [accounts, setAccounts] = useState<{ id: string; name: string; email: string; provider: 'GOOGLE' }[]>([]);
-     const [activeAccountId, setActiveAccountIdState] = useState<string | null>(initialActiveAccountId);
+    // =========================================================================
+    // STATE
+    // =========================================================================
 
-     const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
-     const [path, setPath] = useState<TDrivePathItem[]>([{ id: null, name: 'Home' }]);
+    // ** Items - Simple flat array for current view
+    const [items, setItems] = useState<TDatabaseDrive[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
-     // ** Cache: Key = AccountID ('LOCAL' for null), Value = Items
-     const [allItems, setAllItems] = useState<Record<string, TDatabaseDrive[]>>({});
+    // ** Navigation
+    const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
+    const [path, setPath] = useState<TDrivePathItem[]>([{ id: null, name: 'Home' }]);
 
-     const [searchResults, setSearchResults] = useState<TDatabaseDrive[]>([]);
-     const [isLoading, setIsLoading] = useState(false);
-     const [error, setError] = useState<string | null>(null);
-     const [quota, setQuota] = useState<TDriveQuota | null>(null);
+    // ** Accounts
+    const [accounts, setAccounts] = useState<{ id: string; name: string; email: string; provider: 'GOOGLE' }[]>([]);
+    const [activeAccountId, setActiveAccountIdState] = useState<string | null>(initialActiveAccountId);
 
-     const activeCacheKey = activeAccountId || 'LOCAL';
+    // ** Storage
+    const [quota, setQuota] = useState<TDriveQuota | null>(null);
 
-     const setActiveAccountId = useCallback((id: string | null) => {
-          setActiveAccountIdState(id);
-          if (id) localStorage.setItem('drive_active_account', id);
-          else localStorage.removeItem('drive_active_account');
-          // Reset path when switching accounts
-          setCurrentFolderId(null);
-          setPath([{ id: null, name: 'Home' }]);
-          setSearchResults([]);
-     }, []);
+    // ** UI State
+    const [viewMode, setViewMode] = useState<'GRID' | 'LIST'>(() => {
+        if (typeof window !== 'undefined') return window.innerWidth < 768 ? 'LIST' : 'GRID';
+        return 'GRID';
+    });
+    const [currentView, setCurrentView] = useState<'BROWSE' | 'TRASH' | 'SEARCH'>('BROWSE');
+    const [searchQuery, setSearchQuery] = useState('');
+    const [searchScope, setSearchScope] = useState<'ACTIVE' | 'TRASH'>('ACTIVE');
+    const [groupBy, setGroupBy] = useState<'NONE' | 'CREATED_AT'>('NONE');
+    const [sortBy, setSortBy] = useState<{ field: string; order: number }>({ field: 'createdAt', order: -1 });
 
-     // Load active account from local storage on mount
-     React.useEffect(() => {
-          const stored = localStorage.getItem('drive_active_account');
-          if (stored) setActiveAccountIdState(stored);
-     }, []);
+    // ** Selection
+    const [selectionMode] = useState(initialSelectionMode);
+    const [selectedFileIds, setSelectedFileIds] = useState<string[]>(defaultSelectedFileIds);
 
-     // ** UI State
-     const [viewMode, setViewMode] = useState<'GRID' | 'LIST'>('GRID');
-     const [currentView, setCurrentView] = useState<'BROWSE' | 'TRASH' | 'SEARCH'>('BROWSE');
-     const [searchQuery, setSearchQuery] = useState('');
-     const [searchScope, setSearchScope] = useState<'ACTIVE' | 'TRASH'>('ACTIVE');
-     const [groupBy, setGroupBy] = useState<'NONE' | 'CREATED_AT'>('NONE');
-     const [sortBy, setSortBy] = useState<{ field: string; order: number }>({ field: 'createdAt', order: -1 });
+    // ** Pagination
+    const [hasMore, setHasMore] = useState(false);
+    const [isLoadingMore, setIsLoadingMore] = useState(false);
 
-     // ** Derived items for current folder (from cache)
-     const items = useMemo(() => {
-          const currentItems = allItems[activeCacheKey] || [];
+    // =========================================================================
+    // API HELPER
+    // =========================================================================
 
-          if (currentView === 'TRASH') return currentItems.filter(i => i.trashedAt !== null);
-          if (currentView === 'SEARCH') return searchResults;
-          return currentItems.filter(i => i.parentId === currentFolderId && !i.trashedAt);
-     }, [allItems, activeCacheKey, currentFolderId, currentView, searchResults]);
+    const callAPI = useCallback(async <T,>(
+        action: string,
+        options?: RequestInit & { query?: Record<string, string> }
+    ): Promise<TDriveAPIResponse<T>> => {
+        const { query, ...fetchOptions } = options || {};
+        const params = new URLSearchParams({ action, ...query });
+        const url = `${apiEndpoint}?${params.toString()}`;
 
-     // ** Setter for backward compatibility (Updates ONLY current account cache)
-     const setItems = useCallback((updater: React.SetStateAction<TDatabaseDrive[]>) => {
-          setAllItems(prev => {
-               const currentCache = prev[activeCacheKey] || [];
+        const headers: Record<string, string> = {
+            'Content-Type': 'application/json',
+            ...((fetchOptions?.headers as Record<string, string>) || {})
+        };
+        if (activeAccountId) headers['x-drive-account'] = activeAccountId;
 
-               let newItems: TDatabaseDrive[];
-               if (typeof updater === 'function') {
-                    // Filter current view items for updater
-                    const viewItems = currentCache.filter(i => i.parentId === currentFolderId && !i.trashedAt);
-                    const updatedViewItems = updater(viewItems);
-                    // Merge back: Keep items NOT in current view, add updated view items
-                    newItems = [...currentCache.filter(i => i.parentId !== currentFolderId || i.trashedAt), ...updatedViewItems];
-               } else {
-                    newItems = [...currentCache.filter(i => i.parentId !== currentFolderId || i.trashedAt), ...updater];
-               }
+        try {
+            const res = await fetch(url, {
+                ...fetchOptions,
+                headers,
+                credentials: withCredentials ? 'include' : 'same-origin',
+            });
+            return await res.json();
+        } catch (err) {
+            return { status: 0, message: err instanceof Error ? err.message : 'Network error' };
+        }
+    }, [apiEndpoint, activeAccountId, withCredentials]);
 
-               return { ...prev, [activeCacheKey]: newItems };
-          });
-     }, [activeCacheKey, currentFolderId]);
+    // =========================================================================
+    // FETCH FUNCTIONS
+    // =========================================================================
 
-     // ** Selection
-     const [selectionMode] = useState(initialSelectionMode);
-     const [selectedFileIds, setSelectedFileIds] = useState<string[]>(defaultSelectedFileIds);
+    const fetchItems = useCallback(async () => {
+        setIsLoading(true);
+        setError(null);
 
-     // ** Pagination
-     const [hasMore, setHasMore] = useState(false);
-     const [isLoadingMore, setIsLoadingMore] = useState(false);
+        let res: TDriveAPIResponse<{ items: TDatabaseDrive[]; hasMore?: boolean }>;
 
-     // ** API Helper
-     const callAPI = useCallback(async <T,>(action: string, options?: RequestInit & { query?: Record<string, string> }): Promise<TDriveAPIResponse<T>> => {
-          const { query, ...fetchOptions } = options || {};
-          const params = new URLSearchParams({ action, ...query });
-          const url = `${apiEndpoint}?${params.toString()}`;
+        if (currentView === 'TRASH') {
+            res = await callAPI('trash');
+        } else if (currentView === 'SEARCH' && searchQuery) {
+            res = await callAPI('search', { query: { q: searchQuery, limit: '50' } });
+        } else {
+            res = await callAPI('list', { query: { folderId: currentFolderId || 'root', limit: '50' } });
+        }
 
-          const headers: Record<string, string> = { 'Content-Type': 'application/json', ...((fetchOptions?.headers as Record<string, string>) || {}) };
-          if (activeAccountId) headers['x-drive-account'] = activeAccountId;
+        if (res.status === 200 && res.data) {
+            setItems(res.data.items);
+            setHasMore(!!res.data.hasMore);
+        } else {
+            setError(res.message || 'Failed to load');
+            setItems([]);
+        }
 
-          try {
-               const response = await fetch(url, {
-                    ...fetchOptions,
-                    headers,
-                    credentials: withCredentials ? 'include' : 'same-origin',
-               });
-               return await response.json();
-          } catch (err) {
-               return { status: 0, message: err instanceof Error ? err.message : 'Network error' };
-          }
-     }, [apiEndpoint, activeAccountId, withCredentials]);
+        setIsLoading(false);
+    }, [callAPI, currentFolderId, currentView, searchQuery]);
 
-     // ** Fetch Items (Initial)
-     const refreshItems = useCallback(async () => {
-          setIsLoading(true);
-          setError(null);
-          setHasMore(false); // Reset
+    const loadMore = useCallback(async () => {
+        if (!hasMore || isLoading || isLoadingMore) return;
 
-          let response: TDriveAPIResponse<{ items: TDatabaseDrive[]; hasMore?: boolean }>;
+        const lastItem = items[items.length - 1];
+        if (!lastItem) return;
 
-          if (currentView === 'TRASH') {
-               response = await callAPI('trash');
-          } else if (currentView === 'SEARCH' && searchQuery) {
-               response = await callAPI('search', { query: { q: searchQuery, limit: '50', trashed: searchScope === 'TRASH' ? 'true' : 'false' } });
-          } else {
-               response = await callAPI('list', { query: { folderId: currentFolderId || 'root', limit: '50' } });
-          }
+        setIsLoadingMore(true);
 
-          if (response.status === 200 && response.data) {
-               if (currentView === 'SEARCH') {
-                    // For SEARCH, set results separately (don't pollute cache)
-                    setSearchResults(response.data.items);
-               } else {
-                    // For BROWSE/TRASH, merge into allItems cache (avoid duplicates by id)
-                    setAllItems(prev => {
-                         const currentCache = prev[activeCacheKey] || [];
-                         const existingIds = new Set(response.data!.items.map(i => i.id));
-                         const filtered = currentCache.filter(i => !existingIds.has(i.id));
+        const res = await callAPI<{ items: TDatabaseDrive[]; hasMore?: boolean }>('list', {
+            query: { folderId: currentFolderId || 'root', limit: '50', afterId: lastItem.id }
+        });
 
-                         return {
-                              ...prev,
-                              [activeCacheKey]: [...filtered, ...response.data!.items]
-                         };
-                    });
-               }
-               setHasMore(!!response.data.hasMore);
-          } else {
-               setError(response.message || 'Failed to load items');
-          }
-          setIsLoading(false);
-     }, [callAPI, currentFolderId, currentView, searchQuery, searchScope, activeCacheKey]);
+        if (res.status === 200 && res.data) {
+            setItems(prev => [...prev, ...res.data!.items]);
+            setHasMore(!!res.data.hasMore);
+        }
 
-     // ** Fetch Accounts
-     const refreshAccounts = useCallback(async () => {
-          const response = await callAPI<{ accounts: { id: string; name: string; email: string; provider: 'GOOGLE' }[] }>('listAccounts');
-          if (response.status === 200 && response.data) {
-               setAccounts(response.data.accounts);
-          }
-     }, [callAPI]);
+        setIsLoadingMore(false);
+    }, [callAPI, currentFolderId, hasMore, isLoading, isLoadingMore, items]);
 
-     // ** Load More
-     const loadMore = useCallback(async () => {
-          if (!hasMore || isLoading || isLoadingMore || currentView === 'TRASH') return;
-          setIsLoadingMore(true);
+    const refreshAccounts = useCallback(async () => {
+        const res = await callAPI<{ accounts: typeof accounts }>('listAccounts');
+        if (res.status === 200 && res.data) setAccounts(res.data.accounts);
+    }, [callAPI]);
 
-          const currentItems = items; // derived items
-          const lastItem = currentItems[currentItems.length - 1];
-          const afterId = lastItem ? lastItem.id : undefined;
+    const refreshQuota = useCallback(async () => {
+        const res = await callAPI<TDriveQuota>('quota');
+        if (res.status === 200 && res.data) setQuota(res.data);
+    }, [callAPI]);
 
-          if (!afterId) { setIsLoadingMore(false); return; }
+    // =========================================================================
+    // NAVIGATION
+    // =========================================================================
 
-          let response: TDriveAPIResponse<{ items: TDatabaseDrive[]; hasMore?: boolean }>;
+    const setActiveAccountId = useCallback((id: string | null) => {
+        setActiveAccountIdState(id);
+        if (id) localStorage.setItem('drive_active_account', id);
+        else localStorage.removeItem('drive_active_account');
+        // Reset state
+        setCurrentFolderId(null);
+        setPath([{ id: null, name: 'Home' }]);
+        setItems([]);
+        setSelectedFileIds([]);
+    }, []);
 
-          if (currentView === 'SEARCH' && searchQuery) {
-               setIsLoadingMore(false); return;
-          } else {
-               response = await callAPI('list', {
-                    query: { folderId: currentFolderId || 'root', limit: '50', afterId }
-               });
-          }
+    const navigateToFolder = useCallback((item: { id: string | null; name: string } | null) => {
+        setCurrentView('BROWSE');
+        setSearchQuery('');
+        setSelectedFileIds([]);
 
-          if (response && response.status === 200 && response.data) {
-               // Append to current cache
-               setAllItems(prev => {
-                    const currentCache = prev[activeCacheKey] || [];
-                    return {
-                         ...prev,
-                         [activeCacheKey]: [...currentCache, ...response.data!.items]
-                    };
-               });
-               setHasMore(!!response.data.hasMore);
-          }
-          setIsLoadingMore(false);
-     }, [callAPI, currentFolderId, hasMore, isLoading, isLoadingMore, items, currentView, searchQuery, activeCacheKey]);
+        if (!item) {
+            setCurrentFolderId(null);
+            setPath([{ id: null, name: 'Home' }]);
+            return;
+        }
 
-     // ** Fetch Quota
-     const refreshQuota = useCallback(async () => {
-          const response = await callAPI<TDriveQuota>('quota');
-          if (response.status === 200 && response.data) setQuota(response.data);
-     }, [callAPI]);
+        setCurrentFolderId(item.id);
+        setPath(prev => {
+            const idx = prev.findIndex(p => p.id === item.id);
+            return idx !== -1 ? prev.slice(0, idx + 1) : [...prev, { id: item.id, name: item.name }];
+        });
+    }, []);
 
-     // ** Navigation
-     const navigateToFolder = useCallback((item: { id: string | null; name: string } | null) => {
-          // Always switch to BROWSE view when navigating
-          setCurrentView('BROWSE');
-          setSearchQuery('');
+    const navigateUp = useCallback(() => {
+        if (path.length <= 1) return;
+        setCurrentView('BROWSE');
+        setSearchQuery('');
+        setSelectedFileIds([]);
+        const newPath = path.slice(0, -1);
+        setPath(newPath);
+        setCurrentFolderId(newPath[newPath.length - 1]?.id || null);
+    }, [path]);
 
-          if (item === null) {
-               setCurrentFolderId(null);
-               setPath([{ id: null, name: 'Home' }]);
-               setSelectedFileIds([]);
-               return;
-          }
-          setCurrentFolderId(item.id);
-          setPath((prev) => {
-               const existingIndex = prev.findIndex(p => p.id === item.id);
-               if (existingIndex !== -1) {
-                    return prev.slice(0, existingIndex + 1);
-               }
-               return [...prev, { id: item.id, name: item.name }];
-          });
-          setSelectedFileIds([]);
-     }, []);
+    // =========================================================================
+    // OPTIMISTIC ACTIONS
+    // =========================================================================
 
-     const navigateUp = useCallback(() => {
-          // Always switch to BROWSE view when navigating
-          setCurrentView('BROWSE');
-          setSearchQuery('');
+    const createFolder = useCallback(async (name: string) => {
+        // Optimistic: Add temp folder
+        const tempId = `temp-${Date.now()}`;
+        const tempFolder = {
+            id: tempId,
+            name,
+            parentId: currentFolderId,
+            information: { type: 'FOLDER' as const },
+            createdAt: new Date(),
+            trashedAt: null,
+        } as TDatabaseDrive;
+        setItems(prev => [tempFolder, ...prev]);
 
-          if (path.length <= 1) return;
-          const newPath = path.slice(0, -1);
-          setPath(newPath);
-          setCurrentFolderId(newPath[newPath.length - 1]?.id || null);
-          setSelectedFileIds([]);
-     }, [path]);
+        // API call
+        const res = await callAPI<{ item: TDatabaseDrive }>('createFolder', {
+            method: 'POST',
+            body: JSON.stringify({ name, parentId: currentFolderId || 'root' })
+        });
 
-     // ** Move Item (optimistic update + API call)
-     const moveItem = useCallback(async (itemId: string, targetFolderId: string) => {
-          // Optimistic update
-          setAllItems(prev => {
-               const currentCache = prev[activeCacheKey] || [];
-               const newItems = currentCache.map(item =>
-                    item.id === itemId
-                         ? { ...item, parentId: targetFolderId === 'root' ? null : targetFolderId }
-                         : item
-               );
-               return { ...prev, [activeCacheKey]: newItems };
-          });
+        // Replace temp with real
+        if ((res.status === 200 || res.status === 201) && res.data?.item) {
+            setItems(prev => prev.map(i => i.id === tempId ? res.data!.item : i));
+        } else {
+            // Rollback
+            setItems(prev => prev.filter(i => i.id !== tempId));
+        }
+    }, [callAPI, currentFolderId]);
 
-          // Call API
-          await callAPI('move', {
-               method: 'POST',
-               body: JSON.stringify({ ids: [itemId], targetFolderId })
-          });
-     }, [callAPI, activeCacheKey]);
+    const renameItem = useCallback(async (id: string, newName: string) => {
+        // Optimistic: Update name immediately
+        setItems(prev => prev.map(i => i.id === id ? { ...i, name: newName } : i));
 
-     // ** Delete Items (optimistic update + API call)
-     const deleteItems = useCallback(async (ids: string[]) => {
-          // Optimistic update
-          setAllItems(prev => {
-               const currentCache = prev[activeCacheKey] || [];
-               let newItems: TDatabaseDrive[];
+        // API call (fire and forget, already updated)
+        await callAPI('rename', {
+            method: 'PATCH',
+            query: { id },
+            body: JSON.stringify({ newName })
+        });
+    }, [callAPI]);
 
-               if (currentView === 'TRASH') {
-                    // If in trash (permanent delete), remove completely
-                    newItems = currentCache.filter(item => !ids.includes(item.id));
-               } else {
-                    // If browsing (soft delete), mark as trashed locally or remove from view
-                    // For simplicity, we just mark trashedAt so our view filter catches it
-                    newItems = currentCache.map(item =>
-                         ids.includes(item.id)
-                              ? { ...item, trashedAt: new Date() } // Use Date object
-                              : item
-                    );
-               }
-               return { ...prev, [activeCacheKey]: newItems };
-          });
+    const deleteItem = useCallback(async (id: string) => {
+        // Optimistic: Remove from list immediately
+        setItems(prev => prev.filter(i => i.id !== id));
+        setSelectedFileIds(prev => prev.filter(sid => sid !== id));
 
-          // Clear selection
-          setSelectedFileIds([]);
+        // API call
+        if (currentView === 'TRASH') {
+            await callAPI('deletePermanent', { query: { id } });
+        } else {
+            await callAPI('delete', { query: { id } });
+        }
+    }, [callAPI, currentView]);
 
-          // Call API
-          if (currentView === 'TRASH') {
-               for (const id of ids) {
-                    await callAPI('deletePermanent', { query: { id } });
-               }
-          } else {
-               for (const id of ids) {
-                    await callAPI('delete', { query: { id } });
-               }
-          }
+    const moveItem = useCallback(async (id: string, targetFolderId: string) => {
+        // Optimistic: Remove from current view (it's moving away)
+        setItems(prev => prev.filter(i => i.id !== id));
 
-     }, [callAPI, activeCacheKey, currentView]);
+        // API call
+        await callAPI('move', {
+            method: 'POST',
+            body: JSON.stringify({ ids: [id], targetFolderId })
+        });
+    }, [callAPI]);
 
-     // ** Effects
-     React.useEffect(() => { refreshItems(); }, [currentFolderId, currentView, refreshItems, activeAccountId]); // Reload when account changes
-     React.useEffect(() => { refreshQuota(); }, [refreshQuota, activeAccountId]);
-     React.useEffect(() => { refreshAccounts(); }, [refreshAccounts]);
+    const restoreItem = useCallback(async (id: string) => {
+        // Optimistic: Remove from trash view immediately
+        setItems(prev => prev.filter(i => i.id !== id));
+        setSelectedFileIds(prev => prev.filter(sid => sid !== id));
 
-     // ** Utility methods
-     const createUrl = useCallback((driveFile: TDriveFile, options?: { quality?: TImageQuality; format?: TImageFormat }) => {
-          return driveCreateUrl(driveFile, apiEndpoint, options);
-     }, [apiEndpoint]);
+        // API call in background
+        await callAPI('restore', { method: 'POST', query: { id } });
+    }, [callAPI]);
 
-     const createSrcSet = useCallback((driveFile: TDriveFile, format?: TImageFormat) => {
-          return driveCreateSrcSet(driveFile, apiEndpoint, format);
-     }, [apiEndpoint]);
+    // =========================================================================
+    // UTILITIES
+    // =========================================================================
 
-     return (
-          <DriveContext.Provider value={{
-               apiEndpoint, withCredentials, currentFolderId, path, items, allItems, setItems, setAllItems, isLoading, error, quota, refreshQuota,
-               accounts, activeAccountId, setActiveAccountId, refreshAccounts,
-               viewMode, setViewMode, groupBy, setGroupBy, sortBy, setSortBy,
-               currentView, setCurrentView, searchQuery, setSearchQuery, searchScope, setSearchScope,
-               selectionMode, selectedFileIds, setSelectedFileIds,
-               createUrl, createSrcSet,
-               navigateToFolder, navigateUp, refreshItems, callAPI, moveItem, deleteItems,
-               loadMore, hasMore, isLoadingMore
-          }}>
-               {children}
-          </DriveContext.Provider>
-     );
+    const createUrl = useCallback((driveFile: TDriveFile, options?: { quality?: TImageQuality; format?: TImageFormat }) => {
+        return driveCreateUrl(driveFile, apiEndpoint, options);
+    }, [apiEndpoint]);
+
+    const createSrcSet = useCallback((driveFile: TDriveFile, format?: TImageFormat) => {
+        return driveCreateSrcSet(driveFile, apiEndpoint, format);
+    }, [apiEndpoint]);
+
+    // =========================================================================
+    // EFFECTS
+    // =========================================================================
+
+    // Load stored account on mount
+    React.useEffect(() => {
+        const stored = localStorage.getItem('drive_active_account');
+        if (stored) setActiveAccountIdState(stored);
+    }, []);
+
+    // Fetch items when view/folder/account changes
+    React.useEffect(() => {
+        fetchItems();
+    }, [fetchItems]);
+
+    // Fetch accounts & quota on mount and account change
+    React.useEffect(() => { refreshAccounts(); }, [refreshAccounts]);
+    React.useEffect(() => { refreshQuota(); }, [refreshQuota, activeAccountId]);
+
+    // =========================================================================
+    // RENDER
+    // =========================================================================
+
+    return (
+        <DriveContext.Provider value={{
+            apiEndpoint,
+            withCredentials,
+
+            // Navigation
+            currentFolderId,
+            path,
+            navigateToFolder,
+            navigateUp,
+
+            // Items
+            items,
+            setItems,
+            isLoading,
+            error,
+
+            // Accounts
+            accounts,
+            activeAccountId,
+            setActiveAccountId,
+            refreshAccounts,
+
+            // Storage
+            quota,
+            refreshQuota,
+
+            // UI
+            viewMode,
+            setViewMode,
+            currentView,
+            setCurrentView,
+            searchQuery,
+            setSearchQuery,
+            searchScope,
+            setSearchScope,
+            groupBy,
+            setGroupBy,
+            sortBy,
+            setSortBy,
+
+            // Selection
+            selectionMode,
+            selectedFileIds,
+            setSelectedFileIds,
+
+            // Pagination
+            hasMore,
+            isLoadingMore,
+            loadMore,
+
+            // Utilities
+            createUrl,
+            createSrcSet,
+            callAPI,
+
+            // Optimistic Actions
+            createFolder,
+            renameItem,
+            deleteItem,
+            moveItem,
+            restoreItem,
+        }}>
+            {children}
+        </DriveContext.Provider>
+    );
 };
 
 // ** Hook
 export const useDrive = (): TDriveContext => {
-     const context = useContext(DriveContext);
-     if (!context) throw new Error('useDrive must be used within a DriveProvider');
-     return context;
+    const context = useContext(DriveContext);
+    if (!context) throw new Error('useDrive must be used within a DriveProvider');
+    return context;
 };
-

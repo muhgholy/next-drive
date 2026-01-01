@@ -11,7 +11,7 @@ export type TImageQuality = 'ultralow' | 'low' | 'medium' | 'high' | 'normal';
 export type TImageFormat = 'webp' | 'jpeg' | 'png';
 
 // ** Re-export schema from universal location
-export { driveFileSchemaZod } from '@/schemas';
+export { driveFileSchemaZod } from '../../schemas';
 
 // ** Context Types
 export type TDrivePathItem = {

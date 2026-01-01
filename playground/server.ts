@@ -1,16 +1,14 @@
-import Link from 'next/link'; // Not needed here but for sorting?
 import { createServer } from 'http';
 import { parse } from 'url';
 import next from 'next';
 import mongoose from 'mongoose';
-import { driveConfiguration, driveAPIHandler } from '../src/server';
 
 const dev = process.env.NODE_ENV !== 'production';
 const hostname = 'localhost';
-const port = 3000;
+const port = 8789;
 
 // ** Ensure DB Connection & Start Server
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/next-file-manager-playground';
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/next-drive-playground';
 
 (async () => {
     try {
@@ -27,7 +25,6 @@ const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/next-f
         createServer(async (req, res) => {
             try {
                 const parsedUrl = parse(req.url!, true);
-                const { pathname, query } = parsedUrl;
                 await handle(req, res, parsedUrl);
             } catch (err) {
                 console.error('Error occurred handling', req.url, err);

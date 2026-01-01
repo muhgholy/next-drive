@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { DriveFileChooser, DriveProvider, TDriveFile } from 'next-file-manager/client';
+import { DriveFileChooser, DriveProvider, TDriveFile } from '@muhgholy/next-drive/client';
 import { ModeToggle } from '@/components/mode-toggle';
 
 export default function Home() {
@@ -20,6 +20,7 @@ export default function Home() {
 
                 <DriveProvider apiEndpoint="/api/drive">
                     <DriveFileChooser
+                        accept='image/*'
                         value={selectedFile || null}
                         onChange={(files) => {
                             if (Array.isArray(files)) setSelectedFile(files[0] || undefined);

@@ -33,21 +33,91 @@ export const getFileIcon = (mime: string, isFolder: boolean, className = "w-6 h-
     return <File className={cn("text-gray-400", className)} />;
 };
 
-// ** Check if file matches mime filter
+// ** Check if file matches mime filter (supports native accept format)
+// Supports: "image/*", "video/*", ".pdf", ".jpg,.png", "image/png,image/jpeg", etc.
 export const matchesMimeFilter = (mime: string, isFolder: boolean, filter?: string): boolean => {
     if (!filter) return true;
     if (isFolder) return true;
-    if (filter === '*/*') return true;
+    if (filter === '*/*' || filter === '*') return true;
 
-    const types = filter.split(',').map(t => t.trim());
+    const types = filter.split(',').map(t => t.trim().toLowerCase());
+    const lowerMime = mime.toLowerCase();
+
     return types.some(type => {
-        if (type === mime) return true;
+        // Exact mime match: "image/png"
+        if (type === lowerMime) return true;
+
+        // Wildcard mime: "image/*"
         if (type.endsWith('/*')) {
             const prefix = type.slice(0, -2);
-            return mime.startsWith(`${prefix}/`);
+            return lowerMime.startsWith(`${prefix}/`);
         }
+
+        // Extension format: ".pdf", ".jpg"
+        if (type.startsWith('.')) {
+            const ext = type.slice(1);
+            // Map common extensions to mimes
+            const extMimeMap: Record<string, string[]> = {
+                'jpg': ['image/jpeg'],
+                'jpeg': ['image/jpeg'],
+                'png': ['image/png'],
+                'gif': ['image/gif'],
+                'webp': ['image/webp'],
+                'svg': ['image/svg+xml'],
+                'bmp': ['image/bmp'],
+                'ico': ['image/x-icon', 'image/vnd.microsoft.icon'],
+                'tiff': ['image/tiff'],
+                'tif': ['image/tiff'],
+                'heic': ['image/heic'],
+                'heif': ['image/heif'],
+                'avif': ['image/avif'],
+                'mp4': ['video/mp4'],
+                'webm': ['video/webm'],
+                'mov': ['video/quicktime'],
+                'avi': ['video/x-msvideo'],
+                'mkv': ['video/x-matroska'],
+                'wmv': ['video/x-ms-wmv'],
+                'flv': ['video/x-flv'],
+                'mp3': ['audio/mpeg', 'audio/mp3'],
+                'wav': ['audio/wav', 'audio/x-wav'],
+                'ogg': ['audio/ogg'],
+                'flac': ['audio/flac'],
+                'aac': ['audio/aac'],
+                'm4a': ['audio/mp4', 'audio/x-m4a'],
+                'pdf': ['application/pdf'],
+                'doc': ['application/msword'],
+                'docx': ['application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
+                'xls': ['application/vnd.ms-excel'],
+                'xlsx': ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'],
+                'ppt': ['application/vnd.ms-powerpoint'],
+                'pptx': ['application/vnd.openxmlformats-officedocument.presentationml.presentation'],
+                'txt': ['text/plain'],
+                'csv': ['text/csv'],
+                'json': ['application/json'],
+                'xml': ['application/xml', 'text/xml'],
+                'zip': ['application/zip', 'application/x-zip-compressed'],
+                'rar': ['application/x-rar-compressed', 'application/vnd.rar'],
+                '7z': ['application/x-7z-compressed'],
+                'tar': ['application/x-tar'],
+                'gz': ['application/gzip'],
+            };
+            const allowedMimes = extMimeMap[ext];
+            if (allowedMimes) {
+                return allowedMimes.some(m => lowerMime === m);
+            }
+            // Fallback: check if mime ends with extension
+            return lowerMime.includes(ext);
+        }
+
         return false;
     });
+};
+
+// ** Get accept string for input element from filter
+export const getAcceptString = (filter?: string): string | undefined => {
+    if (!filter) return undefined;
+    // Already in correct format for input accept
+    return filter;
 };
 
 import type { TDriveFile, TImageQuality, TImageFormat } from '@/types/client';

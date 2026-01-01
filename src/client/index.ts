@@ -4,6 +4,8 @@ export * from './context';
 export * from './hooks/useUpload';
 export * from '@/client/file-chooser';
 export * from '@/client/components/drive/explorer';
+export * from '@/client/components/drive/file-grid';
+export * from '@/client/components/drive/dnd-provider';
 export * from '@/client/components/drive/path-bar';
 export * from '@/client/components/drive/upload';
 export * from '@/client/components/drive/storage/indicator';

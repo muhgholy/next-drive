@@ -74,7 +74,7 @@ export const DriveExplorer = (props: Readonly<{
         viewMode, groupBy, sortBy, setSortBy,
         selectedFileIds, setSelectedFileIds, selectionMode,
         navigateToFolder, hasMore, loadMore, isLoadingMore,
-        refreshItems, callAPI, currentView, moveItem, deleteItems
+        callAPI, currentView, moveItem, deleteItem, restoreItem, createFolder, renameItem: renameItemAction
     } = useDrive();
 
     // ** Dialog State
@@ -86,7 +86,7 @@ export const DriveExplorer = (props: Readonly<{
     const [itemToDelete, setItemToDelete] = React.useState<TDatabaseDrive | null>(null);
 
     // ** Item State
-    const [renameItem, setRenameItem] = React.useState<TDatabaseDrive | null>(null);
+    const [itemToRename, setItemToRename] = React.useState<TDatabaseDrive | null>(null);
 
     // ** Drag & Drop State
     const [dragOverFolderId, setDragOverFolderId] = React.useState<string | null>(null);
@@ -255,87 +255,29 @@ export const DriveExplorer = (props: Readonly<{
         return () => { if (observerTarget.current) observer.unobserve(observerTarget.current); };
     }, [hasMore, isLoadingMore, loadMore]);
 
-    // ** Touch/Tap State for mobile double-tap detection
-    const lastTapTime = useRef<number>(0);
-    const lastTapItemId = useRef<string | null>(null);
-    const tapTimeout = useRef<NodeJS.Timeout | null>(null);
-
     // ** Handlers
     const handleItemClick = (e: React.MouseEvent | React.TouchEvent, item: TDatabaseDrive) => {
-        // Detect if this is a touch event
-        const isTouchEvent = e.type === 'touchend';
+        // Don't navigate to temp folders (being created)
+        if (item.id.startsWith('temp-')) return;
 
-        if (isTouchEvent) {
-            // Handle touch/tap for mobile
-            const now = Date.now();
-            const timeSinceLastTap = now - lastTapTime.current;
-            const isSameItem = lastTapItemId.current === item.id;
+        // For folders in BROWSE mode - navigate into folder
+        if (item.information.type === 'FOLDER' && currentView === 'BROWSE' && !selectableFolders) {
+            navigateToFolder(item);
+            onItemClick?.(item);
+            return;
+        }
 
-            // Double-tap detection (within 300ms on same item)
-            if (timeSinceLastTap < 300 && isSameItem) {
-                // Clear any pending single tap action
-                if (tapTimeout.current) {
-                    clearTimeout(tapTimeout.current);
-                    tapTimeout.current = null;
-                }
-
-                // Double-tap detected - open folder or file
-                if (item.information.type === 'FOLDER' && currentView === 'BROWSE') {
-                    navigateToFolder(item);
-                } else {
-                    onItemDoubleClick?.(item);
-                }
-
-                // Reset tap tracking
-                lastTapTime.current = 0;
-                lastTapItemId.current = null;
-                return;
-            }
-
-            // Single tap - schedule selection after delay (to allow double-tap)
-            lastTapTime.current = now;
-            lastTapItemId.current = item.id;
-
-            // Clear any previous timeout
-            if (tapTimeout.current) clearTimeout(tapTimeout.current);
-
-            // For folders, open immediately on single tap (more mobile-friendly)
-            if (item.information.type === 'FOLDER' && currentView === 'BROWSE' && !selectableFolders) {
-                tapTimeout.current = setTimeout(() => {
-                    navigateToFolder(item);
-                    if (onItemClick) onItemClick(item);
-                }, 250); // Short delay to allow double-tap
+        // For files or when in TRASH/SEARCH or folders are selectable, toggle selection
+        onItemClick?.(item);
+        if (selectionMode.type === 'MULTIPLE') {
+            if (selectedFileIds.includes(item.id)) {
+                setSelectedFileIds(prev => prev.filter(id => id !== item.id));
             } else {
-                // For files, select immediately
-                if (onItemClick) onItemClick(item);
-                if (selectionMode.type === 'MULTIPLE') {
-                    if (selectedFileIds.includes(item.id)) {
-                        setSelectedFileIds(prev => prev.filter(id => id !== item.id));
-                    } else {
-                        if (selectionMode.maxFile && selectedFileIds.length >= selectionMode.maxFile) return;
-                        setSelectedFileIds(prev => [...prev, item.id]);
-                    }
-                } else {
-                    setSelectedFileIds([item.id]);
-                }
+                if (selectionMode.maxFile && selectedFileIds.length >= selectionMode.maxFile) return;
+                setSelectedFileIds(prev => [...prev, item.id]);
             }
         } else {
-            // Mouse click - original behavior
-            if (item.information.type === 'FOLDER' && !selectableFolders) {
-                if (onItemClick) onItemClick(item);
-                return;
-            }
-            if (onItemClick) onItemClick(item);
-            if (selectionMode.type === 'MULTIPLE') {
-                if (selectedFileIds.includes(item.id)) {
-                    setSelectedFileIds(prev => prev.filter(id => id !== item.id));
-                } else {
-                    if (selectionMode.maxFile && selectedFileIds.length >= selectionMode.maxFile) return;
-                    setSelectedFileIds(prev => [...prev, item.id]);
-                }
-            } else {
-                setSelectedFileIds([item.id]);
-            }
+            setSelectedFileIds([item.id]);
         }
     };
 
@@ -346,14 +288,6 @@ export const DriveExplorer = (props: Readonly<{
         }
         else onItemDoubleClick?.(item);
     };
-
-    // Cleanup tap timeout on unmount
-    useEffect(() => {
-        return () => {
-            if (tapTimeout.current) clearTimeout(tapTimeout.current);
-        };
-    }, []);
-
 
     const enableDrag = currentView === 'BROWSE';
 
@@ -377,7 +311,6 @@ export const DriveExplorer = (props: Readonly<{
                                 {currentView === 'SEARCH' ? 'No files match your search' :
                                     currentView === 'TRASH' ? 'Trash is empty' : 'No files found'}
                             </p>
-                            {currentView === 'BROWSE' && <p className="text-xs text-muted-foreground/60 mt-1">Right-click to create a folder</p>}
                         </div>
                     </ContextMenuTrigger>
                     <ContextMenuContent>
@@ -400,9 +333,9 @@ export const DriveExplorer = (props: Readonly<{
 
     return (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragOver={handleDragOver} onDragEnd={handleDragEnd}>
-            <div className="flex flex-col h-full w-full overflow-hidden bg-background/50">
+            <div className="flex flex-col h-full w-full overflow-hidden bg-background/50 dark:bg-background/30">
                 {/* Header Row */}
-                <div className="h-14 px-3 sm:px-4 border-b bg-background/95 backdrop-blur-sm shrink-0 flex items-center gap-3">
+                <div className="h-14 px-3 sm:px-4 border-b bg-background/95 dark:bg-background/80 backdrop-blur-sm shrink-0 flex items-center gap-3">
                     {/* Mobile Menu Button */}
                     <div className="lg:hidden">
                         <DriveSidebar />
@@ -413,11 +346,11 @@ export const DriveExplorer = (props: Readonly<{
                         <DrivePathBar />
                     </div>
 
-                    <DriveUpload compact onComplete={() => refreshItems()} />
+                    <DriveUpload compact accept={mimeFilter} />
                 </div>
 
                 {/* Path Bar - Mobile (Separate Row) */}
-                <div className="lg:hidden px-3 py-2 border-b bg-background/95 backdrop-blur-sm shrink-0">
+                <div className="lg:hidden px-3 py-2 border-b bg-background/95 dark:bg-background/80 backdrop-blur-sm shrink-0">
                     <DrivePathBar />
                 </div>
                 {stateContent || (
@@ -457,14 +390,14 @@ export const DriveExplorer = (props: Readonly<{
                                                                             className={cn(
                                                                                 "group relative cursor-pointer transition-all focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2",
                                                                                 viewMode === 'GRID'
-                                                                                    ? "flex flex-col rounded-xl border bg-card hover:bg-accent/50 hover:shadow-sm overflow-hidden"
-                                                                                    : "flex items-center p-2 rounded-lg hover:bg-accent/50 gap-3 border border-transparent hover:border-border",
-                                                                                isSelected && "ring-2 ring-primary border-primary/50 bg-accent/30",
+                                                                                    ? "flex flex-col rounded-xl border bg-card dark:bg-card/50 hover:bg-accent/50 dark:hover:bg-accent/30 hover:shadow-sm overflow-hidden"
+                                                                                    : "flex items-center p-2 rounded-lg hover:bg-accent/50 dark:hover:bg-accent/30 gap-3 border border-transparent hover:border-border",
+                                                                                isSelected && "ring-2 ring-primary border-primary/50 bg-accent/30 dark:bg-accent/20",
                                                                                 isDragOver && "ring-2 ring-primary border-primary scale-[1.02] bg-primary/10 shadow-lg transition-transform"
                                                                             )}
                                                                             onClick={(e) => handleItemClick(e, item)}
                                                                             onTouchEnd={(e) => {
-                                                                                e.preventDefault(); // Prevent ghost clicks
+                                                                                e.preventDefault();
                                                                                 handleItemClick(e, item);
                                                                             }}
                                                                             onDoubleClick={(e) => handleItemDoubleClick(e, item)}
@@ -473,7 +406,7 @@ export const DriveExplorer = (props: Readonly<{
                                                                         >
                                                                             {viewMode === 'GRID' ? (
                                                                                 <>
-                                                                                    <div className="aspect-square w-full bg-muted/20 flex items-center justify-center overflow-hidden relative">
+                                                                                    <div className="aspect-square w-full bg-muted/20 dark:bg-muted/10 flex items-center justify-center overflow-hidden relative">
                                                                                         {isThumbnailable ? (
                                                                                             <img src={thumbnailUrl} alt={item.name} className="size-full object-contain transition-transform group-hover:scale-105 duration-300" loading="lazy" />
                                                                                         ) : (
@@ -486,38 +419,32 @@ export const DriveExplorer = (props: Readonly<{
                                                                                                 <div className="size-2 bg-primary-foreground rounded-full" />
                                                                                             </div>
                                                                                         )}
-                                                                                        {/* Mobile tap indicator for folders */}
                                                                                         {isFolder && currentView === 'BROWSE' && (
                                                                                             <div className="absolute bottom-2 right-2 lg:hidden size-6 bg-primary/90 rounded-full flex items-center justify-center shadow-md">
                                                                                                 <ChevronRight className="size-3.5 text-primary-foreground" />
                                                                                             </div>
                                                                                         )}
                                                                                     </div>
-                                                                                    <div className="p-3">
-                                                                                        <div className="flex items-start justify-between gap-2">
-                                                                                            <span className="text-sm font-medium truncate w-full text-card-foreground" title={item.name}>
-                                                                                                {item.name}
-                                                                                            </span>
-                                                                                        </div>
-                                                                                        <div className="flex items-center justify-between mt-1 text-xs text-muted-foreground">
-                                                                                            <span>{isFolder ? 'Folder' : formatBytes(item.information.type === 'FILE' ? item.information.sizeInBytes : 0)}</span>
-                                                                                        </div>
+                                                                                    <div className="p-2.5">
+                                                                                        <p className="text-sm font-medium truncate" title={item.name}>{item.name}</p>
+                                                                                        <p className="text-xs text-muted-foreground mt-0.5">
+                                                                                            {isFolder ? 'Folder' : formatBytes(item.information.type === 'FILE' ? item.information.sizeInBytes : 0)}
+                                                                                        </p>
                                                                                     </div>
                                                                                 </>
                                                                             ) : (
                                                                                 <>
-                                                                                    <div className="size-9 shrink-0 rounded-md overflow-hidden bg-muted/40 flex items-center justify-center border">
+                                                                                    <div className="size-9 shrink-0 rounded-md overflow-hidden bg-muted/40 dark:bg-muted/20 flex items-center justify-center border">
                                                                                         {isThumbnailable ? (
                                                                                             <img src={thumbnailUrl} alt={item.name} className="size-full object-contain" loading="lazy" />
                                                                                         ) : (
                                                                                             getFileIcon(item.information.type === 'FILE' ? item.information.mime : '', isFolder, "size-4 text-muted-foreground")
                                                                                         )}
                                                                                     </div>
-                                                                                    <span className="text-sm font-medium truncate flex-1 text-card-foreground" title={item.name}>{item.name}</span>
-                                                                                    <span className="text-xs text-muted-foreground w-20 text-right">
+                                                                                    <span className="text-sm font-medium truncate flex-1" title={item.name}>{item.name}</span>
+                                                                                    <span className="text-xs text-muted-foreground w-20 text-right shrink-0">
                                                                                         {isFolder ? '-' : formatBytes(item.information.type === 'FILE' ? item.information.sizeInBytes : 0)}
                                                                                     </span>
-                                                                                    {/* Mobile tap indicator for folders in list view */}
                                                                                     {isFolder && currentView === 'BROWSE' && (
                                                                                         <ChevronRight className="size-4 text-muted-foreground lg:hidden shrink-0" />
                                                                                     )}
@@ -528,10 +455,7 @@ export const DriveExplorer = (props: Readonly<{
                                                                     <ContextMenuContent>
                                                                         {currentView === 'TRASH' ? (
                                                                             <>
-                                                                                <ContextMenuItem onClick={async () => {
-                                                                                    await callAPI('restore', { method: 'POST', query: { id: item.id } });
-                                                                                    await refreshItems();
-                                                                                }}>
+                                                                                <ContextMenuItem onClick={() => restoreItem(item.id)}>
                                                                                     <RotateCcw className="mr-2 size-4" /> Restore
                                                                                 </ContextMenuItem>
                                                                                 <ContextMenuSeparator />
@@ -545,7 +469,7 @@ export const DriveExplorer = (props: Readonly<{
                                                                         ) : (
                                                                             <>
                                                                                 <ContextMenuItem onClick={() => {
-                                                                                    setRenameItem(item);
+                                                                                    setItemToRename(item);
                                                                                     setDialogs(prev => ({ ...prev, rename: true }));
                                                                                 }}>
                                                                                     <Pencil className="mr-2 size-4" /> Rename
@@ -576,78 +500,6 @@ export const DriveExplorer = (props: Readonly<{
                                         {!isLoadingMore && <div className="h-4 w-full" />}
                                     </div>
                                 )}
-
-                                {/* Dialogs */}
-                                <DialogConfirmation
-                                    open={dialogs.newFolder}
-                                    onClose={() => setDialogs(prev => ({ ...prev, newFolder: false }))}
-                                    title="Create New Folder"
-                                    description="Enter a name for the new folder"
-                                    inputs={[{ type: 'INPUT', id: 'name', name: 'Folder name', required: true }] as const}
-                                    onConfirm={async (inputs) => {
-                                        try {
-                                            await callAPI('createFolder', {
-                                                method: 'POST',
-                                                body: JSON.stringify({ name: inputs.name, parentId: currentFolderId || 'root' })
-                                            });
-                                            await refreshItems();
-                                            return [true];
-                                        } catch (error) {
-                                            return [false, error instanceof Error ? error.message : 'Failed to create folder'];
-                                        }
-                                    }}
-                                />
-
-                                <DialogConfirmation
-                                    open={dialogs.rename}
-                                    onClose={() => {
-                                        setDialogs(prev => ({ ...prev, rename: false }));
-                                        setRenameItem(null);
-                                    }}
-                                    title={`Rename ${renameItem?.information.type === 'FOLDER' ? 'Folder' : 'File'}`}
-                                    description="Enter a new name"
-                                    inputs={[{ type: 'INPUT', id: 'name', name: 'Name', default: renameItem?.name, required: true }] as const}
-                                    onConfirm={async (inputs) => {
-                                        if (!renameItem) return [false, 'No item selected'];
-                                        try {
-                                            await callAPI('rename', {
-                                                method: 'PATCH',
-                                                query: { id: renameItem.id },
-                                                body: JSON.stringify({ newName: inputs.name })
-                                            });
-                                            await refreshItems();
-                                            setRenameItem(null);
-                                            return [true];
-                                        } catch (error) {
-                                            return [false, error instanceof Error ? error.message : 'Failed to rename'];
-                                        }
-                                    }}
-                                />
-
-                                <DialogConfirmation
-                                    open={dialogs.delete}
-                                    onClose={() => {
-                                        setDialogs(prev => ({ ...prev, delete: false }));
-                                        setItemToDelete(null);
-                                    }}
-                                    title={currentView === 'TRASH' ? 'Delete Permanently?' : 'Move to Trash?'}
-                                    description={
-                                        currentView === 'TRASH'
-                                            ? `This will permanently delete "${itemToDelete?.name}". You cannot undo this action.`
-                                            : `Are you sure you want to move "${itemToDelete?.name}" to trash?`
-                                    }
-                                    onConfirm={async () => {
-                                        if (!itemToDelete) return [false, 'No item selected'];
-                                        try {
-                                            await deleteItems([itemToDelete.id]);
-                                            await refreshItems();
-                                            setItemToDelete(null);
-                                            return [true];
-                                        } catch (error) {
-                                            return [false, error instanceof Error ? error.message : 'Failed to delete'];
-                                        }
-                                    }}
-                                />
                             </div>
                         </ContextMenuTrigger>
                         <ContextMenuContent>
@@ -663,6 +515,56 @@ export const DriveExplorer = (props: Readonly<{
                         </ContextMenuContent>
                     </ContextMenu>
                 )}
+
+                {/* Dialogs - Outside of ContextMenu to prevent z-index/portal issues */}
+                <DialogConfirmation
+                    open={dialogs.newFolder}
+                    onClose={() => setDialogs(prev => ({ ...prev, newFolder: false }))}
+                    title="Create New Folder"
+                    description="Enter a name for the new folder"
+                    inputs={[{ type: 'INPUT', id: 'name', name: 'Folder name', required: true }] as const}
+                    onConfirm={async (inputs) => {
+                        await createFolder(inputs.name);
+                        return [true];
+                    }}
+                />
+
+                <DialogConfirmation
+                    open={dialogs.rename}
+                    onClose={() => {
+                        setDialogs(prev => ({ ...prev, rename: false }));
+                        setItemToRename(null);
+                    }}
+                    title={`Rename ${itemToRename?.information.type === 'FOLDER' ? 'Folder' : 'File'}`}
+                    description="Enter a new name"
+                    inputs={[{ type: 'INPUT', id: 'name', name: 'Name', default: itemToRename?.name, required: true }] as const}
+                    onConfirm={async (inputs) => {
+                        if (!itemToRename) return [false, 'No item selected'];
+                        await renameItemAction(itemToRename.id, inputs.name);
+                        setItemToRename(null);
+                        return [true];
+                    }}
+                />
+
+                <DialogConfirmation
+                    open={dialogs.delete}
+                    onClose={() => {
+                        setDialogs(prev => ({ ...prev, delete: false }));
+                        setItemToDelete(null);
+                    }}
+                    title={currentView === 'TRASH' ? 'Delete Permanently?' : 'Move to Trash?'}
+                    description={
+                        currentView === 'TRASH'
+                            ? `This will permanently delete "${itemToDelete?.name}". You cannot undo this action.`
+                            : `Are you sure you want to move "${itemToDelete?.name}" to trash?`
+                    }
+                    onConfirm={async () => {
+                        if (!itemToDelete) return [false, 'No item selected'];
+                        await deleteItem(itemToDelete.id);
+                        setItemToDelete(null);
+                        return [true];
+                    }}
+                />
             </div>
         </DndContext>
     );
