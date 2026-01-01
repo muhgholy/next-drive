@@ -5,7 +5,7 @@ import formidable from 'formidable';
 import type { Readable } from 'stream';
 import Drive from '@/server/database/mongoose/schema/drive';
 import { getDriveConfig } from '@/server/config';
-import { computeFileHash, extractImageMetadata, moveFile } from '@/server/utils';
+import { computeFileHash, extractImageMetadata } from '@/server/utils';
 import type { IDatabaseDriveDocument } from '@/server/database/mongoose/schema/drive';
 import type { TDatabaseDrive } from '@/types/lib/database/drive';
 import { LocalStorageProvider } from '@/server/providers/local';
@@ -209,8 +209,8 @@ export const driveFilePath = async (
             stream.on('error', reject);
         });
 
-        // Move temp file to final path (handles cross-device moves)
-        moveFile(tempPath, cachedFilePath);
+        // Rename temp file to final path
+        fs.renameSync(tempPath, cachedFilePath);
 
         return Object.freeze({
             path: cachedFilePath,
