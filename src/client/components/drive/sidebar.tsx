@@ -7,7 +7,7 @@ import { Button } from '@/client/components/ui/button';
 import { Input } from '@/client/components/ui/input';
 import {
      Database, HardDrive, Plus, Check,
-     ChevronsUpDown, FolderOpen, Trash2, Menu, Settings2, Pencil, Trash
+     ChevronsUpDown, FolderOpen, Trash2, Menu, Settings2, Pencil, Trash, Loader2
 } from 'lucide-react';
 import {
      DropdownMenu,
@@ -37,13 +37,15 @@ import {
 } from "@/client/components/ui/dialog";
 import { DialogConfirmation } from '@/client/components/dialog';
 import { DriveStorageIndicator } from '@/client/components/drive/storage/indicator';
-import { Progress } from '@/client/components/ui/progress';
 
 // ** Sidebar Content Component (reusable for both desktop and mobile)
-const SidebarContent = ({ onNavigate }: { onNavigate?: () => void }) => {
+const SidebarContent = (props: Readonly<{ onNavigate?: () => void }>) => {
+     // ** Deconstruct Props
+     const { onNavigate } = props;
+
      const {
           accounts, activeAccountId, setActiveAccountId,
-          callAPI, refreshAccounts, currentView, setCurrentView, isLoading
+          callAPI, refreshAccounts, currentView, setCurrentView, availableProviders
      } = useDrive();
 
      // Dialog states for account management
@@ -54,10 +56,18 @@ const SidebarContent = ({ onNavigate }: { onNavigate?: () => void }) => {
           open: false, account: null
      });
      const [newName, setNewName] = useState('');
+     const [oauthLoading, setOauthLoading] = useState(false);
+     const [oauthAbort, setOauthAbort] = useState<AbortController | null>(null);
+     const [dropdownOpen, setDropdownOpen] = useState(false);
 
      const currentAccount = activeAccountId ? accounts.find(a => a.id === activeAccountId) : null;
      const currentAccountName = currentAccount?.name || 'Local Storage';
      const currentAccountEmail = currentAccount?.email || 'On this device';
+
+     // Check if any provider is available
+     const hasAnyProvider = availableProviders.google;
+     // Disable dropdown if no accounts and no providers available
+     const isDropdownDisabled = accounts.length === 0 && !hasAnyProvider;
 
      const handleRename = async () => {
           if (!renameDialog.account || !newName.trim()) return;
@@ -80,138 +90,205 @@ const SidebarContent = ({ onNavigate }: { onNavigate?: () => void }) => {
           return [true];
      };
 
-     const openOAuthPopup = async () => {
-          const res = await callAPI<{ url: string }>('getAuthUrl', { query: { provider: 'GOOGLE' } });
-          if (res.status !== 200 || !res.data?.url) {
-               alert(res.message || 'Failed to initialize account connection');
-               return;
-          }
+     const openOAuthPopup = () => {
+          // Open popup immediately (synchronously) to avoid popup blocker
           const width = 600, height = 600;
           const left = window.screen.width / 2 - width / 2;
           const top = window.screen.height / 2 - height / 2;
-          window.open(res.data.url, 'Connect to Google Drive', `width=${width},height=${height},top=${top},left=${left}`);
+          const popup = window.open('about:blank', 'Connect to Google Drive', `width=${width},height=${height},top=${top},left=${left}`);
 
-          const cleanup = () => {
-               window.removeEventListener('message', messageListener);
-               window.removeEventListener('storage', storageListener);
-          };
-          const messageListener = (event: MessageEvent) => {
-               if (event.data === 'oauth-success') { cleanup(); refreshAccounts(); }
-          };
-          const storageListener = (event: StorageEvent) => {
-               if (event.key === 'next-drive-oauth-success') { cleanup(); refreshAccounts(); }
-          };
-          window.addEventListener('message', messageListener);
-          window.addEventListener('storage', storageListener);
+          if (!popup) {
+               alert('Popup blocked. Please allow popups for this site.');
+               return;
+          }
+
+          // Show loading dialog
+          const controller = new AbortController();
+          setOauthAbort(controller);
+          setOauthLoading(true);
+
+          // Fetch auth URL and redirect popup
+          (async () => {
+               try {
+                    const res = await callAPI<{ url: string }>('getAuthUrl', { query: { provider: 'GOOGLE' } });
+
+                    if (controller.signal.aborted) {
+                         popup.close();
+                         return;
+                    }
+
+                    if (res.status !== 200 || !res.data?.url) {
+                         popup.close();
+                         setOauthLoading(false);
+                         setOauthAbort(null);
+                         alert(res.message || 'Failed to initialize account connection');
+                         return;
+                    }
+
+                    // Redirect popup to auth URL
+                    popup.location.href = res.data.url;
+
+                    // Listen for OAuth success
+                    const cleanup = () => {
+                         window.removeEventListener('message', messageListener);
+                         window.removeEventListener('storage', storageListener);
+                         setOauthLoading(false);
+                         setOauthAbort(null);
+                    };
+                    const messageListener = (event: MessageEvent) => {
+                         if (event.data === 'oauth-success') { cleanup(); refreshAccounts(); setDropdownOpen(true); }
+                    };
+                    const storageListener = (event: StorageEvent) => {
+                         if (event.key === 'next-drive-oauth-success') { cleanup(); refreshAccounts(); setDropdownOpen(true); }
+                    };
+                    window.addEventListener('message', messageListener);
+                    window.addEventListener('storage', storageListener);
+
+                    // Also close loading if popup is closed manually
+                    const checkPopupClosed = setInterval(() => {
+                         if (popup.closed) {
+                              clearInterval(checkPopupClosed);
+                              cleanup();
+                         }
+                    }, 500);
+               } catch (err) {
+                    popup.close();
+                    setOauthLoading(false);
+                    setOauthAbort(null);
+                    alert('Failed to connect. Please try again.');
+               }
+          })();
+     };
+
+     const cancelOAuth = () => {
+          oauthAbort?.abort();
+          setOauthLoading(false);
+          setOauthAbort(null);
      };
 
      return (
           <div className="w-full h-full flex flex-col bg-muted/5 dark:bg-muted/10">
-               {/* Loading Progress Bar */}
-               <div className="h-1 w-full">
-                    {isLoading && (
-                         <Progress 
-                              value={undefined} 
-                              className="h-full rounded-none bg-transparent" 
-                              indicatorClassName="animate-pulse bg-primary/60" 
-                         />
-                    )}
-               </div>
-
                {/* Account Switcher - Compact */}
                <div className="p-2 border-b border-border/50">
-                    <DropdownMenu>
-                         <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" className="w-full justify-between px-2 h-11 hover:bg-muted/50 dark:hover:bg-muted/30">
-                                   <div className="flex items-center gap-2.5 text-left min-w-0 flex-1">
-                                        <div className={cn(
-                                             "size-7 rounded-md flex items-center justify-center shrink-0",
-                                             activeAccountId
-                                                  ? "bg-blue-500/10 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400"
-                                                  : "bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400"
-                                        )}>
-                                             {activeAccountId ? <Database className="size-3.5" /> : <HardDrive className="size-3.5" />}
-                                        </div>
-                                        <div className="flex flex-col min-w-0">
-                                             <span className="text-sm font-medium truncate">{currentAccountName}</span>
-                                             <span className="text-[11px] text-muted-foreground truncate">{currentAccountEmail}</span>
-                                        </div>
+                    <div className="flex items-center gap-1">
+                         {isDropdownDisabled ? (
+                              /* Static display when no accounts and no providers */
+                              <div className="flex-1 flex items-center gap-2.5 px-2 h-11 min-w-0">
+                                   <div className="size-7 rounded-md flex items-center justify-center shrink-0 bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400">
+                                        <HardDrive className="size-3.5" />
                                    </div>
-                                   <ChevronsUpDown className="size-3.5 text-muted-foreground/60 shrink-0" />
-                              </Button>
-                         </DropdownMenuTrigger>
-                         <DropdownMenuContent className="w-56" align="start">
-                              <DropdownMenuLabel className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
-                                   Storage
-                              </DropdownMenuLabel>
-
-                              {/* Local Storage */}
-                        <DropdownMenuItem onClick={() => { setActiveAccountId(null); setCurrentView('BROWSE'); onNavigate?.(); }} className="gap-2 py-2">
-                                   {activeAccountId === null && <Check className="size-3.5 text-primary" />}
-                              </DropdownMenuItem>
-
-                              {accounts.length > 0 && <DropdownMenuSeparator />}
-
-                              {/* Connected Accounts - Compact with config button */}
-                              {accounts.map(account => (
-                                   <div key={account.id} className="flex items-center group">
-                                        <DropdownMenuItem
-                                             onClick={() => { setActiveAccountId(account.id); setCurrentView('BROWSE'); onNavigate?.(); }}
-                                             className="flex-1 gap-2 py-2 pr-1"
-                                        >
-                                             <div className="flex-1 min-w-0">
-                                                  <p className="text-sm truncate">{account.name}</p>
-                                                  <p className="text-[10px] text-muted-foreground truncate">{account.email}</p>
+                                   <div className="flex flex-col min-w-0">
+                                        <span className="text-sm font-medium truncate">Local Storage</span>
+                                        <span className="text-[11px] text-muted-foreground truncate">On this device</span>
+                                   </div>
+                              </div>
+                         ) : (
+                              <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
+                                   <DropdownMenuTrigger asChild>
+                                        <Button variant="ghost" className="flex-1 min-w-0 justify-between px-2 h-11 hover:bg-muted/50 dark:hover:bg-muted/30">
+                                             <div className="flex items-center gap-2.5 text-left min-w-0 flex-1">
+                                                  <div className={cn(
+                                                       "size-7 rounded-md flex items-center justify-center shrink-0",
+                                                       activeAccountId
+                                                            ? "bg-blue-500/10 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400"
+                                                            : "bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400"
+                                                  )}>
+                                                       {activeAccountId ? <Database className="size-3.5" /> : <HardDrive className="size-3.5" />}
+                                                  </div>
+                                                  <div className="flex flex-col min-w-0">
+                                                       <span className="text-sm font-medium truncate">{currentAccountName}</span>
+                                                       <span className="text-[11px] text-muted-foreground truncate">{currentAccountEmail}</span>
+                                                  </div>
                                              </div>
-                                             {activeAccountId === account.id && <Check className="size-3.5 text-primary" />}
-                                        </DropdownMenuItem>
-                                        {/* Config button - only for storage accounts */}
-                                        <DropdownMenu>
-                                             <DropdownMenuTrigger asChild>
-                                                  <Button
-                                                       variant="ghost"
-                                                       size="icon"
-                                                       className="size-7 mr-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                                                       onClick={(e) => e.stopPropagation()}
-                                                  >
-                                                       <Settings2 className="size-3.5 text-muted-foreground" />
-                                                  </Button>
-                                             </DropdownMenuTrigger>
-                                             <DropdownMenuContent align="end" className="w-36">
-                                                  <DropdownMenuItem onClick={() => {
-                                                       setNewName(account.name);
-                                                       setRenameDialog({ open: true, account });
-                                                  }}>
-                                                       <Pencil className="size-3.5 mr-2" />
-                                                       Rename
-                                                  </DropdownMenuItem>
-                                                  <DropdownMenuSeparator />
-                                                  <DropdownMenuItem
-                                                       className="text-destructive focus:text-destructive"
-                                                       onClick={() => setDeleteDialog({ open: true, account })}
-                                                  >
-                                                       <Trash className="size-3.5 mr-2" />
-                                                       Remove
-                                                  </DropdownMenuItem>
-                                             </DropdownMenuContent>
-                                        </DropdownMenu>
-                                   </div>
-                              ))}
+                                             <ChevronsUpDown className="size-3.5 text-muted-foreground/60 shrink-0" />
+                                        </Button>
+                                   </DropdownMenuTrigger>
+                                   <DropdownMenuContent className="w-56" align="start">
+                                        <DropdownMenuLabel className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
+                                             Storage
+                                        </DropdownMenuLabel>
 
-                              <DropdownMenuSeparator />
-                              <DropdownMenuSub>
-                                   <DropdownMenuSubTrigger className="gap-2">
-                                        <Plus className="size-3.5" />
-                                        <span className="text-sm">Add Account</span>
-                                   </DropdownMenuSubTrigger>
-                                   <DropdownMenuSubContent>
-                                        <DropdownMenuItem onClick={openOAuthPopup}>
-                                             Google Drive
+                                        {/* Local Storage */}
+                                        <DropdownMenuItem onClick={() => { setActiveAccountId(null); setCurrentView('BROWSE'); onNavigate?.(); }} className="gap-2 py-2">
+                                             <span className="flex-1 text-sm">Local Storage</span>
+                                             {activeAccountId === null && <Check className="size-3.5 text-primary" />}
                                         </DropdownMenuItem>
-                                   </DropdownMenuSubContent>
-                              </DropdownMenuSub>
-                         </DropdownMenuContent>
-                    </DropdownMenu>
+
+                                        {accounts.length > 0 && <DropdownMenuSeparator />}
+
+                                        {/* Connected Accounts */}
+                                        {accounts.map(account => (
+                                             <DropdownMenuItem
+                                                  key={account.id}
+                                                  onClick={() => { setActiveAccountId(account.id); setCurrentView('BROWSE'); onNavigate?.(); }}
+                                                  className="gap-2 py-2"
+                                             >
+                                                  <div className="flex-1 min-w-0">
+                                                       <p className="text-sm truncate">{account.name}</p>
+                                                       <p className="text-[10px] text-muted-foreground truncate">{account.email}</p>
+                                                  </div>
+                                                  {activeAccountId === account.id && <Check className="size-3.5 text-primary" />}
+                                             </DropdownMenuItem>
+                                        ))}
+
+                                        {/* Add Account - only show if any provider is available */}
+                                        {hasAnyProvider && (
+                                             <>
+                                                  <DropdownMenuSeparator />
+                                                  <DropdownMenuSub>
+                                                       <DropdownMenuSubTrigger className="gap-2">
+                                                            <Plus className="size-3.5" />
+                                                            <span className="text-sm">Add Account</span>
+                                                       </DropdownMenuSubTrigger>
+                                                       <DropdownMenuSubContent>
+                                                            {availableProviders.google && (
+                                                                 <DropdownMenuItem onClick={openOAuthPopup}>
+                                                                      Google Drive
+                                                                 </DropdownMenuItem>
+                                                            )}
+                                                       </DropdownMenuSubContent>
+                                                  </DropdownMenuSub>
+                                             </>
+                                        )}
+                                   </DropdownMenuContent>
+                              </DropdownMenu>
+                         )}
+
+                         {/* Settings button - only for connected accounts */}
+                         {currentAccount && (
+                              <DropdownMenu>
+                                   <DropdownMenuTrigger asChild>
+                                        <Button
+                                             variant="ghost"
+                                             size="icon"
+                                             className="size-9 shrink-0 hover:bg-muted/50 dark:hover:bg-muted/30"
+                                        >
+                                             <Settings2 className="size-4 text-muted-foreground" />
+                                        </Button>
+                                   </DropdownMenuTrigger>
+                                   <DropdownMenuContent align="end" className="w-40">
+                                        <DropdownMenuLabel className="text-xs text-muted-foreground truncate">
+                                             {currentAccount.name}
+                                        </DropdownMenuLabel>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem onClick={() => {
+                                             setNewName(currentAccount.name);
+                                             setRenameDialog({ open: true, account: currentAccount });
+                                        }}>
+                                             <Pencil className="size-3.5 mr-2" />
+                                             Rename
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                             className="text-destructive focus:text-destructive"
+                                             onClick={() => setDeleteDialog({ open: true, account: currentAccount })}
+                                        >
+                                             <Trash className="size-3.5 mr-2" />
+                                             Disconnect
+                                        </DropdownMenuItem>
+                                   </DropdownMenuContent>
+                              </DropdownMenu>
+                         )}
+                    </div>
                </div>
 
                {/* Navigation */}
@@ -251,7 +328,7 @@ const SidebarContent = ({ onNavigate }: { onNavigate?: () => void }) => {
 
                {/* Rename Dialog */}
                <Dialog open={renameDialog.open} onOpenChange={(open) => !open && setRenameDialog({ open: false, account: null })}>
-                    <DialogContent className="sm:max-w-sm">
+                    <DialogContent className="sm:max-w-sm" showCloseButton={false}>
                          <DialogHeader>
                               <DialogTitle>Rename Account</DialogTitle>
                               <DialogDescription>Enter a new display name for this storage account.</DialogDescription>
@@ -273,49 +350,54 @@ const SidebarContent = ({ onNavigate }: { onNavigate?: () => void }) => {
                     </DialogContent>
                </Dialog>
 
-               {/* Delete Confirmation */}
+               {/* Disconnect Confirmation */}
                <DialogConfirmation
                     open={deleteDialog.open}
                     onClose={() => setDeleteDialog({ open: false, account: null })}
-                    title="Remove Account"
-                    description={`Are you sure you want to disconnect "${deleteDialog.account?.name}"? Synced files will be removed from local cache.`}
+                    title="Disconnect Account"
+                    description={`Are you sure you want to disconnect "${deleteDialog.account?.name}"? Access will be revoked and synced files will be removed from local cache.`}
                     onConfirm={handleDelete}
                />
+
+               {/* OAuth Loading Dialog */}
+               <Dialog open={oauthLoading} onOpenChange={(open) => !open && cancelOAuth()}>
+                    <DialogContent className="sm:max-w-xs" showCloseButton={false}>
+                         <div className="flex flex-col items-center gap-4 py-4">
+                              <Loader2 className="size-8 text-primary animate-spin" />
+                              <div className="text-center">
+                                   <DialogTitle className="text-base">Connecting...</DialogTitle>
+                                   <DialogDescription className="text-sm mt-1">
+                                        Preparing Google authentication
+                                   </DialogDescription>
+                              </div>
+                              <Button variant="outline" size="sm" onClick={cancelOAuth}>
+                                   Cancel
+                              </Button>
+                         </div>
+                    </DialogContent>
+               </Dialog>
           </div>
      );
 };
 
 // ** Desktop Sidebar (always visible on larger screens)
-export const DriveSidebar = () => {
+export const DriveSidebar = ({ className }: { className?: string }) => {
      const [sheetOpen, setSheetOpen] = useState(false);
 
      return (
-          <>
-               {/* Mobile: Hamburger Menu + Sheet */}
-               <div className="lg:hidden">
-                    <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-                         <SheetTrigger asChild>
-                              <Button
-                                   variant="ghost"
-                                   size="icon"
-                                   className="h-9 w-9"
-                                   aria-label="Open menu"
-                              >
-                                   <Menu className="h-5 w-5" />
-                              </Button>
-                         </SheetTrigger>
-                         <SheetContent side="left" className="w-70 sm:w-80 p-0" hideCloseButton>
-                              <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
-                              <SheetDescription className="sr-only">Storage accounts and navigation</SheetDescription>
-                              <SidebarContent onNavigate={() => setSheetOpen(false)} />
-                         </SheetContent>
-                    </Sheet>
-               </div>
-
-               {/* Desktop: Always visible sidebar */}
-               <div className="hidden lg:flex w-full h-full">
-                    <SidebarContent />
-               </div>
-          </>
+          <div className={className}>
+               <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+                    <SheetTrigger asChild>
+                         <Button variant="ghost" size="icon" className="size-9" aria-label="Open menu">
+                              <Menu className="size-5" />
+                         </Button>
+                    </SheetTrigger>
+                    <SheetContent side="left" className="w-70 sm:w-80 p-0" hideCloseButton>
+                         <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
+                         <SheetDescription className="sr-only">Storage accounts and navigation</SheetDescription>
+                         <SidebarContent onNavigate={() => setSheetOpen(false)} />
+                    </SheetContent>
+               </Sheet>
+          </div>
      );
 };

@@ -4,130 +4,133 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { useDrive } from '@/client/context';
 import {
-    DndContext,
-    pointerWithin,
-    KeyboardSensor,
-    PointerSensor,
-    useSensor,
-    useSensors,
-    type DragEndEvent,
-    type DragOverEvent,
-    type DragStartEvent
+     DndContext,
+     pointerWithin,
+     KeyboardSensor,
+     PointerSensor,
+     useSensor,
+     useSensors,
+     type DragEndEvent,
+     type DragOverEvent,
+     type DragStartEvent
 } from '@dnd-kit/core';
 import { arrayMove, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 
 // ** Context for sharing drag state
 type DriveDndContextType = {
-    dragOverFolderId: string | null;
-    draggingItemId: string | null;
+     dragOverFolderId: string | null;
+     draggingItemId: string | null;
 };
 
 const DriveDndContext = createContext<DriveDndContextType>({
-    dragOverFolderId: null,
-    draggingItemId: null
+     dragOverFolderId: null,
+     draggingItemId: null
 });
 
 export const useDriveDnd = () => useContext(DriveDndContext);
 
 // ** Provider Component
-export const DriveDndProvider = ({ children }: { children: React.ReactNode }) => {
-    const { items, setItems, sortBy, setSortBy, moveItem, callAPI, currentView } = useDrive();
+export const DriveDndProvider = (props: Readonly<{ children: React.ReactNode }>) => {
+     // ** Deconstruct Props
+     const { children } = props;
 
-    const [dragOverFolderId, setDragOverFolderId] = useState<string | null>(null);
-    const [draggingItemId, setDraggingItemId] = useState<string | null>(null);
+     const { items, setItems, sortBy, setSortBy, moveItem, callAPI, currentView } = useDrive();
 
-    // ** DnD Sensors
-    const sensors = useSensors(
-        useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-        useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
-    );
+     const [dragOverFolderId, setDragOverFolderId] = useState<string | null>(null);
+     const [draggingItemId, setDraggingItemId] = useState<string | null>(null);
 
-    // ** Handlers
-    const handleDragStart = useCallback((event: DragStartEvent) => {
-        setDraggingItemId(event.active.id as string);
-    }, []);
+     // ** DnD Sensors
+     const sensors = useSensors(
+          useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+          useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+     );
 
-    const handleDragOver = useCallback((event: DragOverEvent) => {
-        const { over } = event;
-        if (!over) {
-            setDragOverFolderId(null);
-            return;
-        }
+     // ** Handlers
+     const handleDragStart = useCallback((event: DragStartEvent) => {
+          setDraggingItemId(event.active.id as string);
+     }, []);
 
-        const overId = over.id as string;
+     const handleDragOver = useCallback((event: DragOverEvent) => {
+          const { over } = event;
+          if (!over) {
+               setDragOverFolderId(null);
+               return;
+          }
 
-        // Check if hovering over a path item
-        if (overId.startsWith('path-')) {
-            setDragOverFolderId(overId);
-            return;
-        }
+          const overId = over.id as string;
 
-        // Check if hovering over a folder in the grid
-        const overItem = items.find((i: { id: string }) => i.id === over.id);
-        if (overItem?.information.type === 'FOLDER' && over.id !== draggingItemId) {
-            setDragOverFolderId(over.id as string);
-        } else {
-            setDragOverFolderId(null);
-        }
-    }, [items, draggingItemId]);
+          // Check if hovering over a path item
+          if (overId.startsWith('path-')) {
+               setDragOverFolderId(overId);
+               return;
+          }
 
-    const handleDragEnd = useCallback(async (event: DragEndEvent) => {
-        const { active, over } = event;
-        setDragOverFolderId(null);
-        setDraggingItemId(null);
+          // Check if hovering over a folder in the grid
+          const overItem = items.find((i: { id: string }) => i.id === over.id);
+          if (overItem?.information.type === 'FOLDER' && over.id !== draggingItemId) {
+               setDragOverFolderId(over.id as string);
+          } else {
+               setDragOverFolderId(null);
+          }
+     }, [items, draggingItemId]);
 
-        if (!over || active.id === over.id) return;
+     const handleDragEnd = useCallback(async (event: DragEndEvent) => {
+          const { active, over } = event;
+          setDragOverFolderId(null);
+          setDraggingItemId(null);
 
-        const overId = over.id as string;
+          if (!over || active.id === over.id) return;
 
-        // Dropping on path bar item (e.g., "path-root" or "path-abc123")
-        if (overId.startsWith('path-')) {
-            const pathId = overId.slice(5); // Remove "path-" prefix
-            const targetFolderId = pathId === 'root' || pathId === 'null' ? 'root' : pathId;
-            await moveItem(active.id as string, targetFolderId);
-            return;
-        }
+          const overId = over.id as string;
 
-        // Dropping on a folder in the grid
-        const overItem = items.find((i: { id: string; information: { type: string } }) => i.id === over.id);
-        if (overItem?.information.type === 'FOLDER') {
-            await moveItem(active.id as string, over.id as string);
-            return;
-        }
+          // Dropping on path bar item (e.g., "path-root" or "path-abc123")
+          if (overId.startsWith('path-')) {
+               const pathId = overId.slice(5); // Remove "path-" prefix
+               const targetFolderId = pathId === 'root' || pathId === 'null' ? 'root' : pathId;
+               await moveItem(active.id as string, targetFolderId);
+               return;
+          }
 
-        // Reordering items (optimistic)
-        const oldIndex = items.findIndex((i: { id: string }) => i.id === active.id);
-        const newIndex = items.findIndex((i: { id: string }) => i.id === over.id);
+          // Dropping on a folder in the grid
+          const overItem = items.find((i: { id: string; information: { type: string } }) => i.id === over.id);
+          if (overItem?.information.type === 'FOLDER') {
+               await moveItem(active.id as string, over.id as string);
+               return;
+          }
 
-        if (oldIndex === -1 || newIndex === -1) return;
+          // Reordering items (optimistic)
+          const oldIndex = items.findIndex((i: { id: string }) => i.id === active.id);
+          const newIndex = items.findIndex((i: { id: string }) => i.id === over.id);
 
-        const reordered = arrayMove(items, oldIndex, newIndex);
+          if (oldIndex === -1 || newIndex === -1) return;
 
-        setItems(reordered);
-        if (sortBy.field !== 'order') setSortBy({ field: 'order', order: 1 });
+          const reordered = arrayMove(items, oldIndex, newIndex);
 
-        // API call in background
-        await callAPI('reorder', { method: 'POST', body: JSON.stringify({ ids: reordered.map((i: { id: string }) => i.id) }) });
-    }, [items, setItems, sortBy, setSortBy, moveItem, callAPI]);
+          setItems(reordered);
+          if (sortBy.field !== 'order') setSortBy({ field: 'order', order: 1 });
 
-    // Only enable DnD in browse mode
-    const enableDnd = currentView === 'BROWSE';
+          // API call in background
+          await callAPI('reorder', { method: 'POST', body: JSON.stringify({ ids: reordered.map((i: { id: string }) => i.id) }) });
+     }, [items, setItems, sortBy, setSortBy, moveItem, callAPI]);
 
-    return (
-        <DriveDndContext.Provider value={{ dragOverFolderId, draggingItemId }}>
-            {enableDnd ? (
-                <DndContext
-                    sensors={sensors}
-                    collisionDetection={pointerWithin}
-                    onDragStart={handleDragStart}
-                    onDragOver={handleDragOver}
-                    onDragEnd={handleDragEnd}
-                >
-                    {children}
-                </DndContext>
-            ) : (
-                children
-            )}
-        </DriveDndContext.Provider>
-    );
+     // Only enable DnD in browse mode
+     const enableDnd = currentView === 'BROWSE';
+
+     return (
+          <DriveDndContext.Provider value={{ dragOverFolderId, draggingItemId }}>
+               {enableDnd ? (
+                    <DndContext
+                         sensors={sensors}
+                         collisionDetection={pointerWithin}
+                         onDragStart={handleDragStart}
+                         onDragOver={handleDragOver}
+                         onDragEnd={handleDragEnd}
+                    >
+                         {children}
+                    </DndContext>
+               ) : (
+                    children
+               )}
+          </DriveDndContext.Provider>
+     );
 };

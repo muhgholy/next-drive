@@ -82,7 +82,7 @@ export const GoogleDriveProvider: TStorageProvider = {
 		do {
 			const res: any = await drive.files.list({
 				q: `'${googleParentId}' in parents and trashed = false`,
-				fields: 'nextPageToken, files(id, name, mimeType, size, webViewLink, iconLink, thumbnailLink)',
+				fields: 'nextPageToken, files(id, name, mimeType, size, webViewLink, iconLink, thumbnailLink, createdTime)',
 				pageSize: 1000,
 				pageToken: nextPageToken,
 			});
@@ -127,13 +127,16 @@ export const GoogleDriveProvider: TStorageProvider = {
 					trashedAt: null,
 				};
 
+				// Use source file's createdTime for createdAt on insert
+				const insertData = file.createdTime ? { createdAt: new Date(file.createdTime) } : {};
+
 				await Drive.findOneAndUpdate(
 					{
 						owner,
 						'provider.google.id': file.id,
 						'provider.type': 'GOOGLE',
 					},
-					{ $set: updateData },
+					{ $set: updateData, $setOnInsert: insertData },
 					{ upsert: true, new: true, setDefaultsOnInsert: true },
 				);
 			}
@@ -166,7 +169,7 @@ export const GoogleDriveProvider: TStorageProvider = {
 		do {
 			const res: any = await drive.files.list({
 				q: 'trashed = true',
-				fields: 'nextPageToken, files(id, name, mimeType, size, webViewLink, iconLink, thumbnailLink)',
+				fields: 'nextPageToken, files(id, name, mimeType, size, webViewLink, iconLink, thumbnailLink, createdTime)',
 				pageSize: 100, // Limit sync for performance
 				pageToken: nextPageToken,
 			});
@@ -181,6 +184,9 @@ export const GoogleDriveProvider: TStorageProvider = {
 				const isFolder = file.mimeType === 'application/vnd.google-apps.folder';
 
 				const sizeInBytes = file.size ? parseInt(file.size) : 0;
+
+				// Use source file's createdTime for createdAt on insert
+				const insertData = file.createdTime ? { createdAt: new Date(file.createdTime) } : {};
 
 				await Drive.findOneAndUpdate(
 					{ owner, 'provider.google.id': file.id, 'provider.type': 'GOOGLE' },
@@ -205,6 +211,7 @@ export const GoogleDriveProvider: TStorageProvider = {
 							},
 							trashedAt: new Date(),
 						},
+						$setOnInsert: insertData,
 					},
 					{ upsert: true, setDefaultsOnInsert: true },
 				);
@@ -220,7 +227,7 @@ export const GoogleDriveProvider: TStorageProvider = {
 		// name contains 'query'
 		const res = await drive.files.list({
 			q: `name contains '${query}' and trashed = false`,
-			fields: 'files(id, name, mimeType, size, parents, webViewLink, iconLink, thumbnailLink)',
+			fields: 'files(id, name, mimeType, size, parents, webViewLink, iconLink, thumbnailLink, createdTime)',
 			pageSize: 50,
 		});
 
@@ -260,6 +267,9 @@ export const GoogleDriveProvider: TStorageProvider = {
 
 			const sizeInBytes = file.size ? parseInt(file.size) : 0;
 
+			// Use source file's createdTime for createdAt on insert
+			const insertData = file.createdTime ? { createdAt: new Date(file.createdTime) } : {};
+
 			await Drive.findOneAndUpdate(
 				{ owner, 'provider.google.id': file.id, 'metadata.type': 'GOOGLE' },
 				{
@@ -286,6 +296,7 @@ export const GoogleDriveProvider: TStorageProvider = {
 						// Don't overwrite parentId if it exists.
 						// New items will default to null (Root) via schema default
 					},
+					$setOnInsert: insertData,
 				},
 				{ upsert: true, setDefaultsOnInsert: true },
 			);
