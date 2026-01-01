@@ -88,7 +88,7 @@ export const DriveUpload = (props: Readonly<{
 
     const renderDialog = () => (
         <Dialog open={showUploadsDialog} onOpenChange={setShowUploadsDialog}>
-            <DialogContent className="sm:max-w-md p-0 gap-0">
+            <DialogContent className="sm:max-w-md p-0 gap-0" showCloseButton={false}>
                 <DialogHeader className="px-4 py-3 border-b flex-row items-center justify-between space-y-0">
                     <DialogTitle className="text-base">Upload Status</DialogTitle>
                     {hasUploadsInProgress && (
