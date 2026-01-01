@@ -1,3 +1,10 @@
+## [2.2.1](https://github.com/muhgholy/next-drive/compare/v2.2.0...v2.2.1) (2026-01-01)
+
+
+### Bug Fixes
+
+* preserve source file createdAt timestamp for Google Drive items during sync ([2508ecd](https://github.com/muhgholy/next-drive/commit/2508ecdf7659dbe7d3c89a7dba09ce123ec79d0b))
+
 # [2.2.0](https://github.com/muhgholy/next-drive/compare/v2.1.0...v2.2.0) (2026-01-01)
 
 
