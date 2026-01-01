@@ -79,3 +79,7 @@
 		transform: translateX(-100%);
 	}
 }
+
+.animate-indeterminate {
+	animation: indeterminate 1.5s ease-in-out infinite;
+}
