@@ -23,7 +23,8 @@
           "./client/styles.css": "./dist/client/styles.css"
      },
      "files": [
-          "dist"
+          "dist",
+          "README.md"
      ],
      "sideEffects": [
           "*.css",
