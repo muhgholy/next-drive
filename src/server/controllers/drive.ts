@@ -198,7 +198,7 @@ export const driveFilePath = async (
             fs.mkdirSync(libraryDir, { recursive: true });
         }
 
-        // Download to temp file first, then rename (atomic operation)
+        // Download to temp file first, then move (atomic operation)
         const tempPath = `${cachedFilePath}.tmp`;
         const writeStream = fs.createWriteStream(tempPath);
 
@@ -209,8 +209,17 @@ export const driveFilePath = async (
             stream.on('error', reject);
         });
 
-        // Rename temp file to final path
-        fs.renameSync(tempPath, cachedFilePath);
+        // Move temp file to final path - handle cross-device case
+        try {
+            fs.renameSync(tempPath, cachedFilePath);
+        } catch (err: unknown) {
+            if (err instanceof Error && 'code' in err && (err as NodeJS.ErrnoException).code === 'EXDEV') {
+                fs.copyFileSync(tempPath, cachedFilePath);
+                fs.unlinkSync(tempPath);
+            } else {
+                throw err;
+            }
+        }
 
         return Object.freeze({
             path: cachedFilePath,
