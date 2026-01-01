@@ -1,3 +1,10 @@
+## [2.2.4](https://github.com/muhgholy/next-drive/compare/v2.2.3...v2.2.4) (2026-01-01)
+
+
+### Bug Fixes
+
+* include README.md in npm package ([d16c5d9](https://github.com/muhgholy/next-drive/commit/d16c5d9c11c9ac577994ec43c519c20c4932ef7f))
+
 ## [2.2.3](https://github.com/muhgholy/next-drive/compare/v2.2.2...v2.2.3) (2026-01-01)
 
 
