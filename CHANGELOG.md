@@ -1,3 +1,10 @@
+## [2.2.2](https://github.com/muhgholy/next-drive/compare/v2.2.1...v2.2.2) (2026-01-01)
+
+
+### Bug Fixes
+
+* **ui:** use CSS class for progress bar animation instead of Tailwind arbitrary value ([19c9a57](https://github.com/muhgholy/next-drive/commit/19c9a574eceda267ab7cb89e0d92f860abcc2039))
+
 ## [2.2.1](https://github.com/muhgholy/next-drive/compare/v2.2.0...v2.2.1) (2026-01-01)
 
 
