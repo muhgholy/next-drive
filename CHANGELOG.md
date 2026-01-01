@@ -1,3 +1,10 @@
+## [2.2.5](https://github.com/muhgholy/next-drive/compare/v2.2.4...v2.2.5) (2026-01-01)
+
+
+### Reverts
+
+* Revert "fix: code style improvements and refactoring" ([29eb327](https://github.com/muhgholy/next-drive/commit/29eb3270d8f573b460f0114cb524fddf4f4e75b3))
+
 ## [2.2.4](https://github.com/muhgholy/next-drive/compare/v2.2.3...v2.2.4) (2026-01-01)
 
 
