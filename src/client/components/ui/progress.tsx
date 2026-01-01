@@ -30,7 +30,7 @@ function Progress({
                     data-slot="progress-indicator"
                     className={cn(
                          "bg-primary h-full flex-1 transition-all",
-                         isIndeterminate && "w-1/3 animate-indeterminate",
+                         isIndeterminate && "w-1/3 animate-[indeterminate_1.5s_ease-in-out_infinite]",
                          !isIndeterminate && "w-full",
                          indicatorClassName
                     )}

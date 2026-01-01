@@ -1,6 +1,6 @@
 {
      "name": "@muhgholy/next-drive",
-     "version": "2.2.5",
+     "version": "2.2.1",
      "description": "File storage and management for Next.js applications",
      "type": "module",
      "exports": {
@@ -23,12 +23,7 @@
           "./client/styles.css": "./dist/client/styles.css"
      },
      "files": [
-          "dist",
-          "README.md"
-     ],
-     "sideEffects": [
-          "*.css",
-          "./dist/client/index.js"
+          "dist"
      ],
      "scripts": {
           "build": "tsup && tsc -p tsconfig.build.json && tsc-alias -p tsconfig.build.json",

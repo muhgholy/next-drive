@@ -1,22 +1,4 @@
-// Auto-inject styles at runtime
-if (typeof document !== 'undefined') {
-	const STYLE_ID = 'next-drive-styles';
-	if (!document.getElementById(STYLE_ID)) {
-		const style = document.createElement('style');
-		style.id = STYLE_ID;
-		style.textContent = `
-@keyframes indeterminate {
-    0% { transform: translateX(-100%); }
-    50% { transform: translateX(200%); }
-    100% { transform: translateX(-100%); }
-}
-.animate-indeterminate {
-    animation: indeterminate 1.5s ease-in-out infinite;
-}
-        `;
-		document.head.appendChild(style);
-	}
-}
+import './styles.css'; // Auto-inject styles
 
 export * from './context';
 export * from './hooks/useUpload';
