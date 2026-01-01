@@ -1,3 +1,10 @@
+# [2.1.0](https://github.com/muhgholy/next-drive/compare/v2.0.2...v2.1.0) (2026-01-01)
+
+
+### Features
+
+* simplify context with optimistic updates and improve mobile UX ([dc0af2d](https://github.com/muhgholy/next-drive/commit/dc0af2ddd520e31a4b0f34fb730f8c2aa8b0d3d1))
+
 ## [2.0.2](https://github.com/muhgholy/next-drive/compare/v2.0.1...v2.0.2) (2025-12-31)
 
 
