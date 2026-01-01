@@ -1,16 +1,18 @@
 # @muhgholy/next-drive
 
-Robust file storage and management solution for Next.js and Express applications, featuring a responsive UI, advanced search, trash management, and secure file handling.
+File storage and management for Next.js and Express apps. Includes a responsive UI, search, trash system, and secure file handling.
 
 ## Features
 
-- **File Management**: Upload, rename, move, and organize files and folders.
-- **Advanced Search**: Search both active files and the trash bin with real-time filtering.
-- **Trash System**: specialized trash view with soft delete, restore, and empty trash capabilities.
-- **Responsive UI**: optimized layouts for both desktop (single toolbar) and mobile (search-focused header).
-- **Video Support**: Auto-generates thumbnails for video files (requires FFmpeg).
-- **Security**: Signed URLs for secure file access and configurable upload limits.
-- **View Modes**: Toggle between Grid and List views with custom sorting and grouping.
+- 📁 **File Management** – Upload, rename, move, organize files and folders
+- 🔍 **Search** – Search active files or trash with real-time filtering
+- 🗑️ **Trash System** – Soft delete, restore, and empty trash
+- 📱 **Responsive UI** – Optimized for desktop and mobile
+- 🎬 **Video Thumbnails** – Auto-generated thumbnails (requires FFmpeg)
+- 🔐 **Security** – Signed URLs and configurable upload limits
+- 📊 **View Modes** – Grid/List views with sorting and grouping
+
+---
 
 ## Installation
 
@@ -18,59 +20,60 @@ Robust file storage and management solution for Next.js and Express applications
 npm install @muhgholy/next-drive
 ```
 
-**Peer Dependencies:**
+### Requirements
 
-- Next.js >= 14
-- React >= 18
-- Mongoose >= 7
-- Tailwind CSS >= 3
+| Dependency   | Version |
+| ------------ | ------- |
+| Next.js      | >= 14   |
+| React        | >= 18   |
+| Mongoose     | >= 7    |
+| Tailwind CSS | >= 3    |
 
-**System Requirements:**
+**FFmpeg** (for video thumbnails):
 
-- **FFmpeg**: Required for generating thumbnails from video files.
-     - MacOS: `brew install ffmpeg`
-     - Ubuntu: `sudo apt install ffmpeg`
-     - Windows: Download from official site and add to PATH.
+```bash
+# macOS
+brew install ffmpeg
 
-### Tailwind CSS Configuration
+# Ubuntu
+sudo apt install ffmpeg
 
-Since this package uses Tailwind CSS for styling, you **must** configure Tailwind to scan the package's files:
+# Windows
+# Download from https://ffmpeg.org and add to PATH
+```
+
+### Tailwind Setup
+
+Add the package to your Tailwind content config:
 
 ```js
 // tailwind.config.js
 export default {
-	content: [
-		'./app/**/*.{js,ts,jsx,tsx,mdx}',
-		'./pages/**/*.{js,ts,jsx,tsx,mdx}',
-		'./components/**/*.{js,ts,jsx,tsx,mdx}',
-		// Add the next-drive package
-		'./node_modules/@muhgholy/next-drive/dist/**/*.{js,mjs}',
-	],
-	theme: {
-		extend: {},
-	},
-	plugins: [],
+	content: ['./app/**/*.{js,ts,jsx,tsx,mdx}', './pages/**/*.{js,ts,jsx,tsx,mdx}', './components/**/*.{js,ts,jsx,tsx,mdx}', './node_modules/@muhgholy/next-drive/dist/**/*.{js,mjs}'],
 };
 ```
 
-> **Note**: The CSS is automatically injected when you import from `@muhgholy/next-drive/client` - no need to manually import stylesheets.
+> CSS is auto-injected when importing from `@muhgholy/next-drive/client`.
+
+---
 
 ## Quick Start
 
-### 1. Configure Server
+### 1. Server Configuration
 
-Create a configuration file (e.g., `lib/drive.ts`) to set up storage paths, database connection, and security rules.
+Create `lib/drive.ts` to configure storage, security, and authentication:
 
 ```typescript
 // lib/drive.ts
 import { driveConfiguration } from '@muhgholy/next-drive/server';
 import type { TDriveConfigInformation } from '@muhgholy/next-drive/server';
 
-export const drive = driveConfiguration({
+driveConfiguration({
 	database: 'MONGOOSE',
+	apiUrl: '/api/drive',
 	storage: { path: '/var/data/drive' },
 	security: {
-		maxUploadSize: 50 * 1024 * 1024, // 50MB
+		maxUploadSizeInBytes: 50 * 1024 * 1024, // 50MB
 		allowedMimeTypes: ['image/*', 'video/*', 'application/pdf'],
 		signedUrls: {
 			enabled: true,
@@ -78,36 +81,20 @@ export const drive = driveConfiguration({
 			expiresIn: 3600, // 1 hour
 		},
 	},
-	image: {
-		formats: ['webp', 'jpeg', 'png'],
-		qualities: ['ultralow', 'low', 'medium', 'high', 'normal'],
-	},
-	// Optional: Enable CORS for cross-origin requests
-	cors: {
-		enabled: true,
-		origins: ['https://example.com', 'https://app.example.com'],
-		credentials: true,
-	},
 	information: async (req): Promise<TDriveConfigInformation> => {
-		// Implement your auth verification here
 		const auth = await verifyAuth(req);
 		if (!auth) throw new Error('Unauthenticated');
 		return {
 			key: { userId: auth.userId },
-			storage: { quotaInBytes: 1024 * 1024 * 1024 }, // 1GB limit
+			storage: { quotaInBytes: 1024 * 1024 * 1024 }, // 1GB
 		};
 	},
 });
 ```
 
-### 2. Create API Route
+### 2. API Route (Pages Router)
 
-Set up the API route handler that `next-drive` will use to communicate with the client.
-
-**Important:**
-
-- The API route must be in the `pages` folder (Pages Router)
-- **You MUST disable Next.js body parser** for uploads to work properly
+> ⚠️ **Important**: Must be in `pages/` folder with body parser disabled.
 
 ```typescript
 // pages/api/drive.ts
@@ -116,67 +103,82 @@ import { driveAPIHandler } from '@muhgholy/next-drive/server';
 import type { NextApiRequest, NextApiResponse } from 'next';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-	// Manually parse JSON body for non-upload requests
-	if (!req.body) req.body = {};
-
+	// Parse JSON body manually (body parser is disabled)
 	if (req.headers['content-type']?.includes('application/json')) {
-		try {
-			const buffer = await new Promise<Buffer>((resolve, reject) => {
-				const chunks: Buffer[] = [];
-				req.on('data', chunk => chunks.push(chunk));
-				req.on('end', () => resolve(Buffer.concat(chunks)));
-				req.on('error', reject);
-			});
-
-			if (buffer.length > 0) {
-				req.body = JSON.parse(buffer.toString());
-			}
-		} catch (e) {
-			console.error('Failed to parse JSON body', e);
-		}
+		const chunks: Buffer[] = [];
+		for await (const chunk of req) chunks.push(chunk);
+		const buffer = Buffer.concat(chunks);
+		req.body = buffer.length > 0 ? JSON.parse(buffer.toString()) : {};
+	} else {
+		req.body = req.body || {};
 	}
 
 	return driveAPIHandler(req, res);
 }
 
-// ⚠️ CRITICAL: Disable body parser for file uploads
 export const config = {
-	api: {
-		bodyParser: false,
-	},
+	api: { bodyParser: false },
 };
 ```
 
-### 2b. Express Integration (Alternative)
+### 3. Client Provider
 
-If you're using Express instead of Next.js API Routes, use the Express adapter:
+Wrap your app with `DriveProvider`:
+
+```tsx
+// app/layout.tsx
+import { DriveProvider } from '@muhgholy/next-drive/client';
+
+export default function RootLayout({ children }) {
+	return <DriveProvider apiEndpoint='/api/drive'>{children}</DriveProvider>;
+}
+```
+
+### 4. UI Components
+
+**File Explorer:**
+
+```tsx
+import { DriveExplorer } from '@muhgholy/next-drive/client';
+
+export default function DrivePage() {
+	return <DriveExplorer />;
+}
+```
+
+**File Picker (for forms):**
+
+```tsx
+import { useState } from 'react';
+import { DriveFileChooser } from '@muhgholy/next-drive/client';
+import type { TDriveFile } from '@muhgholy/next-drive/client';
+
+function MyForm() {
+	const [file, setFile] = useState<TDriveFile | null>(null);
+	return <DriveFileChooser value={file} onChange={setFile} accept='image/*' />;
+}
+```
+
+---
+
+## Express Integration
+
+Use the Express adapter instead of Next.js API routes:
 
 ```typescript
 // lib/drive.ts
 import { driveConfigurationExpress } from '@muhgholy/next-drive/server/express';
 import type { TDriveConfigInformation } from '@muhgholy/next-drive/server/express';
 
-export const drive = driveConfigurationExpress({
+driveConfigurationExpress({
 	database: 'MONGOOSE',
+	apiUrl: '/api/drive',
 	storage: { path: '/var/data/drive' },
 	security: {
-		maxUploadSizeInBytes: 50 * 1024 * 1024, // 50MB
+		maxUploadSizeInBytes: 50 * 1024 * 1024,
 		allowedMimeTypes: ['image/*', 'video/*', 'application/pdf'],
-		signedUrls: {
-			enabled: true,
-			secret: process.env.DRIVE_SECRET!,
-			expiresIn: 3600,
-		},
 	},
-	// Optional: Enable CORS for cross-origin requests
-	cors: {
-		enabled: true,
-		origins: ['https://example.com'],
-		credentials: true,
-	},
-	apiUrl: '/api/drive',
 	information: async (req): Promise<TDriveConfigInformation> => {
-		// req is Express Request type
 		const auth = await verifyAuth(req);
 		if (!auth) throw new Error('Unauthenticated');
 		return {
@@ -189,168 +191,82 @@ export const drive = driveConfigurationExpress({
 
 ```typescript
 // routes/drive.ts
-import './lib/drive'; // Initialize configuration
+import './lib/drive';
 import express from 'express';
 import { driveAPIHandlerExpress } from '@muhgholy/next-drive/server/express';
 
 const router = express.Router();
-
-// Handle all drive API requests
 router.all('/drive', driveAPIHandlerExpress);
 
 export default router;
 ```
 
-**Important for Express:**
+> ⚠️ Don't use `express.json()` middleware on this route.
 
-- Do NOT use `express.json()` middleware on the drive route (file uploads need raw body)
-- The handler supports all HTTP methods (GET, POST, PATCH, DELETE)
+---
 
-### 3. Add Provider
+## Zod Validation
 
-Wrap your application or the specific route with `DriveProvider`.
-
-```typescript
-// app/layout.tsx
-import { DriveProvider } from "@muhgholy/next-drive/client";
-
-export default function RootLayout({ children }) {
-	return <DriveProvider apiEndpoint="/api/drive">{children}</DriveProvider>;
-}
-```
-
-**Cross-Origin Setup:**
-
-When your client runs on a different domain than the API, enable credentials:
-
-```typescript
-// Enable cookies/auth headers for cross-origin requests
-<DriveProvider
-    apiEndpoint="https://api.example.com/drive"
-    withCredentials={true}
->
-    {children}
-</DriveProvider>
-```
-
-> **Note**: Requires matching CORS configuration on the server with `credentials: true`.
-
-### 4. Implement UI Components
-
-You can use the built-in `DriveExplorer` for a full file manager experience or `DriveFileChooser` for form inputs.
-
-**Full File Explorer:**
-
-```typescript
-import { DriveExplorer } from "@muhgholy/next-drive/client";
-
-export default function DrivePage() {
-	return <DriveExplorer />;
-}
-```
-
-**File Picker:**
-
-```typescript
-import { DriveFileChooser } from "@muhgholy/next-drive/client";
-import type { TDriveFile } from "@muhgholy/next-drive/client";
-
-function MyForm() {
-	const [file, setFile] = useState<TDriveFile | null>(null);
-
-	return <DriveFileChooser value={file} onChange={setFile} accept="image/*" />;
-}
-```
-
-**Zod Validation:**
-
-You can use the exported `driveFileSchemaZod` to validate file data in your forms or API routes.
+Validate file data in forms or API routes:
 
 ```typescript
 import { z } from 'zod';
 import { driveFileSchemaZod } from '@muhgholy/next-drive/schemas';
 
-// Use in your form schema (works in both client and server)
-const myFormSchema = z.object({
+const formSchema = z.object({
 	asset: driveFileSchemaZod,
 	title: z.string(),
-	description: z.string().optional(),
 });
-
-type MyFormData = z.infer<typeof myFormSchema>;
 ```
 
-> **Note**: The schema is also available from `/client` and `/server` exports for convenience, but `/schemas` is the recommended universal import.
+> Schema also available from `/client` and `/server` exports.
 
-// Use in your form schema
-const myFormSchema = z.object({
+---
 
-````
+## Client-Side File URLs
 
-## Key Capabilities
+Generate URLs for displaying files:
 
-### Client-Side File URLs
+```tsx
+import { useDrive } from '@muhgholy/next-drive/client';
+import type { TDriveFile } from '@muhgholy/next-drive/client';
 
-**Generate File URL:**
-
-```typescript
-import { useDrive } from "@muhgholy/next-drive/client";
-import type { TDriveFile } from "@muhgholy/next-drive/client";
-
-function MyComponent() {
-	const { createUrl } = useDrive();
-
-	// Basic URL generation
-	const url = createUrl(driveFile);
-	// Returns: /api/drive?action=serve&id={fileId}
-
-	// With image quality and format
-	const url = createUrl(driveFile, {
-		quality: "medium",
-		format: "webp",
-	});
-	// Returns: /api/drive?action=serve&id={fileId}&q=medium&format=webp
-
-	// Use in Next.js Image component
-	return <Image src={createUrl(driveFile)} alt={driveFile.file.name} />;
-}
-````
-
-**Responsive Image SrcSet:**
-
-```typescript
-import { useDrive } from "@muhgholy/next-drive/client";
-
-function ResponsiveImage({ driveFile }: { driveFile: TDriveFile }) {
+function MyComponent({ driveFile }: { driveFile: TDriveFile }) {
 	const { createUrl, createSrcSet } = useDrive();
 
-	// Generate responsive srcSet for optimal image loading
-	const { srcSet, sizes } = createSrcSet(driveFile, "webp");
+	// Basic URL
+	const url = createUrl(driveFile);
 
-	// Use in img tag
-	return <img src={createUrl(driveFile, { quality: "medium" })} srcSet={srcSet} sizes={sizes} alt={driveFile.file.name} />;
+	// With quality and format
+	const optimizedUrl = createUrl(driveFile, { quality: 'medium', format: 'webp' });
+
+	// Responsive srcSet for images
+	const { srcSet, sizes } = createSrcSet(driveFile, 'webp');
+
+	return <img src={optimizedUrl} srcSet={srcSet} sizes={sizes} alt={driveFile.file.name} />;
 }
 ```
 
-### Server-Side File Access
+---
 
-**Get File URL:**
+## Server-Side File Access
+
+### Get Signed URL
 
 ```typescript
 import { driveGetUrl } from '@muhgholy/next-drive/server';
 
-// Generate a secure URL
+// Default expiry (from config)
 const url = driveGetUrl(fileId);
-// Returns: /api/drive?action=serve&id={fileId}&token={signedToken}
 
-// With custom expiry (in seconds)
+// Custom expiry in seconds
 const url = driveGetUrl(fileId, { expiry: 7200 }); // 2 hours
 
-// With specific expiry date
-const url = driveGetUrl(fileId, { expiry: new Date('2025-12-31') });
+// Specific date
+const url = driveGetUrl(fileId, { expiry: new Date('2026-12-31') });
 ```
 
-**Read File Stream:**
+### Read File Stream
 
 ```typescript
 import { driveReadFile } from '@muhgholy/next-drive/server';
@@ -362,191 +278,151 @@ stream.pipe(response);
 // Using database document
 const drive = await Drive.findById(fileId);
 const { stream, mime, size } = await driveReadFile(drive);
-
-// Example: Send file via email
-const { stream } = await driveReadFile(fileId);
-await sendEmail({
-	attachments: [{ filename: 'report.pdf', content: stream }],
-});
-
-// Example: Process file contents
-const { stream } = await driveReadFile(fileId);
-const chunks = [];
-for await (const chunk of stream) {
-	chunks.push(chunk);
-}
-const buffer = Buffer.concat(chunks);
 ```
 
-**Get Local File Path:**
+### Get Local File Path
 
-For scenarios requiring direct file system access, `driveFilePath()` provides the absolute path. Google Drive files are automatically downloaded to a local cache.
+For libraries requiring file paths (Sharp, FFmpeg, etc.):
 
 ```typescript
 import { driveFilePath } from '@muhgholy/next-drive/server';
-import fs from 'fs';
 
-// Get local path (downloads Google Drive files automatically)
 const { path, mime, size, provider } = await driveFilePath(fileId);
 
-// Use with synchronous file operations
-const buffer = fs.readFileSync(path);
-
-// Use with libraries requiring file paths
+// Use with Sharp
 await sharp(path).resize(800, 600).toFile('output.jpg');
-await ffmpeg(path).format('mp4').save('output.mp4');
 
-// Google Drive files are cached at: storage/library/google/{fileId}.ext
-// Local files use their original location
+// Use with FFmpeg
+await ffmpeg(path).format('mp4').save('output.mp4');
 ```
 
-### Search & Trash
+> Google Drive files are automatically downloaded to local cache.
 
-- **Search Scope**: Search automatically adapts to your current view. If you are browsing the Trash, searches will query deleted items. In the main Browser, searches query active files.
-- **Trash Management**: "Delete" moves items to Trash. From Trash, you can "Restore" items or "Delete Forever". A dedicated "Empty Trash" button is available to clear all deleted items.
+---
 
-### CORS Configuration
+## Configuration Options
 
-When your client application runs on a different domain than your API server, you need to enable CORS (Cross-Origin Resource Sharing):
+### Security
 
 ```typescript
-// lib/drive.ts
-export const drive = driveConfiguration({
-	// ... other config
-	cors: {
+security: {
+	maxUploadSizeInBytes: 50 * 1024 * 1024, // 50MB
+	allowedMimeTypes: ['image/*', 'video/*', 'application/pdf'],
+	signedUrls: {
 		enabled: true,
-		origins: ['https://app.example.com', 'https://admin.example.com'], // or '*' for all origins
-		methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // default
-		allowedHeaders: ['Content-Type', 'Authorization', 'X-Drive-Account'], // default
-		exposedHeaders: ['Content-Length', 'Content-Type', 'Content-Disposition'], // default
-		credentials: true, // Allow cookies/auth headers
-		maxAge: 86400, // Preflight cache duration in seconds (default: 24 hours)
+		secret: process.env.DRIVE_SECRET!,
+		expiresIn: 3600, // seconds
 	},
-});
+	trash: { retentionDays: 30 },
+}
 ```
 
-**CORS Options:**
+### Image Processing
 
-| Option           | Type                 | Default                                                     | Description                                 |
-| ---------------- | -------------------- | ----------------------------------------------------------- | ------------------------------------------- |
-| `enabled`        | `boolean`            | `false`                                                     | Enable/disable CORS headers                 |
-| `origins`        | `string \| string[]` | `'*'`                                                       | Allowed origins (use array for multiple)    |
-| `methods`        | `string[]`           | `['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']`               | Allowed HTTP methods                        |
-| `allowedHeaders` | `string[]`           | `['Content-Type', 'Authorization', 'X-Drive-Account']`      | Headers clients can send                    |
-| `exposedHeaders` | `string[]`           | `['Content-Length', 'Content-Type', 'Content-Disposition']` | Headers exposed to client                   |
-| `credentials`    | `boolean`            | `false`                                                     | Allow credentials (cookies, auth headers)   |
-| `maxAge`         | `number`             | `86400`                                                     | Preflight response cache duration (seconds) |
+```typescript
+image: {
+	formats: ['webp', 'jpeg', 'png'],
+	qualities: ['ultralow', 'low', 'medium', 'high', 'normal'],
+}
+```
 
-> **Note**: When `credentials` is `true`, `origins` cannot be `'*'`. You must specify explicit origins.
+### CORS (Cross-Origin)
 
-### Google Drive Integration
+Required when client and API are on different domains:
 
-To enable Google Drive as a storage provider, you need to set up OAuth 2.0 credentials.
+```typescript
+cors: {
+	enabled: true,
+	origins: ['https://app.example.com'],
+	credentials: true, // Allow cookies/auth headers
+	maxAge: 86400, // Preflight cache (24 hours)
+}
+```
 
-#### 1. Google Cloud Console Setup
+**Client setup for CORS:**
+
+```tsx
+<DriveProvider apiEndpoint='https://api.example.com/drive' withCredentials={true}>
+	{children}
+</DriveProvider>
+```
+
+| Option           | Type                 | Default                                                     | Description                     |
+| ---------------- | -------------------- | ----------------------------------------------------------- | ------------------------------- |
+| `enabled`        | `boolean`            | `false`                                                     | Enable CORS                     |
+| `origins`        | `string \| string[]` | `'*'`                                                       | Allowed origins                 |
+| `methods`        | `string[]`           | `['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']`               | Allowed HTTP methods            |
+| `allowedHeaders` | `string[]`           | `['Content-Type', 'Authorization', 'X-Drive-Account']`      | Headers clients can send        |
+| `exposedHeaders` | `string[]`           | `['Content-Length', 'Content-Type', 'Content-Disposition']` | Headers exposed to client       |
+| `credentials`    | `boolean`            | `false`                                                     | Allow credentials               |
+| `maxAge`         | `number`             | `86400`                                                     | Preflight cache duration (secs) |
+
+> When `credentials: true`, you must specify explicit origins (not `'*'`).
+
+---
+
+## Google Drive Integration
+
+### 1. Google Cloud Setup
 
 1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Create a new project or select an existing one
-3. Enable the **Google Drive API** from the API Library
-4. Go to **Credentials** → **Create Credentials** → **OAuth 2.0 Client ID**
-5. Select **Web application** as the application type
-6. Add your redirect URI (e.g., `http://localhost:3000/api/auth/google/callback`)
-7. Copy the **Client ID** and **Client Secret**
+2. Create/select a project
+3. Enable **Google Drive API**
+4. Create OAuth 2.0 credentials (Web application)
+5. Add redirect URI (e.g., `http://localhost:3000/api/drive?action=callback`)
 
-#### 2. Configuration
-
-Add Google credentials to your drive configuration:
+### 2. Configuration
 
 ```typescript
-// lib/drive.ts
-import { driveConfiguration } from '@muhgholy/next-drive/server';
-
-export const drive = driveConfiguration({
-	database: 'MONGOOSE',
-	storage: {
-		path: '/var/data/drive',
-		google: {
-			clientId: process.env.GOOGLE_CLIENT_ID!,
-			clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-			redirectUri: process.env.GOOGLE_REDIRECT_URI!,
-		},
+storage: {
+	path: '/var/data/drive',
+	google: {
+		clientId: process.env.GOOGLE_CLIENT_ID!,
+		clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+		redirectUri: process.env.GOOGLE_REDIRECT_URI!,
 	},
-	// ... other config options
-});
+}
 ```
 
-#### 3. Environment Variables
-
-Add to your `.env` file:
+### 3. Environment Variables
 
 ```env
 GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=your-client-secret
-GOOGLE_REDIRECT_URI=http://localhost:3000/api/auth/google/callback
+GOOGLE_REDIRECT_URI=http://localhost:3000/api/drive?action=callback
 ```
 
-#### 4. OAuth Scopes
+### OAuth Scopes
 
-The following scopes are used depending on your needs:
+| Scope                                            | Description            |
+| ------------------------------------------------ | ---------------------- |
+| `https://www.googleapis.com/auth/drive`          | Full Drive access      |
+| `https://www.googleapis.com/auth/drive.file`     | App-created files only |
+| `https://www.googleapis.com/auth/drive.readonly` | Read-only access       |
 
-| Scope                                            | Description                                                      |
-| ------------------------------------------------ | ---------------------------------------------------------------- |
-| `https://www.googleapis.com/auth/drive`          | Full access to all Drive files (recommended for file management) |
-| `https://www.googleapis.com/auth/drive.file`     | Access only to files created/opened by your app                  |
-| `https://www.googleapis.com/auth/drive.readonly` | Read-only access to all Drive files                              |
-
-For full file management features (list, upload, download, delete), use:
-
-```typescript
-const SCOPES = ['https://www.googleapis.com/auth/drive'];
-```
-
-#### 5. User Authentication Flow
-
-After OAuth authentication, user credentials are stored in the `StorageAccount` collection:
-
-```typescript
-{
-  owner: { userId: 'user-id' },
-  metadata: {
-    provider: 'GOOGLE',
-    google: {
-      credentials: {
-        access_token: '...',
-        refresh_token: '...',
-        expiry_date: 1234567890
-      }
-    }
-  }
-}
-```
-
-The library automatically handles token refresh when tokens expire.
-
-### Responsive Design
-
-- **Desktop**: Features a unified single-row header containing Search, Group, Delete, Sort, View, and Trash controls.
-- **Mobile**: Optimizes for small screens by separating the Search bar into a full-width top row and grouping action buttons in a scrollable toolbar below.
+---
 
 ## API Endpoints
 
-All operations use the `?action=` query parameter on your configured API endpoint:
+All operations use `?action=` query parameter:
 
-| Action            | Method | Description                                              |
-| ----------------- | ------ | -------------------------------------------------------- |
-| `upload`          | POST   | Chunked file upload handling                             |
-| `list`            | GET    | List files in a folder (supports `trashed` param)        |
-| `serve`           | GET    | Serve file content (supports resizing/format conversion) |
-| `thumbnail`       | GET    | specific endpoint for file thumbnails                    |
-| `rename`          | PATCH  | Rename a file or folder                                  |
-| `trash`           | POST   | Move items to trash (soft delete)                        |
-| `deletePermanent` | DELETE | Permanently remove items                                 |
-| `restore`         | POST   | Restore items from trash                                 |
-| `emptyTrash`      | DELETE | Permanently remove all trashed items                     |
-| `createFolder`    | POST   | Create a new directory                                   |
-| `move`            | POST   | Move files/folders to a new parent                       |
-| `search`          | GET    | Search by name (supports `trashed=true`)                 |
-| `quota`           | GET    | Get current storage usage                                |
+| Action            | Method | Description                      |
+| ----------------- | ------ | -------------------------------- |
+| `upload`          | POST   | Chunked file upload              |
+| `list`            | GET    | List folder contents             |
+| `serve`           | GET    | Serve file (with resize/convert) |
+| `thumbnail`       | GET    | Get file thumbnail               |
+| `rename`          | PATCH  | Rename file/folder               |
+| `trash`           | POST   | Move to trash                    |
+| `deletePermanent` | DELETE | Delete permanently               |
+| `restore`         | POST   | Restore from trash               |
+| `emptyTrash`      | DELETE | Empty all trash                  |
+| `createFolder`    | POST   | Create folder                    |
+| `move`            | POST   | Move to new parent               |
+| `search`          | GET    | Search by name                   |
+| `quota`           | GET    | Get storage usage                |
+
+---
 
 ## License
 
