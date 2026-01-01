@@ -1,3 +1,10 @@
+# [2.2.0](https://github.com/muhgholy/next-drive/compare/v2.1.0...v2.2.0) (2026-01-01)
+
+
+### Features
+
+* **ui:** improve mobile sidebar UX and upload dialog ([ae5271f](https://github.com/muhgholy/next-drive/commit/ae5271f45eca48ec9ff37cfcfebc6dc08802f163))
+
 # [2.1.0](https://github.com/muhgholy/next-drive/compare/v2.0.2...v2.1.0) (2026-01-01)
 
 
