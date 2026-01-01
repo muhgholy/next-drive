@@ -1,3 +1,15 @@
+# [3.0.0](https://github.com/muhgholy/next-drive/compare/v2.2.5...v3.0.0) (2026-01-01)
+
+
+### Bug Fixes
+
+* resolve EXDEV cross-device rename error and path duplication ([accfcc1](https://github.com/muhgholy/next-drive/commit/accfcc15982963d03f2768121f00be8b7e9abbfc))
+
+
+### BREAKING CHANGES
+
+* File storage path changed from {storage.path}/drive/{id}/data.ext to {storage.path}/{id}/data.ext
+
 ## [2.2.5](https://github.com/muhgholy/next-drive/compare/v2.2.4...v2.2.5) (2026-01-01)
 
 
