@@ -33,12 +33,48 @@ const LogViewerDialog = (props: Readonly<{ upload: TDriveUploadState; open: bool
     const { upload, open, onOpenChange } = props;
     const logs = upload.logs || [];
 
+    const handleCopy = () => {
+        const logText = logs.map(log => `[${new Date(log.timestamp).toLocaleTimeString()}] ${log.type.toUpperCase()}: ${log.message}`).join('\n');
+        navigator.clipboard.writeText(logText);
+    };
+
+    const handleDownload = () => {
+        const logText = logs.map(log => `[${new Date(log.timestamp).toLocaleTimeString()}] ${log.type.toUpperCase()}: ${log.message}`).join('\n');
+        const blob = new Blob([logText], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${upload.name}-logs.txt`;
+        a.click();
+        URL.revokeObjectURL(url);
+    };
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-lg p-0 gap-0 max-h-[85vh] flex flex-col">
                 <DialogHeader className="px-4 py-3 border-b">
                     <DialogTitle className="text-base truncate">{upload.name}</DialogTitle>
                 </DialogHeader>
+                <div className="sticky top-0 z-10 bg-background px-4 py-2 border-b flex items-center gap-2">
+                    <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={handleCopy}
+                        disabled={logs.length === 0}
+                    >
+                        Copy
+                    </Button>
+                    <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={handleDownload}
+                        disabled={logs.length === 0}
+                    >
+                        Download
+                    </Button>
+                </div>
                 <div className="flex-1 overflow-y-auto p-4 space-y-2">
                     {logs.length === 0 && (
                         <p className="text-sm text-muted-foreground text-center py-8">No logs available</p>
