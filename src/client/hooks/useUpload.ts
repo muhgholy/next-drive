@@ -8,202 +8,240 @@ import type { TDriveUploadState } from '@/types/client';
 const MAX_CONCURRENT_UPLOADS = 2;
 
 const getChunkSize = (fileSize: number) => {
-	if (fileSize < 50 * 1024 * 1024) return 2 * 1024 * 1024;
-	if (fileSize < 200 * 1024 * 1024) return 4 * 1024 * 1024;
-	if (fileSize < 1024 * 1024 * 1024) return 8 * 1024 * 1024;
-	return 16 * 1024 * 1024;
+    if (fileSize < 50 * 1024 * 1024) return 2 * 1024 * 1024;
+    if (fileSize < 200 * 1024 * 1024) return 4 * 1024 * 1024;
+    if (fileSize < 1024 * 1024 * 1024) return 8 * 1024 * 1024;
+    return 16 * 1024 * 1024;
 };
 
 export const useUpload = (apiEndpoint: string, activeAccountId: string | null, withCredentials: boolean = false, onUploadComplete?: (item: any) => void) => {
-	const [uploads, setUploads] = useState<TDriveUploadState[]>([]);
-	const abortControllers = useRef<Map<string, AbortController>>(new Map());
+    const [uploads, setUploads] = useState<TDriveUploadState[]>([]);
+    const abortControllers = useRef<Map<string, AbortController>>(new Map());
 
-	// ** Refs for data storage
-	const filesRef = useRef<Map<string, File>>(new Map());
-	const metaRef = useRef<Map<string, { folderId: string | null }>>(new Map());
+    // ** Refs for data storage
+    const filesRef = useRef<Map<string, File>>(new Map());
+    const metaRef = useRef<Map<string, { folderId: string | null }>>(new Map());
 
-	const updateUpload = useCallback((id: string, updates: Partial<TDriveUploadState>) => {
-		setUploads(prev => prev.map(u => (u.id === id ? { ...u, ...updates } : u)));
-	}, []);
+    const updateUpload = useCallback((id: string, updates: Partial<TDriveUploadState>) => {
+        setUploads(prev => prev.map(u => (u.id === id ? { ...u, ...updates } : u)));
+    }, []);
 
-	const uploadChunk = async (formData: FormData): Promise<[boolean, any, boolean]> => {
-		try {
-			const headers: Record<string, string> = {};
-			if (activeAccountId) headers['x-drive-account'] = activeAccountId;
-			const response = await fetch(`${apiEndpoint}?action=upload`, {
-				method: 'POST',
-				body: formData,
-				headers,
-				credentials: withCredentials ? 'include' : 'same-origin',
-			});
+    const addLog = useCallback((id: string, type: 'info' | 'warning' | 'error' | 'success', message: string) => {
+        setUploads(prev => prev.map(u => {
+            if (u.id !== id) return u;
+            const logs = u.logs || [];
+            return { ...u, logs: [...logs, { type, message, timestamp: Date.now() }] };
+        }));
+    }, []);
 
-			// Handle HTTP errors
-			if (!response.ok) {
-				const text = await response.text();
-				try {
-					const json = JSON.parse(text);
-					const msg = json.message || json.error?.message || `Status ${response.status}`;
+    const uploadChunk = async (uploadId: string, formData: FormData): Promise<[boolean, any, boolean]> => {
+        try {
+            const headers: Record<string, string> = {};
+            if (activeAccountId) headers['x-drive-account'] = activeAccountId;
+            addLog(uploadId, 'info', `Sending chunk to ${apiEndpoint}?action=upload`);
 
-					// Retry on Gateway errors (502, 503, 504) or Request Timeout (408) or Too Many Requests (429)
-					const canRetry = [408, 429, 502, 503, 504].includes(response.status);
-					return [false, msg, canRetry];
-				} catch {
-					// If parsing fails, it's likely a severe server error (500 HTML) or network glitch response?
-					// Assume retryable for 5xx range, non-retryable for 4xx?
-					const isRetryable = response.status >= 500 || response.status === 429;
-					return [false, `Server error ${response.status}: ${text.slice(0, 100)}`, isRetryable];
-				}
-			}
+            const response = await fetch(`${apiEndpoint}?action=upload`, {
+                method: 'POST',
+                body: formData,
+                headers,
+                credentials: withCredentials ? 'include' : 'same-origin',
+            });
 
-			const data = await response.json();
-			if (data.status !== 200) return [false, data.message || 'Upload failed', false]; // Business logic errors are fatal
+            // Handle HTTP errors
+            if (!response.ok) {
+                const text = await response.text();
+                addLog(uploadId, 'error', `HTTP ${response.status}: ${response.statusText}`);
+                try {
+                    const json = JSON.parse(text);
+                    const msg = json.message || json.error?.message || `Status ${response.status}`;
+                    addLog(uploadId, 'error', `Server response: ${msg}`);
 
-			return [true, data.data, false];
-		} catch (error) {
-			return [false, error instanceof Error ? error.message : 'Network error', true]; // Network errors are retryable
-		}
-	};
+                    // Retry on Gateway errors (502, 503, 504) or Request Timeout (408) or Too Many Requests (429)
+                    const canRetry = [408, 429, 502, 503, 504].includes(response.status);
+                    if (canRetry) {
+                        addLog(uploadId, 'warning', `Error is retryable (status ${response.status})`);
+                    }
+                    return [false, msg, canRetry];
+                } catch {
+                    // If parsing fails, it's likely a severe server error (500 HTML) or network glitch response?
+                    // Assume retryable for 5xx range, non-retryable for 4xx?
+                    addLog(uploadId, 'error', `Failed to parse error response: ${text.slice(0, 100)}`);
+                    const isRetryable = response.status >= 500 || response.status === 429;
+                    return [false, `Server error ${response.status}: ${text.slice(0, 100)}`, isRetryable];
+                }
+            }
 
-	const processItem = async (item: TDriveUploadState, file: File, folderId: string | null) => {
-		const controller = new AbortController();
-		abortControllers.current.set(item.id, controller);
+            const data = await response.json();
+            if (data.status !== 200) {
+                addLog(uploadId, 'error', `Upload API error: ${data.message || 'Unknown error'}`);
+                return [false, data.message || 'Upload failed', false]; // Business logic errors are fatal
+            }
 
-		updateUpload(item.id, { status: 'uploading' });
+            addLog(uploadId, 'success', `Chunk uploaded successfully`);
+            return [true, data.data, false];
+        } catch (error) {
+            const errorMsg = error instanceof Error ? error.message : 'Network error';
+            addLog(uploadId, 'error', `Network/Fetch error: ${errorMsg}`);
+            return [false, errorMsg, true]; // Network errors are retryable
+        }
+    };
 
-		const chunkSize = getChunkSize(file.size);
-		const totalChunks = Math.ceil(file.size / chunkSize);
+    const processItem = async (item: TDriveUploadState, file: File, folderId: string | null) => {
+        const controller = new AbortController();
+        abortControllers.current.set(item.id, controller);
 
-		let driveId = item.driveId;
+        addLog(item.id, 'info', `Starting upload: ${file.name} (${file.size} bytes)`);
+        updateUpload(item.id, { status: 'uploading' });
 
-		try {
-			for (let i = item.currentChunk; i < totalChunks; i++) {
-				if (controller.signal.aborted) throw new Error('Cancelled');
+        const chunkSize = getChunkSize(file.size);
+        const totalChunks = Math.ceil(file.size / chunkSize);
+        addLog(item.id, 'info', `File split into ${totalChunks} chunks of ${chunkSize} bytes each`);
 
-				updateUpload(item.id, { currentChunk: i });
+        let driveId = item.driveId;
 
-				const start = i * chunkSize;
-				const end = Math.min(start + chunkSize, file.size);
-				const chunk = file.slice(start, end);
+        try {
+            for (let i = item.currentChunk; i < totalChunks; i++) {
+                if (controller.signal.aborted) throw new Error('Cancelled');
 
-				const formData = new FormData();
-				formData.append('chunk', chunk);
-				formData.append('chunkIndex', String(i));
-				formData.append('totalChunks', String(totalChunks));
-				formData.append('fileName', file.name);
-				formData.append('fileSize', String(file.size));
-				formData.append('fileType', file.type);
-				formData.append('folderId', folderId || 'root');
-				if (driveId) formData.append('driveId', driveId);
+                updateUpload(item.id, { currentChunk: i });
+                addLog(item.id, 'info', `Processing chunk ${i + 1}/${totalChunks}`);
 
-				// Smart retry logic
-				let attempts = 0;
-				let success = false;
-				while (!success && attempts < 3 && !controller.signal.aborted) {
-					const [ok, result, canRetry] = await uploadChunk(formData);
-					if (ok) {
-						success = true;
-						if (result.type === 'UPLOAD_STARTED' && result.driveId) {
-							driveId = result.driveId;
-							updateUpload(item.id, { driveId });
-						} else if (result.type === 'UPLOAD_COMPLETE') {
-							// Single chunk upload complete
-							if (onUploadComplete) onUploadComplete(result.item);
-						}
-					} else {
-						if (!canRetry) throw new Error(result as string); // Immediate failure for non-retryable errors
+                const start = i * chunkSize;
+                const end = Math.min(start + chunkSize, file.size);
+                const chunk = file.slice(start, end);
 
-						attempts++;
-						if (attempts === 3) throw new Error(result as string);
-						await new Promise(r => setTimeout(r, 1000 * attempts));
-					}
-				}
-			}
-			updateUpload(item.id, { status: 'complete', currentChunk: totalChunks });
-			// Since we don't get the item in the final chunk response here easily without parsing the loop result,
-			// wait, the server returns UPLOAD_COMPLETE with item in the last chunk response.
-			// But loop logic handles it?
-			// "if (result.type === 'UPLOAD_COMPLETE')" is handled inside the loop for single files OR last chunk.
-			// So onUploadComplete is called there.
-			// Wait, chunked upload response handling loop (lines 96-103) ONLY handles UPLOAD_STARTED.
-			// I need to update the loop to checks for UPLOAD_COMPLETE too.
-		} catch (error: any) {
-			if (error.message === 'Cancelled') {
-				updateUpload(item.id, { status: 'cancelled' });
-			} else {
-				updateUpload(item.id, { status: 'error', error: error.message });
-			}
-		} finally {
-			abortControllers.current.delete(item.id);
-		}
-	};
+                const formData = new FormData();
+                formData.append('chunk', chunk);
+                formData.append('chunkIndex', String(i));
+                formData.append('totalChunks', String(totalChunks));
+                formData.append('fileName', file.name);
+                formData.append('fileSize', String(file.size));
+                formData.append('fileType', file.type);
+                formData.append('folderId', folderId || 'root');
+                if (driveId) formData.append('driveId', driveId);
 
-	const uploadFiles = useCallback(async (files: File[], folderId: string | null) => {
-		const newUploads: TDriveUploadState[] = [];
-		files.forEach(file => {
-			const id = `upload_${Date.now()}_${Math.random().toString(36).slice(2)}`;
-			const chunkSize = getChunkSize(file.size);
-			filesRef.current.set(id, file);
-			metaRef.current.set(id, { folderId });
+                // Smart retry logic
+                let attempts = 0;
+                let success = false;
+                while (!success && attempts < 3 && !controller.signal.aborted) {
+                    const [ok, result, canRetry] = await uploadChunk(item.id, formData);
+                    if (ok) {
+                        success = true;
+                        if (result.type === 'UPLOAD_STARTED' && result.driveId) {
+                            driveId = result.driveId;
+                            updateUpload(item.id, { driveId });
+                            addLog(item.id, 'success', `Upload session started with ID: ${driveId}`);
+                        } else if (result.type === 'UPLOAD_COMPLETE') {
+                            // Single chunk upload complete
+                            addLog(item.id, 'success', `Upload completed successfully`);
+                            if (onUploadComplete) onUploadComplete(result.item);
+                        }
+                    } else {
+                        if (!canRetry) {
+                            addLog(item.id, 'error', `Non-retryable error: ${result as string}`);
+                            throw new Error(result as string); // Immediate failure for non-retryable errors
+                        }
 
-			newUploads.push({
-				id,
-				name: file.name,
-				size: file.size,
-				status: 'queued',
-				currentChunk: 0,
-				totalChunks: Math.ceil(file.size / chunkSize),
-			});
-		});
+                        attempts++;
+                        addLog(item.id, 'warning', `Retry attempt ${attempts}/3 after error`);
+                        if (attempts === 3) {
+                            addLog(item.id, 'error', `Max retry attempts reached: ${result as string}`);
+                            throw new Error(result as string);
+                        }
+                        await new Promise(r => setTimeout(r, 1000 * attempts));
+                    }
+                }
+            }
+            addLog(item.id, 'success', `All ${totalChunks} chunks uploaded successfully`);
+            updateUpload(item.id, { status: 'complete', currentChunk: totalChunks });
+            // Since we don't get the item in the final chunk response here easily without parsing the loop result,
+            // wait, the server returns UPLOAD_COMPLETE with item in the last chunk response.
+            // But loop logic handles it?
+            // "if (result.type === 'UPLOAD_COMPLETE')" is handled inside the loop for single files OR last chunk.
+            // So onUploadComplete is called there.
+            // Wait, chunked upload response handling loop (lines 96-103) ONLY handles UPLOAD_STARTED.
+            // I need to update the loop to checks for UPLOAD_COMPLETE too.
+        } catch (error: any) {
+            if (error.message === 'Cancelled') {
+                addLog(item.id, 'warning', 'Upload cancelled by user');
+                updateUpload(item.id, { status: 'cancelled' });
+            } else {
+                addLog(item.id, 'error', `Upload failed: ${error.message}`);
+                updateUpload(item.id, { status: 'error', error: error.message });
+            }
+        } finally {
+            abortControllers.current.delete(item.id);
+        }
+    };
 
-		setUploads(prev => [...prev, ...newUploads]);
-	}, []);
+    const uploadFiles = useCallback(async (files: File[], folderId: string | null) => {
+        const newUploads: TDriveUploadState[] = [];
+        files.forEach(file => {
+            const id = `upload_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+            const chunkSize = getChunkSize(file.size);
+            filesRef.current.set(id, file);
+            metaRef.current.set(id, { folderId });
 
-	const cancelUpload = useCallback(
-		async (id: string) => {
-			const controller = abortControllers.current.get(id);
-			if (controller) {
-				controller.abort();
-			} else {
-				updateUpload(id, { status: 'cancelled' });
-			}
+            newUploads.push({
+                id,
+                name: file.name,
+                size: file.size,
+                status: 'queued',
+                currentChunk: 0,
+                totalChunks: Math.ceil(file.size / chunkSize),
+                logs: [],
+            });
+        });
 
-			const upload = uploads.find(u => u.id === id);
-			if (upload?.driveId) {
-				fetch(`${apiEndpoint}?action=cancel&id=${upload.driveId}`, {
-					method: 'POST',
-					credentials: withCredentials ? 'include' : 'same-origin',
-				}).catch(() => {});
-			}
-		},
-		[apiEndpoint, updateUpload, uploads, withCredentials],
-	);
+        setUploads(prev => [...prev, ...newUploads]);
+    }, []);
 
-	const cancelAllUploads = useCallback(async () => {
-		uploads.forEach(u => {
-			if (['queued', 'uploading', 'pending'].includes(u.status)) {
-				cancelUpload(u.id);
-			}
-		});
-	}, [uploads, cancelUpload]);
+    const cancelUpload = useCallback(
+        async (id: string) => {
+            const controller = abortControllers.current.get(id);
+            if (controller) {
+                controller.abort();
+            } else {
+                updateUpload(id, { status: 'cancelled' });
+            }
 
-	// ** Robust Scheduler
-	useEffect(() => {
-		const activeCount = uploads.filter(u => u.status === 'uploading').length;
+            const upload = uploads.find(u => u.id === id);
+            if (upload?.driveId) {
+                fetch(`${apiEndpoint}?action=cancel&id=${upload.driveId}`, {
+                    method: 'POST',
+                    credentials: withCredentials ? 'include' : 'same-origin',
+                }).catch(() => { });
+            }
+        },
+        [apiEndpoint, updateUpload, uploads, withCredentials],
+    );
 
-		if (activeCount >= MAX_CONCURRENT_UPLOADS) return;
+    const cancelAllUploads = useCallback(async () => {
+        uploads.forEach(u => {
+            if (['queued', 'uploading', 'pending'].includes(u.status)) {
+                cancelUpload(u.id);
+            }
+        });
+    }, [uploads, cancelUpload]);
 
-		const queued = uploads.find(u => u.status === 'queued');
+    // ** Robust Scheduler
+    useEffect(() => {
+        const activeCount = uploads.filter(u => u.status === 'uploading').length;
 
-		if (queued) {
-			const file = filesRef.current.get(queued.id);
-			const meta = metaRef.current.get(queued.id);
+        if (activeCount >= MAX_CONCURRENT_UPLOADS) return;
 
-			if (file) {
-				processItem(queued, file, meta?.folderId || null);
-			}
-		}
-		// eslint-disable-next-line
-	}, [uploads]);
+        const queued = uploads.find(u => u.status === 'queued');
 
-	return { uploads, uploadFiles, cancelUpload, cancelAllUploads };
+        if (queued) {
+            const file = filesRef.current.get(queued.id);
+            const meta = metaRef.current.get(queued.id);
+
+            if (file) {
+                processItem(queued, file, meta?.folderId || null);
+            }
+        }
+        // eslint-disable-next-line
+    }, [uploads]);
+
+    return { uploads, uploadFiles, cancelUpload, cancelAllUploads };
 };

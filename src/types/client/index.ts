@@ -36,4 +36,5 @@ export type TDriveUploadState = {
     totalChunks: number;
     driveId?: string;
     error?: string;
+    logs?: Array<{ type: 'info' | 'warning' | 'error' | 'success'; message: string; timestamp: number }>;
 };
