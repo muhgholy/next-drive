@@ -122,6 +122,8 @@ export const DriveUpload = (props: Readonly<{
     const [isDragging, setIsDragging] = useState(false);
     const [showUploadsDialog, setShowUploadsDialog] = useState(false);
     const [logViewerUpload, setLogViewerUpload] = useState<TDriveUploadState | null>(null);
+    const [manuallyOpened, setManuallyOpened] = useState(false);
+    const hasAutoClosedRef = useRef(false);
     const inputRef = useRef<HTMLInputElement>(null);
     const { currentFolderId, setItems, apiEndpoint, activeAccountId, withCredentials, fetchItems, isLoading } = useDrive();
     const { uploads, uploadFiles, cancelUpload, cancelAllUploads } = useUpload(apiEndpoint, activeAccountId, withCredentials, (uploadedItem) => {
@@ -132,9 +134,9 @@ export const DriveUpload = (props: Readonly<{
         onComplete?.(uploadedItem);
     });
 
-    // Auto-hide dialog when all uploads are finished
+    // Auto-hide dialog when all uploads are finished (only once, and not if manually opened)
     React.useEffect(() => {
-        if (!showUploadsDialog || uploads.length === 0) return;
+        if (!showUploadsDialog || uploads.length === 0 || manuallyOpened || hasAutoClosedRef.current) return;
 
         const allFinished = uploads.every(u =>
             ['complete', 'error', 'cancelled'].includes(u.status)
@@ -143,10 +145,11 @@ export const DriveUpload = (props: Readonly<{
         if (allFinished) {
             const timer = setTimeout(() => {
                 setShowUploadsDialog(false);
+                hasAutoClosedRef.current = true;
             }, 2000);
             return () => clearTimeout(timer);
         }
-    }, [uploads, showUploadsDialog]);
+    }, [uploads, showUploadsDialog, manuallyOpened]);
 
     // Filter files based on accept prop
     const filterFiles = useCallback((files: File[]): File[] => {
@@ -159,6 +162,7 @@ export const DriveUpload = (props: Readonly<{
         const filteredFiles = filterFiles(Array.from(files));
         if (filteredFiles.length === 0) return;
         uploadFiles(filteredFiles, currentFolderId);
+        setManuallyOpened(false);
         setShowUploadsDialog(true);
     }, [uploadFiles, currentFolderId, filterFiles]);
 
@@ -305,7 +309,7 @@ export const DriveUpload = (props: Readonly<{
                             type="button"
                             variant="outline"
                             size="sm"
-                            onClick={() => setShowUploadsDialog(true)}
+                            onClick={() => { setManuallyOpened(true); setShowUploadsDialog(true); }}
                         >
                             {activeUploads.length > 0 ? (
                                 <Loader2 className="!size-4 shrink-0 animate-spin" />
@@ -358,7 +362,7 @@ export const DriveUpload = (props: Readonly<{
 
             {hasUploadsInProgress && (
                 <div className="mt-4 text-center">
-                    <Button variant="link" onClick={() => setShowUploadsDialog(true)}>View Upload Progress</Button>
+                    <Button variant="link" onClick={() => { setManuallyOpened(true); setShowUploadsDialog(true); }}>View Upload Progress</Button>
                 </div>
             )}
             {renderDialog()}

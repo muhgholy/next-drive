@@ -38,9 +38,10 @@ export const useUpload = (apiEndpoint: string, activeAccountId: string | null, w
         try {
             const headers: Record<string, string> = {};
             if (activeAccountId) headers['x-drive-account'] = activeAccountId;
-            addLog(uploadId, 'info', `Sending chunk to ${apiEndpoint}?action=upload`);
+            const url = `${apiEndpoint.replace(/\/$/, '')}?action=upload`;
+            addLog(uploadId, 'info', `Sending chunk to ${url}`);
 
-            const response = await fetch(`${apiEndpoint}?action=upload`, {
+            const response = await fetch(url, {
                 method: 'POST',
                 body: formData,
                 headers,
@@ -207,7 +208,7 @@ export const useUpload = (apiEndpoint: string, activeAccountId: string | null, w
 
             const upload = uploads.find(u => u.id === id);
             if (upload?.driveId) {
-                fetch(`${apiEndpoint}?action=cancel&id=${upload.driveId}`, {
+                fetch(`${apiEndpoint.replace(/\/$/, '')}?action=cancel&id=${upload.driveId}`, {
                     method: 'POST',
                     credentials: withCredentials ? 'include' : 'same-origin',
                 }).catch(() => { });
