@@ -21,8 +21,19 @@ export const LocalStorageProvider: TStorageProvider = {
     },
 
     getQuota: async (owner, accountId, configuredQuotaInBytes) => {
-        // Calculate storage used from DB
-        const result = await Drive.aggregate([{ $match: { owner, 'information.type': 'FILE', trashedAt: null } }, { $group: { _id: null, total: { $sum: '$information.sizeInBytes' } } }]);
+        // Calculate storage used from DB - only count LOCAL provider files
+        const result = await Drive.aggregate([
+            { 
+                $match: { 
+                    owner, 
+                    'information.type': 'FILE', 
+                    trashedAt: null,
+                    'provider.type': 'LOCAL',
+                    storageAccountId: accountId || null
+                } 
+            }, 
+            { $group: { _id: null, total: { $sum: '$information.sizeInBytes' } } }
+        ]);
         const usedInBytes = result[0]?.total || 0;
 
         // Use configured quota from user's information callback (required)
