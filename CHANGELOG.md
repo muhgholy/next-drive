@@ -1,3 +1,10 @@
+# [3.1.0](https://github.com/muhgholy/next-drive/compare/v3.0.0...v3.1.0) (2026-01-07)
+
+
+### Features
+
+* add comprehensive upload logging with debug viewer ([542a7de](https://github.com/muhgholy/next-drive/commit/542a7de8557438af8674a55567be5dce404c7786))
+
 # [3.0.0](https://github.com/muhgholy/next-drive/compare/v2.2.5...v3.0.0) (2026-01-07)
 
 
