@@ -1,3 +1,10 @@
+## [3.2.1](https://github.com/muhgholy/next-drive/compare/v3.2.0...v3.2.1) (2026-01-07)
+
+
+### Bug Fixes
+
+* prevent auto-close of manually opened upload dialog and fix double slash in URLs ([af21ef1](https://github.com/muhgholy/next-drive/commit/af21ef1c9b5018c474d06ac3b0402667e249e838))
+
 # [3.2.0](https://github.com/muhgholy/next-drive/compare/v3.1.0...v3.2.0) (2026-01-07)
 
 
