@@ -265,7 +265,7 @@ const ChooserSidebar = (props: Readonly<{ onNavigate?: () => void }>) => {
                                 <DropdownMenuItem onClick={() => { setNewName(currentAccount.name); setRenameDialog({ open: true, account: currentAccount }); }}>
                                     <Pencil className="size-3.5 mr-2" /> Rename
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={handleConnectGoogle}>
+                                <DropdownMenuItem onClick={openOAuthPopup}>
                                     <RefreshCw className="size-3.5 mr-2" /> Reconnect
                                 </DropdownMenuItem>
                                 <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => setDeleteDialog({ open: true, account: currentAccount })}>

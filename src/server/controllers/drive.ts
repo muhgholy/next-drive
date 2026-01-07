@@ -1,11 +1,12 @@
 import fs from 'fs';
 import path from 'path';
+import os from 'os';
 import crypto from 'crypto';
 import formidable from 'formidable';
 import type { Readable } from 'stream';
 import Drive from '@/server/database/mongoose/schema/drive';
 import { getDriveConfig } from '@/server/config';
-import { computeFileHash, extractImageMetadata } from '@/server/utils';
+import { computeFileHash, extractImageMetadata, validateMimeType } from '@/server/utils';
 import type { IDatabaseDriveDocument } from '@/server/database/mongoose/schema/drive';
 import type { TDatabaseDrive } from '@/types/lib/database/drive';
 import { LocalStorageProvider } from '@/server/providers/local';
@@ -263,4 +264,170 @@ export const processChunk = async (drive: any, chunkFile: formidable.File | form
     }
 
     await drive.save();
+};
+
+/**
+ * Upload a file to the drive system from a file path or readable stream.
+ * @param source - File path (string) or Readable stream
+ * @param key - Owner key (must match the authenticated user's key)
+ * @param options - Upload options including name, parentId, accountId, and enforce flag
+ * @returns Promise with the created drive file object
+ * @example
+ * ```typescript
+ * // Upload from file path
+ * const file = await driveUpload('/tmp/photo.jpg', { userId: '123' }, {
+ *   name: 'photo.jpg',
+ *   parentId: 'folderId',
+ *   enforce: false
+ * });
+ * 
+ * // Upload from stream
+ * const stream = fs.createReadStream('/tmp/video.mp4');
+ * const file = await driveUpload(stream, { userId: '123' }, {
+ *   name: 'video.mp4',
+ *   enforce: true // Skip quota check
+ * });
+ * ```
+ */
+export const driveUpload = async (
+    source: string | Readable,
+    key: Record<string, unknown> | null,
+    options: {
+        name: string;
+        parentId?: string | null;
+        accountId?: string;
+        enforce?: boolean;
+    }
+): Promise<TDatabaseDrive> => {
+    const config = getDriveConfig();
+
+    // Determine provider based on accountId
+    let provider: typeof LocalStorageProvider | typeof GoogleDriveProvider = LocalStorageProvider;
+    const accountId: string | undefined = options.accountId;
+
+    if (accountId && accountId !== 'LOCAL') {
+        // Validate account belongs to owner
+        const account = await Drive.db.model('StorageAccount').findOne({ _id: accountId, owner: key });
+        if (!account) {
+            throw new Error('Invalid Storage Account');
+        }
+        if (account.metadata.provider === 'GOOGLE') {
+            provider = GoogleDriveProvider;
+        }
+    }
+
+    // Create temporary file if source is a stream
+    let tempFilePath: string | null = null;
+    let sourceFilePath: string;
+    let fileSize: number;
+
+    if (typeof source === 'string') {
+        // Source is a file path
+        if (!fs.existsSync(source)) {
+            throw new Error(`Source file not found: ${source}`);
+        }
+        sourceFilePath = source;
+        const stats = fs.statSync(source);
+        fileSize = stats.size;
+    } else {
+        // Source is a Readable stream
+        const tempDir = path.join(os.tmpdir(), 'next-drive-uploads');
+        if (!fs.existsSync(tempDir)) {
+            fs.mkdirSync(tempDir, { recursive: true });
+        }
+
+        tempFilePath = path.join(tempDir, `upload-${crypto.randomUUID()}.tmp`);
+        const writeStream = fs.createWriteStream(tempFilePath);
+
+        await new Promise<void>((resolve, reject) => {
+            source.pipe(writeStream);
+            writeStream.on('finish', resolve);
+            writeStream.on('error', reject);
+            source.on('error', reject);
+        });
+
+        sourceFilePath = tempFilePath;
+        const stats = fs.statSync(tempFilePath);
+        fileSize = stats.size;
+    }
+
+    try {
+        // Detect MIME type from file extension
+        const ext = path.extname(options.name).toLowerCase();
+        const mimeTypes: Record<string, string> = {
+            '.jpg': 'image/jpeg',
+            '.jpeg': 'image/jpeg',
+            '.png': 'image/png',
+            '.gif': 'image/gif',
+            '.webp': 'image/webp',
+            '.svg': 'image/svg+xml',
+            '.mp4': 'video/mp4',
+            '.mov': 'video/quicktime',
+            '.avi': 'video/x-msvideo',
+            '.pdf': 'application/pdf',
+            '.doc': 'application/msword',
+            '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            '.xls': 'application/vnd.ms-excel',
+            '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            '.txt': 'text/plain',
+            '.json': 'application/json',
+            '.zip': 'application/zip',
+        };
+        const mimeType = mimeTypes[ext] || 'application/octet-stream';
+
+        // Validate MIME type
+        if (!validateMimeType(mimeType, config.security.allowedMimeTypes)) {
+            throw new Error(`File type ${mimeType} not allowed`);
+        }
+
+        // Validate file size
+        if (fileSize > config.security.maxUploadSizeInBytes) {
+            throw new Error(`File size ${fileSize} exceeds maximum allowed size ${config.security.maxUploadSizeInBytes}`);
+        }
+
+        // Quota Check (unless enforce is true)
+        if (!options.enforce) {
+            const quota = await provider.getQuota(key, accountId, undefined);
+            if (quota.usedInBytes + fileSize > quota.quotaInBytes) {
+                throw new Error('Storage quota exceeded');
+            }
+        }
+
+        // Create Drive Document
+        const drive = new Drive({
+            owner: key,
+            storageAccountId: accountId || null,
+            provider: { type: provider.name },
+            name: options.name,
+            parentId: options.parentId === 'root' || !options.parentId ? null : options.parentId,
+            order: await getNextOrderValue(key),
+            information: { type: 'FILE', sizeInBytes: fileSize, mime: mimeType, path: '' },
+            status: 'UPLOADING',
+        });
+
+        // Set initial path for LOCAL provider
+        if (provider.name === 'LOCAL' && drive.information.type === 'FILE') {
+            let sanitizedExt = path.extname(options.name) || '.bin';
+            sanitizedExt = sanitizedExt.replace(/[^a-zA-Z0-9.]/g, '').slice(0, 11);
+            if (!sanitizedExt.startsWith('.')) sanitizedExt = '.bin';
+            drive.information.path = path.join(String(drive._id), `data${sanitizedExt}`);
+        }
+
+        await drive.save();
+
+        // Upload file through provider
+        try {
+            const item = await provider.uploadFile(drive, sourceFilePath, accountId);
+            return item;
+        } catch (err) {
+            // Upload failed, cleanup DB record
+            await Drive.deleteOne({ _id: drive._id });
+            throw err;
+        }
+    } finally {
+        // Cleanup temporary file if created from stream
+        if (tempFilePath && fs.existsSync(tempFilePath)) {
+            fs.rmSync(tempFilePath, { force: true });
+        }
+    }
 };

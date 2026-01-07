@@ -4,13 +4,13 @@ File storage and management for Next.js and Express apps. Includes a responsive 
 
 ## Features
 
-- 📁 **File Management** – Upload, rename, move, organize files and folders
-- 🔍 **Search** – Search active files or trash with real-time filtering
-- 🗑️ **Trash System** – Soft delete, restore, and empty trash
-- 📱 **Responsive UI** – Optimized for desktop and mobile
-- 🎬 **Video Thumbnails** – Auto-generated thumbnails (requires FFmpeg)
-- 🔐 **Security** – Signed URLs and configurable upload limits
-- 📊 **View Modes** – Grid/List views with sorting and grouping
+-    📁 **File Management** – Upload, rename, move, organize files and folders
+-    🔍 **Search** – Search active files or trash with real-time filtering
+-    🗑️ **Trash System** – Soft delete, restore, and empty trash
+-    📱 **Responsive UI** – Optimized for desktop and mobile
+-    🎬 **Video Thumbnails** – Auto-generated thumbnails (requires FFmpeg)
+-    🔐 **Security** – Signed URLs and configurable upload limits
+-    📊 **View Modes** – Grid/List views with sorting and grouping
 
 ---
 
@@ -49,7 +49,7 @@ Add the package to your Tailwind content config:
 ```js
 // tailwind.config.js
 export default {
-	content: ['./app/**/*.{js,ts,jsx,tsx,mdx}', './pages/**/*.{js,ts,jsx,tsx,mdx}', './components/**/*.{js,ts,jsx,tsx,mdx}', './node_modules/@muhgholy/next-drive/dist/**/*.{js,mjs}'],
+	content: ["./app/**/*.{js,ts,jsx,tsx,mdx}", "./pages/**/*.{js,ts,jsx,tsx,mdx}", "./components/**/*.{js,ts,jsx,tsx,mdx}", "./node_modules/@muhgholy/next-drive/dist/**/*.{js,mjs}"],
 };
 ```
 
@@ -65,16 +65,16 @@ Create `lib/drive.ts` to configure storage, security, and authentication:
 
 ```typescript
 // lib/drive.ts
-import { driveConfiguration } from '@muhgholy/next-drive/server';
-import type { TDriveConfigInformation } from '@muhgholy/next-drive/server';
+import { driveConfiguration } from "@muhgholy/next-drive/server";
+import type { TDriveConfigInformation } from "@muhgholy/next-drive/server";
 
 driveConfiguration({
-	database: 'MONGOOSE',
-	apiUrl: '/api/drive',
-	storage: { path: '/var/data/drive' },
+	database: "MONGOOSE",
+	apiUrl: "/api/drive",
+	storage: { path: "/var/data/drive" },
 	security: {
 		maxUploadSizeInBytes: 50 * 1024 * 1024, // 50MB
-		allowedMimeTypes: ['image/*', 'video/*', 'application/pdf'],
+		allowedMimeTypes: ["image/*", "video/*", "application/pdf"],
 		signedUrls: {
 			enabled: true,
 			secret: process.env.DRIVE_SECRET!,
@@ -83,7 +83,7 @@ driveConfiguration({
 	},
 	information: async (req): Promise<TDriveConfigInformation> => {
 		const auth = await verifyAuth(req);
-		if (!auth) throw new Error('Unauthenticated');
+		if (!auth) throw new Error("Unauthenticated");
 		return {
 			key: { userId: auth.userId },
 			storage: { quotaInBytes: 1024 * 1024 * 1024 }, // 1GB
@@ -98,13 +98,13 @@ driveConfiguration({
 
 ```typescript
 // pages/api/drive.ts
-import '@/lib/drive';
-import { driveAPIHandler } from '@muhgholy/next-drive/server';
-import type { NextApiRequest, NextApiResponse } from 'next';
+import "@/lib/drive";
+import { driveAPIHandler } from "@muhgholy/next-drive/server";
+import type { NextApiRequest, NextApiResponse } from "next";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
 	// Parse JSON body manually (body parser is disabled)
-	if (req.headers['content-type']?.includes('application/json')) {
+	if (req.headers["content-type"]?.includes("application/json")) {
 		const chunks: Buffer[] = [];
 		for await (const chunk of req) chunks.push(chunk);
 		const buffer = Buffer.concat(chunks);
@@ -127,10 +127,10 @@ Wrap your app with `DriveProvider`:
 
 ```tsx
 // app/layout.tsx
-import { DriveProvider } from '@muhgholy/next-drive/client';
+import { DriveProvider } from "@muhgholy/next-drive/client";
 
 export default function RootLayout({ children }) {
-	return <DriveProvider apiEndpoint='/api/drive'>{children}</DriveProvider>;
+	return <DriveProvider apiEndpoint="/api/drive">{children}</DriveProvider>;
 }
 ```
 
@@ -139,7 +139,7 @@ export default function RootLayout({ children }) {
 **File Explorer:**
 
 ```tsx
-import { DriveExplorer } from '@muhgholy/next-drive/client';
+import { DriveExplorer } from "@muhgholy/next-drive/client";
 
 export default function DrivePage() {
 	return <DriveExplorer />;
@@ -149,13 +149,13 @@ export default function DrivePage() {
 **File Picker (for forms):**
 
 ```tsx
-import { useState } from 'react';
-import { DriveFileChooser } from '@muhgholy/next-drive/client';
-import type { TDriveFile } from '@muhgholy/next-drive/client';
+import { useState } from "react";
+import { DriveFileChooser } from "@muhgholy/next-drive/client";
+import type { TDriveFile } from "@muhgholy/next-drive/client";
 
 function MyForm() {
 	const [file, setFile] = useState<TDriveFile | null>(null);
-	return <DriveFileChooser value={file} onChange={setFile} accept='image/*' />;
+	return <DriveFileChooser value={file} onChange={setFile} accept="image/*" />;
 }
 ```
 
@@ -167,20 +167,20 @@ Use the Express adapter instead of Next.js API routes:
 
 ```typescript
 // lib/drive.ts
-import { driveConfigurationExpress } from '@muhgholy/next-drive/server/express';
-import type { TDriveConfigInformation } from '@muhgholy/next-drive/server/express';
+import { driveConfigurationExpress } from "@muhgholy/next-drive/server/express";
+import type { TDriveConfigInformation } from "@muhgholy/next-drive/server/express";
 
 driveConfigurationExpress({
-	database: 'MONGOOSE',
-	apiUrl: '/api/drive',
-	storage: { path: '/var/data/drive' },
+	database: "MONGOOSE",
+	apiUrl: "/api/drive",
+	storage: { path: "/var/data/drive" },
 	security: {
 		maxUploadSizeInBytes: 50 * 1024 * 1024,
-		allowedMimeTypes: ['image/*', 'video/*', 'application/pdf'],
+		allowedMimeTypes: ["image/*", "video/*", "application/pdf"],
 	},
 	information: async (req): Promise<TDriveConfigInformation> => {
 		const auth = await verifyAuth(req);
-		if (!auth) throw new Error('Unauthenticated');
+		if (!auth) throw new Error("Unauthenticated");
 		return {
 			key: { userId: auth.userId },
 			storage: { quotaInBytes: 1024 * 1024 * 1024 },
@@ -191,12 +191,12 @@ driveConfigurationExpress({
 
 ```typescript
 // routes/drive.ts
-import './lib/drive';
-import express from 'express';
-import { driveAPIHandlerExpress } from '@muhgholy/next-drive/server/express';
+import "./lib/drive";
+import express from "express";
+import { driveAPIHandlerExpress } from "@muhgholy/next-drive/server/express";
 
 const router = express.Router();
-router.all('/drive', driveAPIHandlerExpress);
+router.all("/drive", driveAPIHandlerExpress);
 
 export default router;
 ```
@@ -210,8 +210,8 @@ export default router;
 Validate file data in forms or API routes:
 
 ```typescript
-import { z } from 'zod';
-import { driveFileSchemaZod } from '@muhgholy/next-drive/schemas';
+import { z } from "zod";
+import { driveFileSchemaZod } from "@muhgholy/next-drive/schemas";
 
 const formSchema = z.object({
 	asset: driveFileSchemaZod,
@@ -228,8 +228,8 @@ const formSchema = z.object({
 Generate URLs for displaying files:
 
 ```tsx
-import { useDrive } from '@muhgholy/next-drive/client';
-import type { TDriveFile } from '@muhgholy/next-drive/client';
+import { useDrive } from "@muhgholy/next-drive/client";
+import type { TDriveFile } from "@muhgholy/next-drive/client";
 
 function MyComponent({ driveFile }: { driveFile: TDriveFile }) {
 	const { createUrl, createSrcSet } = useDrive();
@@ -238,10 +238,10 @@ function MyComponent({ driveFile }: { driveFile: TDriveFile }) {
 	const url = createUrl(driveFile);
 
 	// With quality and format
-	const optimizedUrl = createUrl(driveFile, { quality: 'medium', format: 'webp' });
+	const optimizedUrl = createUrl(driveFile, { quality: "medium", format: "webp" });
 
 	// Responsive srcSet for images
-	const { srcSet, sizes } = createSrcSet(driveFile, 'webp');
+	const { srcSet, sizes } = createSrcSet(driveFile, "webp");
 
 	return <img src={optimizedUrl} srcSet={srcSet} sizes={sizes} alt={driveFile.file.name} />;
 }
@@ -251,10 +251,51 @@ function MyComponent({ driveFile }: { driveFile: TDriveFile }) {
 
 ## Server-Side File Access
 
+### Upload File
+
+Upload files programmatically from server-side code:
+
+```typescript
+import { driveUpload } from "@muhgholy/next-drive/server";
+
+// Upload from file path
+const file = await driveUpload(
+	"/tmp/photo.jpg",
+	{ userId: "123" },
+	{
+		name: "photo.jpg",
+		parentId: "folderId", // Optional: folder ID or null for root
+		accountId: "LOCAL", // Optional: storage account ID
+		enforce: false, // Optional: bypass quota check
+	}
+);
+
+// Upload from stream
+import fs from "fs";
+const stream = fs.createReadStream("/tmp/video.mp4");
+const file = await driveUpload(
+	stream,
+	{ userId: "123" },
+	{
+		name: "video.mp4",
+		enforce: true, // Skip quota check
+	}
+);
+```
+
+**Options:**
+
+| Option      | Type             | Required | Description                                    |
+| ----------- | ---------------- | -------- | ---------------------------------------------- |
+| `name`      | `string`         | Yes      | File name with extension                       |
+| `parentId`  | `string \| null` | No       | Parent folder ID (null or 'root' for root)     |
+| `accountId` | `string`         | No       | Storage account ID ('LOCAL' for local storage) |
+| `enforce`   | `boolean`        | No       | Bypass quota check (default: false)            |
+
 ### Get Signed URL
 
 ```typescript
-import { driveGetUrl } from '@muhgholy/next-drive/server';
+import { driveGetUrl } from "@muhgholy/next-drive/server";
 
 // Default expiry (from config)
 const url = driveGetUrl(fileId);
@@ -263,13 +304,13 @@ const url = driveGetUrl(fileId);
 const url = driveGetUrl(fileId, { expiry: 7200 }); // 2 hours
 
 // Specific date
-const url = driveGetUrl(fileId, { expiry: new Date('2026-12-31') });
+const url = driveGetUrl(fileId, { expiry: new Date("2026-12-31") });
 ```
 
 ### Read File Stream
 
 ```typescript
-import { driveReadFile } from '@muhgholy/next-drive/server';
+import { driveReadFile } from "@muhgholy/next-drive/server";
 
 // Using file ID
 const { stream, mime, size } = await driveReadFile(fileId);
@@ -285,15 +326,15 @@ const { stream, mime, size } = await driveReadFile(drive);
 For libraries requiring file paths (Sharp, FFmpeg, etc.):
 
 ```typescript
-import { driveFilePath } from '@muhgholy/next-drive/server';
+import { driveFilePath } from "@muhgholy/next-drive/server";
 
 const { path, mime, size, provider } = await driveFilePath(fileId);
 
 // Use with Sharp
-await sharp(path).resize(800, 600).toFile('output.jpg');
+await sharp(path).resize(800, 600).toFile("output.jpg");
 
 // Use with FFmpeg
-await ffmpeg(path).format('mp4').save('output.mp4');
+await ffmpeg(path).format("mp4").save("output.mp4");
 ```
 
 > Google Drive files are automatically downloaded to local cache.
@@ -342,7 +383,7 @@ cors: {
 **Client setup for CORS:**
 
 ```tsx
-<DriveProvider apiEndpoint='https://api.example.com/drive' withCredentials={true}>
+<DriveProvider apiEndpoint="https://api.example.com/drive" withCredentials={true}>
 	{children}
 </DriveProvider>
 ```

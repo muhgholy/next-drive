@@ -822,7 +822,7 @@ export const driveAPIHandler = async (req: NextApiRequest, res: NextApiResponse)
 
 // ** Exports
 export { driveConfiguration, getDriveConfig, getDriveInformation };
-export { driveGetUrl, driveReadFile, driveFilePath } from '@/server/controllers/drive';
+export { driveGetUrl, driveReadFile, driveFilePath, driveUpload } from '@/server/controllers/drive';
 export { driveFileSchemaZod } from '@/server/zod/schemas';
 export { driveCreateUrl, driveCreateSrcSet } from '@/client/utils';
 export type { TDriveFile, TImageQuality, TImageFormat } from '@/types/client';

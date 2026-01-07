@@ -278,7 +278,7 @@ const SidebarContent = (props: Readonly<{ onNavigate?: () => void }>) => {
                                     <Pencil className="size-3.5 mr-2" />
                                     Rename
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={handleConnectGoogle}>
+                                <DropdownMenuItem onClick={openOAuthPopup}>
                                     <RefreshCw className="size-3.5 mr-2" />
                                     Reconnect
                                 </DropdownMenuItem>
