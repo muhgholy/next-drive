@@ -1,3 +1,10 @@
+# [3.2.0](https://github.com/muhgholy/next-drive/compare/v3.1.0...v3.2.0) (2026-01-07)
+
+
+### Features
+
+* add Copy and Download buttons to log viewer ([c53cb8b](https://github.com/muhgholy/next-drive/commit/c53cb8bb728bd67d1cd2d5073b6d3976d41361e4))
+
 # [3.1.0](https://github.com/muhgholy/next-drive/compare/v3.0.0...v3.1.0) (2026-01-07)
 
 
