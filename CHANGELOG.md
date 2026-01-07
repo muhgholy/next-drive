@@ -3,6 +3,24 @@
 
 ### Bug Fixes
 
+* correct quota calculation to filter by provider and account ([8f91e7d](https://github.com/muhgholy/next-drive/commit/8f91e7d7e6fd9ee37fa2e6da7db86cc204822d4d))
+* resolve EXDEV cross-device rename error and path duplication ([accfcc1](https://github.com/muhgholy/next-drive/commit/accfcc15982963d03f2768121f00be8b7e9abbfc))
+
+
+### Features
+
+* add driveUpload server function for programmatic file uploads ([874531c](https://github.com/muhgholy/next-drive/commit/874531c963a6bdf3a836389d12de93949169e885))
+
+
+### BREAKING CHANGES
+
+* File storage path changed from {storage.path}/drive/{id}/data.ext to {storage.path}/{id}/data.ext
+
+# [3.0.0](https://github.com/muhgholy/next-drive/compare/v2.2.5...v3.0.0) (2026-01-07)
+
+
+### Bug Fixes
+
 * resolve EXDEV cross-device rename error and path duplication ([accfcc1](https://github.com/muhgholy/next-drive/commit/accfcc15982963d03f2768121f00be8b7e9abbfc))
 
 
