@@ -1,3 +1,10 @@
+# [3.11.0](https://github.com/muhgholy/next-drive/compare/v3.10.0...v3.11.0) (2026-01-08)
+
+
+### Features
+
+* add backpressure handling for chunked file uploads ([8b8ff76](https://github.com/muhgholy/next-drive/commit/8b8ff766603a74f45ceea3eb26b49a12e4d93bba))
+
 # [3.10.0](https://github.com/muhgholy/next-drive/compare/v3.9.0...v3.10.0) (2026-01-08)
 
 
