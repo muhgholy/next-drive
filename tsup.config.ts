@@ -9,7 +9,7 @@ export default defineConfig({
         'client/index': 'src/client/index.ts',
         schemas: 'src/schemas.ts',
     },
-    format: ['esm'],
+    format: ['esm', 'cjs'],
     dts: false, // Use tsc separately - tsup's DTS uses too much memory
     splitting: true, // Enable code splitting to share state (like globalConfig) across entry points
     sourcemap: true,
