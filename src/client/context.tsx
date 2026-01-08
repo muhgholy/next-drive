@@ -23,6 +23,7 @@ export type TDriveContext = {
      isLoading: boolean;
      error: string | null;
      fetchItems: () => Promise<void>;
+     triggerFetch: () => void;
 
      // ** Accounts
      accounts: { id: string; name: string; email: string; provider: 'GOOGLE' }[];
@@ -82,6 +83,7 @@ export const DriveProvider = (props: Readonly<{
      initialSelectionMode?: { type: 'SINGLE' } | { type: 'MULTIPLE'; maxFile?: number };
      defaultSelectedFileIds?: string[];
      withCredentials?: boolean;
+     lazyFetch?: boolean;
 }>) => {
      const {
           children,
@@ -89,8 +91,12 @@ export const DriveProvider = (props: Readonly<{
           initialActiveAccountId = null,
           initialSelectionMode = { type: 'SINGLE' },
           defaultSelectedFileIds = [],
-          withCredentials = false
+          withCredentials = false,
+          lazyFetch = false
      } = props;
+
+     // Track if initial fetch has been triggered (for lazy mode)
+     const [hasFetched, setHasFetched] = React.useState(!lazyFetch);
 
      // =========================================================================
      // STATE
@@ -369,14 +375,26 @@ export const DriveProvider = (props: Readonly<{
           if (stored) setActiveAccountIdState(stored);
      }, []);
 
-     // Fetch items when view/folder/account changes
+     // Fetch items when view/folder/account changes (skip if lazy and not yet triggered)
      React.useEffect(() => {
+          if (!hasFetched) return;
           fetchItems();
-     }, [fetchItems]);
+     }, [fetchItems, hasFetched]);
 
-     // Fetch accounts & quota on mount and account change
-     React.useEffect(() => { refreshAccounts(); }, [refreshAccounts]);
-     React.useEffect(() => { refreshQuota(); }, [refreshQuota, activeAccountId]);
+     // Fetch accounts & quota on mount and account change (skip if lazy and not yet triggered)
+     React.useEffect(() => { 
+          if (!hasFetched) return;
+          refreshAccounts(); 
+     }, [refreshAccounts, hasFetched]);
+     React.useEffect(() => { 
+          if (!hasFetched) return;
+          refreshQuota(); 
+     }, [refreshQuota, activeAccountId, hasFetched]);
+
+     // Trigger initial fetch (used by components to start fetching in lazy mode)
+     const triggerFetch = React.useCallback(() => {
+          if (!hasFetched) setHasFetched(true);
+     }, [hasFetched]);
 
      // =========================================================================
      // RENDER
@@ -399,6 +417,7 @@ export const DriveProvider = (props: Readonly<{
                isLoading,
                error,
                fetchItems,
+               triggerFetch,
 
                // Accounts
                accounts,

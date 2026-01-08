@@ -378,17 +378,20 @@ export const DriveFileChooser = (props: Readonly<{
         className, disabled = false, error, helperText
     } = props;
 
-    const { items, selectedFileIds, setSelectedFileIds, createUrl } = useDrive();
+    const { items, selectedFileIds, setSelectedFileIds, createUrl, triggerFetch } = useDrive();
     const [isOpen, setIsOpen] = useState(false);
 
-    // Sync selection on open
+    // Sync selection on open and trigger fetch
     useEffect(() => {
         if (isOpen) {
+            // Trigger API fetch when dialog opens (for lazy mode)
+            triggerFetch();
+            
             if (!value) setSelectedFileIds([]);
             else if (Array.isArray(value)) setSelectedFileIds(value.map(f => f.id));
             else setSelectedFileIds([value.id]);
         }
-    }, [isOpen, value, setSelectedFileIds]);
+    }, [isOpen, value, setSelectedFileIds, triggerFetch]);
 
     const handleConfirm = useCallback(() => {
         const selectedItems = items.filter(item => selectedFileIds.includes(item.id));
