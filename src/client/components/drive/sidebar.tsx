@@ -36,6 +36,7 @@ import {
     DialogTitle,
 } from "@/client/components/ui/dialog";
 import { DialogConfirmation } from '@/client/components/dialog';
+import { RenameAccountDialog } from '@/client/components/drive/RenameAccountDialog';
 import { DriveStorageIndicator } from '@/client/components/drive/storage/indicator';
 
 // ** Sidebar Content Component (reusable for both desktop and mobile)
@@ -55,7 +56,6 @@ const SidebarContent = (props: Readonly<{ onNavigate?: () => void }>) => {
     const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; account: typeof accounts[0] | null }>({
         open: false, account: null
     });
-    const [newName, setNewName] = useState('');
     const [oauthLoading, setOauthLoading] = useState(false);
     const [oauthAbort, setOauthAbort] = useState<AbortController | null>(null);
     const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -69,16 +69,15 @@ const SidebarContent = (props: Readonly<{ onNavigate?: () => void }>) => {
     // Disable dropdown if no accounts and no providers available
     const isDropdownDisabled = accounts.length === 0 && !hasAnyProvider;
 
-    const handleRename = async () => {
-        if (!renameDialog.account || !newName.trim()) return;
+    const handleRename = async (account: typeof accounts[0], newName: string) => {
+        if (!account || !newName.trim()) return;
         await callAPI('renameAccount', {
             method: 'PATCH',
-            query: { id: renameDialog.account.id },
+            query: { id: account.id },
             body: JSON.stringify({ name: newName.trim() })
         });
         await refreshAccounts();
         setRenameDialog({ open: false, account: null });
-        setNewName('');
     };
 
     const handleDelete = async (): Promise<[true] | [false, string]> => {
@@ -272,7 +271,6 @@ const SidebarContent = (props: Readonly<{ onNavigate?: () => void }>) => {
                                 </DropdownMenuLabel>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem onClick={() => {
-                                    setNewName(currentAccount.name);
                                     setRenameDialog({ open: true, account: currentAccount });
                                 }}>
                                     <Pencil className="size-3.5 mr-2" />
@@ -331,28 +329,12 @@ const SidebarContent = (props: Readonly<{ onNavigate?: () => void }>) => {
             </div>
 
             {/* Rename Dialog */}
-            <Dialog open={renameDialog.open} onOpenChange={(open) => !open && setRenameDialog({ open: false, account: null })}>
-                <DialogContent className="sm:max-w-sm" showCloseButton={false}>
-                    <DialogHeader>
-                        <DialogTitle>Rename Account</DialogTitle>
-                        <DialogDescription>Enter a new display name for this storage account.</DialogDescription>
-                    </DialogHeader>
-                    <Input
-                        value={newName}
-                        onChange={(e) => setNewName(e.target.value)}
-                        placeholder="Account name"
-                        onKeyDown={(e) => e.key === 'Enter' && handleRename()}
-                    />
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setRenameDialog({ open: false, account: null })}>
-                            Cancel
-                        </Button>
-                        <Button onClick={handleRename} disabled={!newName.trim()}>
-                            Save
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+            <RenameAccountDialog
+                open={renameDialog.open}
+                onClose={() => setRenameDialog({ open: false, account: null })}
+                account={renameDialog.account}
+                onConfirm={handleRename}
+            />
 
             {/* Disconnect Confirmation */}
             <DialogConfirmation

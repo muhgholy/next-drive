@@ -44,6 +44,7 @@ import {
     DropdownMenuSubTrigger,
 } from "@/client/components/ui/dropdown-menu";
 import { DialogConfirmation } from '@/client/components/dialog';
+import { RenameAccountDialog } from '@/client/components/drive/RenameAccountDialog';
 
 // ** Drive Components
 import { DriveFileGrid } from '@/client/components/drive/file-grid';
@@ -73,7 +74,6 @@ const ChooserSidebar = (props: Readonly<{ onNavigate?: () => void }>) => {
 
     const [renameDialog, setRenameDialog] = useState<{ open: boolean; account: typeof accounts[0] | null }>({ open: false, account: null });
     const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; account: typeof accounts[0] | null }>({ open: false, account: null });
-    const [newName, setNewName] = useState('');
     const [oauthLoading, setOauthLoading] = useState(false);
     const [oauthAbort, setOauthAbort] = useState<AbortController | null>(null);
     const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -87,12 +87,11 @@ const ChooserSidebar = (props: Readonly<{ onNavigate?: () => void }>) => {
     // Disable dropdown if no accounts and no providers available
     const isDropdownDisabled = accounts.length === 0 && !hasAnyProvider;
 
-    const handleRename = async () => {
-        if (!renameDialog.account || !newName.trim()) return;
-        await callAPI('renameAccount', { method: 'PATCH', query: { id: renameDialog.account.id }, body: JSON.stringify({ name: newName.trim() }) });
+    const handleRename = async (account: typeof accounts[0], newName: string) => {
+        if (!account || !newName.trim()) return;
+        await callAPI('renameAccount', { method: 'PATCH', query: { id: account.id }, body: JSON.stringify({ name: newName.trim() }) });
         await refreshAccounts();
         setRenameDialog({ open: false, account: null });
-        setNewName('');
     };
 
     const handleDelete = async (): Promise<[true] | [false, string]> => {
@@ -262,7 +261,7 @@ const ChooserSidebar = (props: Readonly<{ onNavigate?: () => void }>) => {
                                     {currentAccount.name}
                                 </DropdownMenuLabel>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem onClick={() => { setNewName(currentAccount.name); setRenameDialog({ open: true, account: currentAccount }); }}>
+                                <DropdownMenuItem onClick={() => { setRenameDialog({ open: true, account: currentAccount }); }}>
                                     <Pencil className="size-3.5 mr-2" /> Rename
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onClick={openOAuthPopup}>
@@ -301,19 +300,12 @@ const ChooserSidebar = (props: Readonly<{ onNavigate?: () => void }>) => {
             </div>
 
             {/* Dialogs */}
-            <Dialog open={renameDialog.open} onOpenChange={(open) => !open && setRenameDialog({ open: false, account: null })}>
-                <DialogContent className="sm:max-w-sm" showCloseButton={false}>
-                    <DialogHeader>
-                        <DialogTitle>Rename Account</DialogTitle>
-                        <DialogDescription>Enter a new display name.</DialogDescription>
-                    </DialogHeader>
-                    <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Account name" onKeyDown={(e) => e.key === 'Enter' && handleRename()} />
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setRenameDialog({ open: false, account: null })}>Cancel</Button>
-                        <Button onClick={handleRename} disabled={!newName.trim()}>Save</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+            <RenameAccountDialog
+                open={renameDialog.open}
+                onClose={() => setRenameDialog({ open: false, account: null })}
+                account={renameDialog.account}
+                onConfirm={handleRename}
+            />
 
             <DialogConfirmation
                 open={deleteDialog.open}

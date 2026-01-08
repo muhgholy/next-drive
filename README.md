@@ -339,6 +339,87 @@ await ffmpeg(path).format("mp4").save("output.mp4");
 
 > Google Drive files are automatically downloaded to local cache.
 
+### List Files and Folders
+
+List files and folders in a directory:
+
+```typescript
+import { driveList } from "@muhgholy/next-drive/server";
+
+// List root folder
+const items = await driveList({ key: { userId: "123" } });
+
+// List specific folder
+const items = await driveList({
+	key: { userId: "123" },
+	folderId: "folderIdHere",
+	limit: 50,
+});
+
+// Pagination
+const items = await driveList({
+	key: { userId: "123" },
+	folderId: "root",
+	limit: 20,
+	afterId: "lastItemId",
+});
+```
+
+**Options:**
+
+| Option      | Type                      | Required | Description                                    |
+| ----------- | ------------------------- | -------- | ---------------------------------------------- |
+| `key`       | `Record<string, unknown>` | Yes      | Owner key (must match authenticated user)      |
+| `folderId`  | `string \| null`          | No       | Folder ID to list (null or 'root' for root)    |
+| `accountId` | `string`                  | No       | Storage account ID ('LOCAL' for local storage) |
+| `limit`     | `number`                  | No       | Maximum items to return (default: 100)         |
+| `afterId`   | `string`                  | No       | Last item ID for pagination                    |
+
+### Delete File or Folder
+
+Permanently delete a file or folder from the drive system:
+
+```typescript
+import { driveDelete } from "@muhgholy/next-drive/server";
+
+// Delete a file
+await driveDelete("694f5013226de007be94fcc0");
+
+// Delete a folder recursively (default behavior)
+await driveDelete(folderId, { recurse: true });
+
+// Delete only if folder is empty
+try {
+	await driveDelete(folderId, { recurse: false });
+} catch (error) {
+	// Throws error if folder contains items
+	console.error("Cannot delete non-empty folder");
+}
+
+// Delete using database document
+const drive = await Drive.findById(fileId);
+await driveDelete(drive);
+
+// Delete using TDatabaseDrive object
+const items = await driveList({ key: { userId: "123" } });
+await driveDelete(items[0]);
+```
+
+**Parameters:**
+
+| Parameter | Type                                                 | Description                            |
+| --------- | ---------------------------------------------------- | -------------------------------------- |
+| `source`  | `string \| IDatabaseDriveDocument \| TDatabaseDrive` | File/folder ID or object to delete     |
+| `options` | `{ recurse?: boolean }`                              | Delete options (default: recurse=true) |
+
+**Options:**
+
+| Option    | Type      | Default | Description                                                                               |
+| --------- | --------- | ------- | ----------------------------------------------------------------------------------------- |
+| `recurse` | `boolean` | `true`  | If true, deletes folder and all children. If false, throws error if folder contains items |
+
+> **Note:** This permanently deletes the file/folder. For soft deletion (trash), use the `trash` API action instead.
+
 ---
 
 ## Configuration Options

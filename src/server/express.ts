@@ -14,7 +14,7 @@ export const driveAPIHandlerExpress = driveAPIHandler as unknown as (req: Reques
 export const driveConfigurationExpress = driveConfiguration as unknown as (config: TDriveConfigurationExpress) => TDriveConfigurationExpress;
 
 // ** Re-export utilities that work with any framework
-export { driveGetUrl, driveReadFile, driveFilePath } from '@/server/controllers/drive';
+export { driveGetUrl, driveReadFile, driveFilePath, driveUpload, driveDelete, driveList } from '@/server/controllers/drive';
 export { driveFileSchemaZod } from '@/server/zod/schemas';
 export { getDriveConfig } from '@/server/config';
 

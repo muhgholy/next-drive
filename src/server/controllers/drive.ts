@@ -267,6 +267,143 @@ export const processChunk = async (drive: any, chunkFile: formidable.File | form
 };
 
 /**
+ * List files and folders in a specific directory.
+ * @param options - List options including owner key, folderId, limit, and afterId for pagination
+ * @returns Promise with array of drive items
+ * @example
+ * ```typescript
+ * // List root folder
+ * const items = await driveList({ key: { userId: '123' } });
+ * 
+ * // List specific folder with limit
+ * const items = await driveList({
+ *   key: { userId: '123' },
+ *   folderId: 'folderIdHere',
+ *   limit: 50
+ * });
+ * 
+ * // Pagination
+ * const items = await driveList({
+ *   key: { userId: '123' },
+ *   folderId: 'root',
+ *   limit: 20,
+ *   afterId: 'lastItemId'
+ * });
+ * ```
+ */
+export const driveList = async (
+    options: {
+        key: Record<string, unknown> | null;
+        folderId?: string | null;
+        accountId?: string;
+        limit?: number;
+        afterId?: string;
+    }
+): Promise<TDatabaseDrive[]> => {
+    const { key, folderId, accountId, limit = 100, afterId } = options;
+
+    // Determine provider
+    let providerName: 'LOCAL' | 'GOOGLE' = 'LOCAL';
+    if (accountId && accountId !== 'LOCAL') {
+        const account = await Drive.db.model('StorageAccount').findOne({ _id: accountId, owner: key });
+        if (!account) {
+            throw new Error('Invalid Storage Account');
+        }
+        if (account.metadata.provider === 'GOOGLE') {
+            providerName = 'GOOGLE';
+        }
+    }
+
+    // Build query
+    const query: Record<string, unknown> = {
+        owner: key,
+        'provider.type': providerName,
+        storageAccountId: accountId || null,
+        parentId: folderId === 'root' || !folderId ? null : folderId,
+        trashedAt: null,
+    };
+
+    if (afterId) {
+        query._id = { $lt: afterId };
+    }
+
+    const items = await Drive.find(query, {}, { sort: { order: 1, _id: -1 }, limit });
+    return await Promise.all(items.map(item => item.toClient()));
+};
+
+/**
+ * Delete a file or folder permanently from the drive system.
+ * @param source - File ID (string) or a TDatabaseDrive/IDatabaseDriveDocument object
+ * @param options - Delete options including recurse flag
+ * @returns Promise that resolves when deletion is complete
+ * @example
+ * ```typescript
+ * // Delete a file
+ * await driveDelete('694f5013226de007be94fcc0');
+ * 
+ * // Delete a folder recursively (default behavior)
+ * await driveDelete(folderId, { recurse: true });
+ * 
+ * // Delete only if folder is empty
+ * await driveDelete(folderId, { recurse: false }); // Throws error if folder has children
+ * 
+ * // Delete using database document
+ * const drive = await Drive.findById(fileId);
+ * await driveDelete(drive);
+ * ```
+ */
+export const driveDelete = async (
+    source: string | IDatabaseDriveDocument | TDatabaseDrive,
+    options?: { recurse?: boolean }
+): Promise<void> => {
+    const { recurse = true } = options || {};
+
+    let drive: IDatabaseDriveDocument;
+    let driveId: string;
+
+    // If source is a string (ID), fetch from database
+    if (typeof source === 'string') {
+        const doc = await Drive.findById(source);
+        if (!doc) throw new Error(`File not found: ${source}`);
+        drive = doc;
+        driveId = source;
+    } else if ('toClient' in source) {
+        // Already an IDatabaseDriveDocument (Mongoose document)
+        drive = source;
+        driveId = String(drive._id);
+    } else {
+        // TDatabaseDrive object (plain object from API)
+        const doc = await Drive.findById(source.id);
+        if (!doc) throw new Error(`File not found: ${source.id}`);
+        drive = doc;
+        driveId = source.id;
+    }
+
+    // If it's a folder and recurse is false, check for children
+    if (drive.information.type === 'FOLDER' && !recurse) {
+        const owner = drive.owner as Record<string, unknown> | null;
+        const childCount = await Drive.countDocuments({
+            owner,
+            parentId: driveId,
+            trashedAt: null,
+        });
+
+        if (childCount > 0) {
+            throw new Error(`Cannot delete folder: it contains ${childCount} item(s). Use recurse: true to delete folder and all its contents.`);
+        }
+    }
+
+    // Determine provider based on drive's provider type
+    const provider = drive.provider?.type === 'GOOGLE' ? GoogleDriveProvider : LocalStorageProvider;
+    const accountId = drive.storageAccountId?.toString();
+    const owner = drive.owner as Record<string, unknown> | null;
+
+    // Use provider's delete method to permanently delete the file/folder
+    // Note: The provider's delete method already handles recursive deletion
+    await provider.delete([driveId], owner, accountId);
+};
+
+/**
  * Upload a file to the drive system from a file path or readable stream.
  * @param source - File path (string) or Readable stream
  * @param key - Owner key (must match the authenticated user's key)
