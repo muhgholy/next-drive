@@ -1,3 +1,10 @@
+## [3.2.2](https://github.com/muhgholy/next-drive/compare/v3.2.1...v3.2.2) (2026-01-08)
+
+
+### Bug Fixes
+
+* trigger release for upload logging and UI improvements ([f4353db](https://github.com/muhgholy/next-drive/commit/f4353dba9a2a255cb97da58d031ceaf8dd0eea00))
+
 ## [3.2.1](https://github.com/muhgholy/next-drive/compare/v3.2.0...v3.2.1) (2026-01-07)
 
 
