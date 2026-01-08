@@ -427,7 +427,7 @@ export const driveDelete = async (
  * ```
  */
 export const driveUpload = async (
-    source: string | Readable,
+    source: string | Readable | Buffer,
     key: Record<string, unknown> | null,
     options: {
         name: string;
@@ -453,7 +453,7 @@ export const driveUpload = async (
         }
     }
 
-    // Create temporary file if source is a stream
+    // Create temporary file if source is a stream or buffer
     let tempFilePath: string | null = null;
     let sourceFilePath: string;
     let fileSize: number;
@@ -466,6 +466,18 @@ export const driveUpload = async (
         sourceFilePath = source;
         const stats = fs.statSync(source);
         fileSize = stats.size;
+    } else if (Buffer.isBuffer(source)) {
+        // Source is a Buffer
+        const tempDir = path.join(os.tmpdir(), 'next-drive-uploads');
+        if (!fs.existsSync(tempDir)) {
+            fs.mkdirSync(tempDir, { recursive: true });
+        }
+
+        tempFilePath = path.join(tempDir, `upload-${crypto.randomUUID()}.tmp`);
+        fs.writeFileSync(tempFilePath, source);
+
+        sourceFilePath = tempFilePath;
+        fileSize = source.length;
     } else {
         // Source is a Readable stream
         const tempDir = path.join(os.tmpdir(), 'next-drive-uploads');

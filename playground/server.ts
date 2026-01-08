@@ -22,7 +22,7 @@ const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/next-d
 
         await app.prepare();
 
-        createServer(async (req, res) => {
+        const server = createServer(async (req, res) => {
             try {
                 const parsedUrl = parse(req.url!, true);
                 await handle(req, res, parsedUrl);
@@ -31,13 +31,22 @@ const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/next-d
                 res.statusCode = 500;
                 res.end('internal server error');
             }
-        })
+        });
+
+        // Enable HTTP Keep-Alive
+        server.keepAliveTimeout = 65000; // 65 seconds (higher than nginx default)
+        server.headersTimeout = 66000; // Slightly higher than keepAliveTimeout
+        server.maxConnections = 1000; // Limit concurrent connections
+        server.maxConnections = 1000; // Limit concurrent connections
+
+        server
             .once('error', (err) => {
                 console.error(err);
                 process.exit(1);
             })
             .listen(port, () => {
                 console.log(`> Ready on http://${hostname}:${port}`);
+                console.log(`> Keep-Alive enabled (${server.keepAliveTimeout}ms timeout)`);
             });
 
     } catch (e) {

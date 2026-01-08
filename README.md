@@ -103,16 +103,6 @@ import { driveAPIHandler } from "@muhgholy/next-drive/server";
 import type { NextApiRequest, NextApiResponse } from "next";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-	// Parse JSON body manually (body parser is disabled)
-	if (req.headers["content-type"]?.includes("application/json")) {
-		const chunks: Buffer[] = [];
-		for await (const chunk of req) chunks.push(chunk);
-		const buffer = Buffer.concat(chunks);
-		req.body = buffer.length > 0 ? JSON.parse(buffer.toString()) : {};
-	} else {
-		req.body = req.body || {};
-	}
-
 	return driveAPIHandler(req, res);
 }
 
@@ -279,6 +269,16 @@ const file = await driveUpload(
 	{
 		name: "video.mp4",
 		enforce: true, // Skip quota check
+	}
+);
+
+// Upload from Buffer
+const buffer = Buffer.from("file content");
+const file = await driveUpload(
+	buffer,
+	{ userId: "123" },
+	{
+		name: "document.txt",
 	}
 );
 ```
