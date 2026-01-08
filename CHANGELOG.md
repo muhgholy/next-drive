@@ -1,3 +1,10 @@
+# [3.10.0](https://github.com/muhgholy/next-drive/compare/v3.9.0...v3.10.0) (2026-01-08)
+
+
+### Features
+
+* add ROOT mode for admin access without authentication ([afe73f0](https://github.com/muhgholy/next-drive/commit/afe73f03ad2f6674844053a4db6dacb0b84aaac4))
+
 # [3.9.0](https://github.com/muhgholy/next-drive/compare/v3.8.0...v3.9.0) (2026-01-08)
 
 
