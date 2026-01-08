@@ -1,3 +1,10 @@
+# [3.7.0](https://github.com/muhgholy/next-drive/compare/v3.6.0...v3.7.0) (2026-01-08)
+
+
+### Features
+
+* add mime option to driveUpload for custom MIME type specification ([9ac7adb](https://github.com/muhgholy/next-drive/commit/9ac7adb0f9158ed70d97cff44c41f8bead5e51b8))
+
 # [3.6.0](https://github.com/muhgholy/next-drive/compare/v3.5.0...v3.6.0) (2026-01-08)
 
 
