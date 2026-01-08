@@ -1,3 +1,10 @@
+# [3.3.0](https://github.com/muhgholy/next-drive/compare/v3.2.3...v3.3.0) (2026-01-08)
+
+
+### Features
+
+* add Buffer support to driveUpload function ([917ece9](https://github.com/muhgholy/next-drive/commit/917ece9defd8cd301be7ca392088980bbbaad73a))
+
 ## [3.2.3](https://github.com/muhgholy/next-drive/compare/v3.2.2...v3.2.3) (2026-01-08)
 
 
