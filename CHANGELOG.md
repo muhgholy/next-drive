@@ -1,3 +1,10 @@
+## [3.7.1](https://github.com/muhgholy/next-drive/compare/v3.7.0...v3.7.1) (2026-01-08)
+
+
+### Bug Fixes
+
+* move serve and thumbnail endpoints before authentication ([b0bbc87](https://github.com/muhgholy/next-drive/commit/b0bbc8733569ce2d8f9634f808116a000565f260))
+
 # [3.7.0](https://github.com/muhgholy/next-drive/compare/v3.6.0...v3.7.0) (2026-01-08)
 
 
