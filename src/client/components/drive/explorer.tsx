@@ -7,7 +7,7 @@ import { useDrive } from '@/client/context';
 import { formatBytes, getFileIcon, matchesMimeFilter, cn } from '@/client/utils';
 import { Folder, Loader2, RotateCcw, ChevronRight } from 'lucide-react';
 import { isToday, isYesterday, startOfWeek, subWeeks, isAfter } from 'date-fns';
-import { ContextMenu, ContextMenuTrigger, ContextMenuContent, ContextMenuItem, ContextMenuSeparator, ContextMenuShortcut } from "@/client/components/ui/context-menu";
+import { ContextMenu, ContextMenuTrigger, ContextMenuContent, ContextMenuItem, ContextMenuSeparator } from "@/client/components/ui/context-menu";
 import { DialogConfirmation } from '@/client/components/dialog';
 import { CreateFolderDialog } from '@/client/components/drive/CreateFolderDialog';
 import { RenameDialog } from '@/client/components/drive/RenameDialog';

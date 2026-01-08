@@ -476,7 +476,7 @@ export const driveDelete = async (
  * Upload a file to the drive system from a file path or readable stream.
  * @param source - File path (string) or Readable stream
  * @param key - Owner key (must match the authenticated user's key)
- * @param options - Upload options including name, parentId, accountId, and enforce flag
+ * @param options - Upload options including name, parentId, accountId, mime, and enforce flag
  * @returns Promise with the created drive file object
  * @example
  * ```typescript
@@ -487,11 +487,19 @@ export const driveDelete = async (
  *   enforce: false
  * });
  * 
- * // Upload from stream
+ * // Upload from stream with custom MIME type
  * const stream = fs.createReadStream('/tmp/video.mp4');
  * const file = await driveUpload(stream, { userId: '123' }, {
  *   name: 'video.mp4',
+ *   mime: 'video/mp4',
  *   enforce: true // Skip quota check
+ * });
+ * 
+ * // Upload from Buffer with MIME type
+ * const buffer = Buffer.from('data');
+ * const file = await driveUpload(buffer, { userId: '123' }, {
+ *   name: 'data.bin',
+ *   mime: 'application/octet-stream'
  * });
  * ```
  */
@@ -502,6 +510,7 @@ export const driveUpload = async (
         name: string;
         parentId?: string | null;
         accountId?: string;
+        mime?: string;
         enforce?: boolean;
     }
 ): Promise<TDriveFile> => {
@@ -570,28 +579,36 @@ export const driveUpload = async (
     }
 
     try {
-        // Detect MIME type from file extension
-        const ext = path.extname(options.name).toLowerCase();
-        const mimeTypes: Record<string, string> = {
-            '.jpg': 'image/jpeg',
-            '.jpeg': 'image/jpeg',
-            '.png': 'image/png',
-            '.gif': 'image/gif',
-            '.webp': 'image/webp',
-            '.svg': 'image/svg+xml',
-            '.mp4': 'video/mp4',
-            '.mov': 'video/quicktime',
-            '.avi': 'video/x-msvideo',
-            '.pdf': 'application/pdf',
-            '.doc': 'application/msword',
-            '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-            '.xls': 'application/vnd.ms-excel',
-            '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            '.txt': 'text/plain',
-            '.json': 'application/json',
-            '.zip': 'application/zip',
-        };
-        const mimeType = mimeTypes[ext] || 'application/octet-stream';
+        // Detect MIME type from options or file extension
+        let mimeType: string;
+        
+        if (options.mime) {
+            // Use provided MIME type
+            mimeType = options.mime;
+        } else {
+            // Auto-detect from file extension
+            const ext = path.extname(options.name).toLowerCase();
+            const mimeTypes: Record<string, string> = {
+                '.jpg': 'image/jpeg',
+                '.jpeg': 'image/jpeg',
+                '.png': 'image/png',
+                '.gif': 'image/gif',
+                '.webp': 'image/webp',
+                '.svg': 'image/svg+xml',
+                '.mp4': 'video/mp4',
+                '.mov': 'video/quicktime',
+                '.avi': 'video/x-msvideo',
+                '.pdf': 'application/pdf',
+                '.doc': 'application/msword',
+                '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                '.xls': 'application/vnd.ms-excel',
+                '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                '.txt': 'text/plain',
+                '.json': 'application/json',
+                '.zip': 'application/zip',
+            };
+            mimeType = mimeTypes[ext] || 'application/octet-stream';
+        }
 
         // Validate MIME type
         if (!validateMimeType(mimeType, config.security.allowedMimeTypes)) {
