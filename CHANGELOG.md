@@ -1,3 +1,10 @@
+# [3.6.0](https://github.com/muhgholy/next-drive/compare/v3.5.0...v3.6.0) (2026-01-08)
+
+
+### Features
+
+* add CommonJS support for tsx and ts-node compatibility ([5916d57](https://github.com/muhgholy/next-drive/commit/5916d5798a4010b2e2d7884c1c9718ee2fd7a239))
+
 # [3.5.0](https://github.com/muhgholy/next-drive/compare/v3.4.0...v3.5.0) (2026-01-08)
 
 
