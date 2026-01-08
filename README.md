@@ -286,13 +286,13 @@ const file = await driveUpload(
 
 **Options:**
 
-| Option      | Type             | Required | Description                                    |
-| ----------- | ---------------- | -------- | ---------------------------------------------- |
-| `name`      | `string`         | Yes      | File name with extension                       |
-| `parentId`  | `string \| null` | No       | Parent folder ID (null or 'root' for root)     |
-| `accountId` | `string`         | No       | Storage account ID ('LOCAL' for local storage) |
+| Option      | Type             | Required | Description                                              |
+| ----------- | ---------------- | -------- | -------------------------------------------------------- |
+| `name`      | `string`         | Yes      | File name with extension                                 |
+| `parentId`  | `string \| null` | No       | Parent folder ID (null or 'root' for root)               |
+| `accountId` | `string`         | No       | Storage account ID ('LOCAL' for local storage)           |
 | `mime`      | `string`         | No       | MIME type (auto-detected from extension if not provided) |
-| `enforce`   | `boolean`        | No       | Bypass quota check (default: false)            |
+| `enforce`   | `boolean`        | No       | Bypass quota check (default: false)                      |
 
 ### Get Signed URL
 

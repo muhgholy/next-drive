@@ -581,7 +581,7 @@ export const driveUpload = async (
     try {
         // Detect MIME type from options or file extension
         let mimeType: string;
-        
+
         if (options.mime) {
             // Use provided MIME type
             mimeType = options.mime;

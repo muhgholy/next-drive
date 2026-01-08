@@ -4,6 +4,7 @@ import formidable from 'formidable';
 import path from 'path';
 import fs from 'fs';
 import os from 'os';
+import crypto from 'crypto';
 import { z } from 'zod';
 
 import { getDriveConfig, getDriveInformation, driveConfiguration } from '@/server/config';
@@ -120,6 +121,80 @@ export const driveAPIHandler = async (req: NextApiRequest, res: NextApiResponse)
     if (!action) {
         res.status(400).json({ status: 400, message: 'Missing action query parameter' });
         return;
+    }
+
+    // ** Public Actions (No Auth Required) - Handle serve and thumbnail before authentication
+    if (action === 'serve' || action === 'thumbnail') {
+        try {
+            const { id, token } = req.query;
+            if (!id || typeof id !== 'string') {
+                return res.status(400).json({ status: 400, message: 'Missing or invalid file ID' });
+            }
+
+            const drive = await Drive.findById(id);
+            if (!drive) return res.status(404).json({ status: 404, message: 'File not found' });
+
+            // Verify signed URL token if enabled
+            if (config.security.signedUrls?.enabled) {
+                if (!token || typeof token !== 'string') {
+                    return res.status(401).json({ status: 401, message: 'Missing or invalid token' });
+                }
+
+                try {
+                    const decoded = Buffer.from(token, 'base64url').toString();
+                    const [expiryStr, signature] = decoded.split(':');
+                    const expiry = parseInt(expiryStr, 10);
+
+                    if (Date.now() / 1000 > expiry) {
+                        return res.status(401).json({ status: 401, message: 'Token expired' });
+                    }
+
+                    const { secret } = config.security.signedUrls;
+                    const expectedSignature = crypto.createHmac('sha256', secret)
+                        .update(`${id}:${expiry}`)
+                        .digest('hex');
+
+                    if (signature !== expectedSignature) {
+                        return res.status(401).json({ status: 401, message: 'Invalid token' });
+                    }
+                } catch (err) {
+                    return res.status(401).json({ status: 401, message: 'Invalid token format' });
+                }
+            }
+
+            // Resolve provider
+            const itemProvider = drive.provider?.type === 'GOOGLE' ? GoogleDriveProvider : LocalStorageProvider;
+            const itemAccountId = drive.storageAccountId ? drive.storageAccountId.toString() : undefined;
+
+            if (action === 'thumbnail') {
+                const stream = await itemProvider.getThumbnail(drive, itemAccountId);
+                res.setHeader('Content-Type', 'image/webp');
+                if (config.cors?.enabled) {
+                    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+                }
+                stream.pipe(res);
+                return;
+            }
+
+            if (action === 'serve') {
+                const { stream, mime, size } = await itemProvider.openStream(drive, itemAccountId);
+                const safeFilename = sanitizeContentDispositionFilename(drive.name);
+                res.setHeader('Content-Disposition', `inline; filename="${safeFilename}"`);
+                res.setHeader('Content-Type', mime);
+                if (config.cors?.enabled) {
+                    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+                }
+                if (size) res.setHeader('Content-Length', size);
+                stream.pipe(res);
+                return;
+            }
+        } catch (error) {
+            console.error(`[next-drive] Error in ${action}:`, error);
+            return res.status(500).json({ 
+                status: 500, 
+                message: error instanceof Error ? error.message : 'Unknown error' 
+            });
+        }
     }
 
     try {
@@ -761,55 +836,6 @@ export const driveAPIHandler = async (req: NextApiRequest, res: NextApiResponse)
             }
 
             // ** 9. THUMBNAIL **
-            case 'thumbnail': {
-                const thumbQuery = schemas.thumbnailQuerySchema.safeParse(req.query);
-                if (!thumbQuery.success) return res.status(400).json({ status: 400, message: 'Invalid params' });
-                const { id } = thumbQuery.data;
-                const drive = await Drive.findById(id);
-                if (!drive) return res.status(404).json({ status: 404, message: 'Not found' });
-
-                // Resolve Correct Provider
-                const itemProvider = drive.provider?.type === 'GOOGLE' ? GoogleDriveProvider : LocalStorageProvider;
-                const itemAccountId = drive.storageAccountId ? drive.storageAccountId.toString() : undefined;
-
-                const stream = await itemProvider.getThumbnail(drive, itemAccountId);
-                res.setHeader('Content-Type', 'image/webp');
-                // Allow cross-origin resource sharing for images
-                if (config.cors?.enabled) {
-                    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
-                }
-                stream.pipe(res);
-                return;
-            }
-
-            // ** 10. SERVE / DOWNLOAD **
-            case 'serve': {
-                const serveQuery = schemas.serveQuerySchema.safeParse(req.query);
-                if (!serveQuery.success) return res.status(400).json({ status: 400, message: 'Invalid params' });
-                const { id } = serveQuery.data;
-                const drive = await Drive.findById(id);
-                if (!drive) return res.status(404).json({ status: 404, message: 'Not found' });
-
-                // Resolve Correct Provider
-                const itemProvider = drive.provider?.type === 'GOOGLE' ? GoogleDriveProvider : LocalStorageProvider;
-                const itemAccountId = drive.storageAccountId ? drive.storageAccountId.toString() : undefined;
-
-                const { stream, mime, size } = await itemProvider.openStream(drive, itemAccountId);
-
-                const safeFilename = sanitizeContentDispositionFilename(drive.name);
-                res.setHeader('Content-Disposition', `inline; filename="${safeFilename}"`);
-                res.setHeader('Content-Type', mime);
-                // Allow cross-origin resource sharing for files
-                if (config.cors?.enabled) {
-                    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
-                }
-                // Google streams might not give exact size, but we have IT in DB?
-                if (size) res.setHeader('Content-Length', size);
-
-                stream.pipe(res);
-                return;
-            }
-
             default:
                 res.status(400).json({ status: 400, message: `Unknown action: ${action}` });
         }
