@@ -1,3 +1,10 @@
+# [3.8.0](https://github.com/muhgholy/next-drive/compare/v3.7.1...v3.8.0) (2026-01-08)
+
+
+### Features
+
+* release v3.7.0 with serve authentication fix and enhancements ([41a0c4c](https://github.com/muhgholy/next-drive/commit/41a0c4cdab3f2fdc755e285573ab6d85c1db23f8))
+
 ## [3.7.1](https://github.com/muhgholy/next-drive/compare/v3.7.0...v3.7.1) (2026-01-08)
 
 
