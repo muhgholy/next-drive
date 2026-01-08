@@ -321,6 +321,40 @@ const drive = await Drive.findById(fileId);
 const { stream, mime, size } = await driveReadFile(drive);
 ```
 
+### Get File/Folder Information
+
+```typescript
+import { driveInfo } from "@muhgholy/next-drive/server";
+
+// Using file ID
+const info = await driveInfo("694f5013226de007be94fcc0");
+console.log(info.name, info.size, info.createdAt);
+console.log(info.dimensions); // { width: 1920, height: 1080 } for images
+console.log(info.duration); // 120 (seconds) for videos
+
+// Using TDriveFile
+const file = { id: "123", file: { name: "photo.jpg", mime: "image/jpeg", size: 1024 } };
+const info = await driveInfo(file);
+```
+
+**Returns `TDriveInformation`:**
+
+| Property     | Type                 | Description                          |
+| ------------ | -------------------- | ------------------------------------ |
+| `id`         | `string`             | File/folder ID                       |
+| `name`       | `string`             | File/folder name                     |
+| `type`       | `'FILE' \| 'FOLDER'` | Item type                            |
+| `mime`       | `string?`            | MIME type (files only)               |
+| `size`       | `number?`            | Size in bytes (files only)           |
+| `hash`       | `string?`            | Content hash (files only)            |
+| `dimensions` | `{width, height}?`   | Image dimensions                     |
+| `duration`   | `number?`            | Video duration in seconds            |
+| `status`     | `string`             | Processing status                    |
+| `provider`   | `object`             | Storage provider info (LOCAL/GOOGLE) |
+| `parent`     | `{id, name}?`        | Parent folder                        |
+| `createdAt`  | `Date`               | Creation timestamp                   |
+| `trashedAt`  | `Date \| null?`      | Trash timestamp if deleted           |
+
 ### Get Local File Path
 
 For libraries requiring file paths (Sharp, FFmpeg, etc.):

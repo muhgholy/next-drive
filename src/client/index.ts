@@ -11,5 +11,5 @@ export * from '@/client/components/drive/upload';
 export * from '@/client/components/drive/storage/indicator';
 export * from '@/client/components/drive/header';
 export * from '@/client/components/drive/sidebar';
-export type { TDriveFile, TImageQuality, TImageFormat } from '@/types/client';
+export type { TDriveFile, TDriveInformation, TImageQuality, TImageFormat } from '@/types/client';
 export { driveFileSchemaZod } from '@/types/client';

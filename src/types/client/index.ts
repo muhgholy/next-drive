@@ -6,6 +6,31 @@ export type TDriveFile = {
     file: { name: string; mime: string; size: number };
 };
 
+// ** Drive Information (Detailed file/folder info)
+export type TDriveInformation = {
+    id: string;
+    name: string;
+    type: 'FILE' | 'FOLDER';
+    mime?: string;
+    size?: number;
+    hash?: string;
+    dimensions?: { width: number; height: number };
+    duration?: number;
+    status: 'READY' | 'PROCESSING' | 'UPLOADING' | 'FAILED';
+    provider: {
+        type: 'LOCAL' | 'GOOGLE';
+        google?: {
+            id: string;
+            webViewLink?: string;
+            iconLink?: string;
+            thumbnailLink?: string;
+        };
+    };
+    parent?: { id: string | null; name?: string };
+    createdAt: Date;
+    trashedAt?: Date | null;
+};
+
 // ** Image Options
 export type TImageQuality = 'ultralow' | 'low' | 'medium' | 'high' | 'normal';
 export type TImageFormat = 'webp' | 'jpeg' | 'png';

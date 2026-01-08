@@ -20,4 +20,4 @@ export { getDriveConfig } from '@/server/config';
 
 // ** Re-export types
 export type { TDriveConfigurationExpress, TDriveConfigInformation } from '@/types/server/express';
-export type { TDriveFile, TImageQuality, TImageFormat } from '@/types/client';
+export type { TDriveFile, TDriveInformation, TImageQuality, TImageFormat } from '@/types/client';

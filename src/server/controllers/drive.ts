@@ -109,6 +109,74 @@ export const driveReadFile = async (
 };
 
 /**
+ * Get detailed information about a file or folder
+ * @param source - Either a file/folder ID (string) or a TDriveFile object
+ * @returns Promise with detailed file/folder information
+ * @example
+ * ```typescript
+ * // Using file ID
+ * const info = await driveInfo('694f5013226de007be94fcc0');
+ * console.log(info.name, info.size, info.createdAt);
+ * 
+ * // Using TDriveFile
+ * const file = { id: '123', file: { name: 'photo.jpg', mime: 'image/jpeg', size: 1024 } };
+ * const info = await driveInfo(file);
+ * ```
+ */
+export const driveInfo = async (
+    source: string | TDriveFile
+): Promise<import('@/types/client').TDriveInformation> => {
+    const fileId = typeof source === 'string' ? source : source.id;
+
+    const drive = await Drive.findById(fileId);
+    if (!drive) throw new Error(`File not found: ${fileId}`);
+
+    // Get parent folder name if exists
+    let parentName: string | undefined;
+    if (drive.parentId) {
+        const parent = await Drive.findById(drive.parentId);
+        if (parent) parentName = parent.name;
+    }
+
+    // Build the response
+    const info: import('@/types/client').TDriveInformation = {
+        id: String(drive._id),
+        name: drive.name,
+        type: drive.information.type,
+        status: drive.status,
+        provider: drive.provider,
+        parent: {
+            id: drive.parentId ? String(drive.parentId) : null,
+            name: parentName,
+        },
+        createdAt: drive.createdAt,
+        trashedAt: drive.trashedAt,
+    };
+
+    // Add file-specific information
+    if (drive.information.type === 'FILE') {
+        info.mime = drive.information.mime;
+        info.size = drive.information.sizeInBytes;
+        info.hash = drive.information.hash;
+
+        // Add image dimensions if available
+        if (drive.information.width && drive.information.height) {
+            info.dimensions = {
+                width: drive.information.width,
+                height: drive.information.height,
+            };
+        }
+
+        // Add video duration if available
+        if (drive.information.duration) {
+            info.duration = drive.information.duration;
+        }
+    }
+
+    return info;
+};
+
+/**
  * Get the local file system path for a file. For Google Drive files, downloads them to a local cache first.
  * @param file - Either a file ID (string) or a TDatabaseDrive/IDatabaseDriveDocument object
  * @returns Promise with readonly object containing the absolute file path and metadata
