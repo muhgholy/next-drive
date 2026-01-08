@@ -19,6 +19,7 @@ import type { TDatabaseDrive } from '@/types/server';
 import { LocalStorageProvider } from '@/server/providers/local';
 import { GoogleDriveProvider } from '@/server/providers/google';
 import type { TStorageProvider } from '@/types/server/storage';
+import { google } from 'googleapis';
 
 // ** Helper to get Provider
 const getProvider = async (req: NextApiRequest, owner: Record<string, unknown> | null): Promise<{ provider: TStorageProvider; accountId?: string }> => {
@@ -190,9 +191,9 @@ export const driveAPIHandler = async (req: NextApiRequest, res: NextApiResponse)
             }
         } catch (error) {
             console.error(`[next-drive] Error in ${action}:`, error);
-            return res.status(500).json({ 
-                status: 500, 
-                message: error instanceof Error ? error.message : 'Unknown error' 
+            return res.status(500).json({
+                status: 500,
+                message: error instanceof Error ? error.message : 'Unknown error'
             });
         }
     }
@@ -227,8 +228,6 @@ export const driveAPIHandler = async (req: NextApiRequest, res: NextApiResponse)
                         const { clientId, clientSecret, redirectUri } = config.storage?.google || {};
                         if (!clientId || !clientSecret || !redirectUri) return res.status(500).json({ status: 500, message: 'Google not configured' });
 
-                        // eslint-disable-next-line @typescript-eslint/no-require-imports
-                        const { google } = require('googleapis');
                         // Append action=callback to redirectUri for explicit routing
                         const callbackUri = new URL(redirectUri);
                         callbackUri.searchParams.set('action', 'callback');
@@ -255,8 +254,6 @@ export const driveAPIHandler = async (req: NextApiRequest, res: NextApiResponse)
 
                     const { clientId, clientSecret, redirectUri } = config.storage?.google || {};
                     if (!clientId || !clientSecret || !redirectUri) return res.status(500).json({ status: 500, message: 'Google not configured' });
-                    // eslint-disable-next-line @typescript-eslint/no-require-imports
-                    const { google } = require('googleapis');
                     // Must use the same redirect URI that was used in getAuthUrl (with action=callback)
                     const callbackUri = new URL(redirectUri);
                     callbackUri.searchParams.set('action', 'callback');

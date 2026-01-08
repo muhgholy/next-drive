@@ -28,6 +28,46 @@ npm install @muhgholy/next-drive
 | React        | >= 18   |
 | Mongoose     | >= 7    |
 | Tailwind CSS | >= 3    |
+| TypeScript   | >= 5    |
+
+**TypeScript Configuration:**
+
+This package uses [subpath exports](https://nodejs.org/api/packages.html#subpath-exports). Configure your `tsconfig.json` based on your project type:
+
+**For Next.js (App Router or Pages Router):**
+
+```json
+{
+	"compilerOptions": {
+		"module": "esnext",
+		"moduleResolution": "bundler"
+	}
+}
+```
+
+**For Node.js/Express servers:**
+
+```json
+{
+	"compilerOptions": {
+		"module": "nodenext",
+		"moduleResolution": "nodenext"
+	}
+}
+```
+
+**For projects using bundlers (Vite, Webpack, etc.):**
+
+```json
+{
+	"compilerOptions": {
+		"module": "esnext",
+		"moduleResolution": "bundler"
+	}
+}
+```
+
+> ⚠️ The legacy `"moduleResolution": "node"` is **not supported** and will cause build errors with subpath imports like `@muhgholy/next-drive/server`.
 
 **FFmpeg** (for video thumbnails):
 
