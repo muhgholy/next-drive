@@ -273,7 +273,7 @@ export const driveAPIHandler = async (req: NextApiRequest, res: NextApiResponse)
                         existing.markModified('metadata');
                         await existing.save();
                     } else {
-                        await StorageAccount.create({
+                        const newAccount = new StorageAccount({
                             owner,
                             name: userInfo.data.name || 'Google Drive',
                             metadata: {
@@ -284,6 +284,7 @@ export const driveAPIHandler = async (req: NextApiRequest, res: NextApiResponse)
                                 },
                             },
                         });
+                        await newAccount.save();
                     }
 
                     // Helper: Return HTML that notifies parent and closes tab/popup
