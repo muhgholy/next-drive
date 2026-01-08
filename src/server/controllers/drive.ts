@@ -9,6 +9,7 @@ import { getDriveConfig } from '@/server/config';
 import { computeFileHash, extractImageMetadata, validateMimeType } from '@/server/utils';
 import type { IDatabaseDriveDocument } from '@/server/database/mongoose/schema/drive';
 import type { TDatabaseDrive } from '@/types/lib/database/drive';
+import type { TDriveFile } from '@/types/client';
 import { LocalStorageProvider } from '@/server/providers/local';
 import { GoogleDriveProvider } from '@/server/providers/google';
 
@@ -435,7 +436,7 @@ export const driveUpload = async (
         accountId?: string;
         enforce?: boolean;
     }
-): Promise<TDatabaseDrive> => {
+): Promise<TDriveFile> => {
     const config = getDriveConfig();
 
     // Determine provider based on accountId
@@ -567,7 +568,15 @@ export const driveUpload = async (
         // Upload file through provider
         try {
             const item = await provider.uploadFile(drive, sourceFilePath, accountId);
-            return item;
+            // Return simplified TDriveFile format for public API
+            return {
+                id: item.id,
+                file: {
+                    name: item.name,
+                    mime: item.information.type === 'FILE' ? item.information.mime : 'application/x-folder',
+                    size: item.information.type === 'FILE' ? item.information.sizeInBytes : 0,
+                },
+            };
         } catch (err) {
             // Upload failed, cleanup DB record
             await Drive.deleteOne({ _id: drive._id });
