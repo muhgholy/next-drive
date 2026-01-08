@@ -1,3 +1,10 @@
+# [3.12.0](https://github.com/muhgholy/next-drive/compare/v3.11.0...v3.12.0) (2026-01-08)
+
+
+### Features
+
+* add lazy fetch support to prevent API calls before dialog opens ([63654de](https://github.com/muhgholy/next-drive/commit/63654de17669b41289407360b8bc5329c26f5d4a))
+
 # [3.11.0](https://github.com/muhgholy/next-drive/compare/v3.10.0...v3.11.0) (2026-01-08)
 
 
