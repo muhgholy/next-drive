@@ -1,3 +1,10 @@
+## [3.2.3](https://github.com/muhgholy/next-drive/compare/v3.2.2...v3.2.3) (2026-01-08)
+
+
+### Bug Fixes
+
+* force semantic release publish ([5269923](https://github.com/muhgholy/next-drive/commit/5269923f57e228720b0b782cdbc001bc28706c89))
+
 ## [3.2.2](https://github.com/muhgholy/next-drive/compare/v3.2.1...v3.2.2) (2026-01-08)
 
 
