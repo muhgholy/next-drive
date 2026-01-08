@@ -56,7 +56,7 @@ export const getDriveConfig = (): TDriveConfiguration => {
 // ** Get drive information (quota, owner) - Returns null key in ROOT mode
 export const getDriveInformation = async (req: NextApiRequest): Promise<TDriveConfigInformation> => {
     const config = getDriveConfig();
-    
+
     // In ROOT mode, return null key if information callback is not provided
     if (config.mode === 'ROOT') {
         if (!config.information) {
@@ -67,7 +67,7 @@ export const getDriveInformation = async (req: NextApiRequest): Promise<TDriveCo
         }
         return config.information(req);
     }
-    
+
     // NORMAL mode - information is guaranteed to exist
     return config.information(req);
 };

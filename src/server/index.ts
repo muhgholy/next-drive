@@ -574,27 +574,50 @@ export const driveAPIHandler = async (req: NextApiRequest, res: NextApiResponse)
                             const finalTempPath = path.join(uploadDir, 'final.bin');
                             const writeStream = fs.createWriteStream(finalTempPath);
 
+                            // Track stream errors immediately
+                            let streamError: Error | null = null;
+                            writeStream.on('error', (err) => {
+                                streamError = err;
+                            });
+
                             // Wait for stream to be ready
                             await new Promise<void>((resolve, reject) => {
                                 writeStream.on('open', () => resolve());
-                                writeStream.on('error', reject);
+                                writeStream.once('error', reject);
                             });
 
+                            // Write chunks with proper backpressure handling
                             for (let i = 0; i < totalChunks; i++) {
+                                if (streamError) {
+                                    writeStream.destroy();
+                                    throw streamError;
+                                }
                                 const pPath = path.join(uploadDir, `part_${i}`);
                                 if (!fs.existsSync(pPath)) {
                                     writeStream.destroy();
                                     throw new Error(`Missing chunk part: ${i}`);
                                 }
                                 const data = fs.readFileSync(pPath);
-                                writeStream.write(data);
+                                const canContinue = writeStream.write(data);
+
+                                // Handle backpressure - wait for drain if buffer is full
+                                if (!canContinue) {
+                                    await new Promise<void>((resolve, reject) => {
+                                        writeStream.once('drain', resolve);
+                                        writeStream.once('error', reject);
+                                    });
+                                }
                             }
 
                             // Wait for write stream to finish
                             await new Promise<void>((resolve, reject) => {
+                                if (streamError) {
+                                    reject(streamError);
+                                    return;
+                                }
                                 writeStream.end();
                                 writeStream.on('finish', resolve);
-                                writeStream.on('error', reject);
+                                writeStream.once('error', reject);
                             });
 
                             // Verify final file exists
