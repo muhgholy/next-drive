@@ -1,3 +1,15 @@
+# [3.9.0](https://github.com/muhgholy/next-drive/compare/v3.8.0...v3.9.0) (2026-01-08)
+
+
+### Bug Fixes
+
+* resolve TypeScript error in StorageAccount creation ([4802efc](https://github.com/muhgholy/next-drive/commit/4802efce04cda3884aa0683616424fb20c234fd4))
+
+
+### Features
+
+* update documentation and finalize v3.7.0 release ([a39a5ca](https://github.com/muhgholy/next-drive/commit/a39a5ca8ba5000d2535c33974c6447d98327aa0b))
+
 # [3.8.0](https://github.com/muhgholy/next-drive/compare/v3.7.1...v3.8.0) (2026-01-08)
 
 
