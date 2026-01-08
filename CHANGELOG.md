@@ -1,3 +1,10 @@
+# [3.5.0](https://github.com/muhgholy/next-drive/compare/v3.4.0...v3.5.0) (2026-01-08)
+
+
+### Features
+
+* add driveInfo function for detailed file/folder information ([31dcae4](https://github.com/muhgholy/next-drive/commit/31dcae47fb0f9685724b57e6f7c57e49351cd9f8))
+
 # [3.4.0](https://github.com/muhgholy/next-drive/compare/v3.3.0...v3.4.0) (2026-01-08)
 
 
