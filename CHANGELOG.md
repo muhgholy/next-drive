@@ -1,3 +1,10 @@
+# [3.4.0](https://github.com/muhgholy/next-drive/compare/v3.3.0...v3.4.0) (2026-01-08)
+
+
+### Features
+
+* publish v3.3.0 with all recent improvements ([04328bd](https://github.com/muhgholy/next-drive/commit/04328bdd7ac5f93ae367e971cae29750d9861eab))
+
 # [3.3.0](https://github.com/muhgholy/next-drive/compare/v3.2.3...v3.3.0) (2026-01-08)
 
 
