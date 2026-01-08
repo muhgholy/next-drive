@@ -136,7 +136,7 @@ export const driveAPIHandler = async (req: NextApiRequest, res: NextApiResponse)
             if (!drive) return res.status(404).json({ status: 404, message: 'File not found' });
 
             // Verify signed URL token if enabled
-            if (config.security.signedUrls?.enabled) {
+            if (config.security?.signedUrls?.enabled) {
                 if (!token || typeof token !== 'string') {
                     return res.status(401).json({ status: 401, message: 'Missing or invalid token' });
                 }
@@ -199,9 +199,13 @@ export const driveAPIHandler = async (req: NextApiRequest, res: NextApiResponse)
     }
 
     try {
+        const mode = config.mode || 'NORMAL';
         const information = await getDriveInformation(req);
         const { key: owner } = information;
         const STORAGE_PATH = config.storage.path;
+
+        // ** In ROOT mode, owner can be null and we list all files without filtering
+        const isRootMode = mode === 'ROOT';
 
         // ** Information Action (No Auth Needed)
         if (action === 'information') {
@@ -215,6 +219,7 @@ export const driveAPIHandler = async (req: NextApiRequest, res: NextApiResponse)
                     providers: {
                         google: googleConfigured,
                     },
+                    mode: mode,
                 },
             });
         }
@@ -377,14 +382,19 @@ export const driveAPIHandler = async (req: NextApiRequest, res: NextApiResponse)
                     // Continue to list what we have in DB
                 }
 
-                // Query DB
+                // Query DB - In ROOT mode, don't filter by owner
                 const query: Record<string, unknown> = {
-                    owner,
                     'provider.type': provider.name,
                     storageAccountId: accountId || null,
                     parentId: folderId === 'root' || !folderId ? null : folderId,
                     trashedAt: null,
                 };
+
+                // Only filter by owner in NORMAL mode
+                if (!isRootMode) {
+                    query.owner = owner;
+                }
+
                 if (afterId) query._id = { $lt: afterId }; // Pagination
 
                 const items = await Drive.find(query, {}, { sort: { order: 1, _id: -1 }, limit });
@@ -409,14 +419,19 @@ export const driveAPIHandler = async (req: NextApiRequest, res: NextApiResponse)
                     }
                 }
 
-                // Query DB
+                // Query DB - In ROOT mode, don't filter by owner
                 const query: Record<string, unknown> = {
-                    owner,
                     'provider.type': provider.name,
                     storageAccountId: accountId || null,
                     trashedAt: trashed ? { $ne: null } : null,
                     name: { $regex: q, $options: 'i' },
                 };
+
+                // Only filter by owner in NORMAL mode
+                if (!isRootMode) {
+                    query.owner = owner;
+                }
+
                 if (folderId && folderId !== 'root') query.parentId = folderId;
 
                 const items = await Drive.find(query, {}, { limit, sort: { createdAt: -1 } });
@@ -432,7 +447,7 @@ export const driveAPIHandler = async (req: NextApiRequest, res: NextApiResponse)
                 if (!fs.existsSync(systemTmpDir)) fs.mkdirSync(systemTmpDir, { recursive: true });
                 const form = formidable({
                     multiples: false,
-                    maxFileSize: config.security.maxUploadSizeInBytes * 2,
+                    maxFileSize: (config.security?.maxUploadSizeInBytes ?? 1024 * 1024 * 1024) * 2,
                     uploadDir: systemTmpDir,
                     keepExtensions: true,
                 });
@@ -481,16 +496,20 @@ export const driveAPIHandler = async (req: NextApiRequest, res: NextApiResponse)
                     // Start of new upload (usually Chunk 0, but could be adapted)
                     if (chunkIndex !== 0) return res.status(400).json({ message: 'Missing upload ID for non-zero chunk' });
 
-                    if (fileType && !validateMimeType(fileType, config.security.allowedMimeTypes)) {
-                        cleanupTempFiles(files);
-                        return res.status(400).json({ status: 400, message: `File type ${fileType} not allowed` });
+                    if (fileType && config.security) {
+                        if (!validateMimeType(fileType, config.security.allowedMimeTypes)) {
+                            cleanupTempFiles(files);
+                            return res.status(400).json({ status: 400, message: `File type ${fileType} not allowed` });
+                        }
                     }
 
-                    // Quota Check
-                    const quota = await provider.getQuota(owner, accountId, information.storage.quotaInBytes);
-                    if (quota.usedInBytes + fileSizeInBytes > quota.quotaInBytes) {
-                        cleanupTempFiles(files);
-                        return res.status(413).json({ status: 413, message: 'Storage quota exceeded' });
+                    // Quota Check - Skip in ROOT mode
+                    if (!isRootMode) {
+                        const quota = await provider.getQuota(owner, accountId, information.storage.quotaInBytes);
+                        if (quota.usedInBytes + fileSizeInBytes > quota.quotaInBytes) {
+                            cleanupTempFiles(files);
+                            return res.status(413).json({ status: 413, message: 'Storage quota exceeded' });
+                        }
                     }
 
                     // Generate Temp ID (Stateless)

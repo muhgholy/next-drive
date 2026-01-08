@@ -21,20 +21,33 @@ export const LocalStorageProvider: TStorageProvider = {
     },
 
     getQuota: async (owner, accountId, configuredQuotaInBytes) => {
+        const config = getDriveConfig();
+        const isRootMode = config.mode === 'ROOT';
+
+        // In ROOT mode, return total storage used across all users
+        const match: Record<string, unknown> = {
+            'information.type': 'FILE',
+            trashedAt: null,
+            'provider.type': 'LOCAL',
+            storageAccountId: accountId || null
+        };
+
+        // Only filter by owner in NORMAL mode
+        if (!isRootMode) {
+            match.owner = owner;
+        }
+
         // Calculate storage used from DB - only count LOCAL provider files
         const result = await Drive.aggregate([
-            {
-                $match: {
-                    owner,
-                    'information.type': 'FILE',
-                    trashedAt: null,
-                    'provider.type': 'LOCAL',
-                    storageAccountId: accountId || null
-                }
-            },
+            { $match: match },
             { $group: { _id: null, total: { $sum: '$information.sizeInBytes' } } }
         ]);
         const usedInBytes = result[0]?.total || 0;
+
+        // In ROOT mode, return unlimited quota
+        if (isRootMode) {
+            return { usedInBytes, quotaInBytes: Number.MAX_SAFE_INTEGER };
+        }
 
         // Use configured quota from user's information callback (required)
         return { usedInBytes, quotaInBytes: configuredQuotaInBytes ?? 0 };

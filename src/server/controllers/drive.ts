@@ -44,7 +44,7 @@ export const getAllFolderContents = async (folderId: string, owner: Record<strin
 
 export const driveGetUrl = (fileId: string, options?: { expiry?: number | Date }): string => {
     const config = getDriveConfig();
-    if (!config.security.signedUrls?.enabled) {
+    if (!config.security?.signedUrls?.enabled) {
         return `/api/drive?action=serve&id=${fileId}`;
     }
 
@@ -610,18 +610,19 @@ export const driveUpload = async (
             mimeType = mimeTypes[ext] || 'application/octet-stream';
         }
 
-        // Validate MIME type
-        if (!validateMimeType(mimeType, config.security.allowedMimeTypes)) {
+        // Validate MIME type only if security config exists
+        if (config.security && !validateMimeType(mimeType, config.security.allowedMimeTypes)) {
             throw new Error(`File type ${mimeType} not allowed`);
         }
 
-        // Validate file size
-        if (fileSize > config.security.maxUploadSizeInBytes) {
+        // Validate file size only if security config exists
+        if (config.security && fileSize > config.security.maxUploadSizeInBytes) {
             throw new Error(`File size ${fileSize} exceeds maximum allowed size ${config.security.maxUploadSizeInBytes}`);
         }
 
-        // Quota Check (unless enforce is true)
-        if (!options.enforce) {
+        // Quota Check (skip in ROOT mode or if enforce is true)
+        const isRootMode = config.mode === 'ROOT';
+        if (!options.enforce && !isRootMode) {
             const quota = await provider.getQuota(key, accountId, undefined);
             if (quota.usedInBytes + fileSize > quota.quotaInBytes) {
                 throw new Error('Storage quota exceeded');
