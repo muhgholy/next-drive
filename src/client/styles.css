@@ -1,10 +1,8 @@
-@tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* CSS Variables for next-drive components */
-
-:root {
+/* CSS Variables for next-drive components - scoped to avoid conflicts */
+.nd-drive-root {
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
 
@@ -36,7 +34,7 @@
     --radius: 0.5rem;
 }
 
-.dark {
+.nd-drive-root.dark {
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
 
@@ -66,12 +64,8 @@
     --ring: 212.7 26.8% 83.9%;
 }
 
-* {
-    border-color: hsl(var(--border));
-}
-
 /* Indeterminate progress bar animation */
-@keyframes indeterminate {
+@keyframes nd-indeterminate {
     0% {
         transform: translateX(-100%);
     }

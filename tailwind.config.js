@@ -1,7 +1,11 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+	prefix: "nd-",
 	content: ["./src/client/**/*.{js,ts,jsx,tsx}"],
-	darkMode: "class",
+	darkMode: ["class", ".dark"],
+	corePlugins: {
+		preflight: false, // Disable base reset to avoid conflicts
+	},
 	theme: {
 		extend: {
 			colors: {

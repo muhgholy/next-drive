@@ -306,20 +306,20 @@ export const DriveExplorer = (props: Readonly<{
     const stateContent = (() => {
         // Loading State (empty)
         if (isLoading && items.length === 0) {
-            return <div className="flex items-center justify-center py-12 flex-1"><Loader2 className="size-6 animate-spin text-muted-foreground" /></div>;
+            return <div className="nd-flex nd-items-center nd-justify-center nd-py-12 nd-flex-1"><Loader2 className="nd-size-6 nd-animate-spin nd-text-muted-foreground" /></div>;
         }
         // Error State
         if (error) {
-            return <div className="flex items-center justify-center p-12 text-destructive bg-destructive/10 rounded-lg flex-1">{error}</div>;
+            return <div className="nd-flex nd-items-center nd-justify-center nd-p-12 nd-text-destructive nd-bg-destructive/10 nd-rounded-lg nd-flex-1">{error}</div>;
         }
         // Empty State
         if (processedItems.length === 0) {
             return (
                 <ContextMenu>
                     <ContextMenuTrigger asChild>
-                        <div className={cn("flex flex-col items-center justify-center py-12 text-center flex-1", className)}>
-                            <div className="size-12 rounded-full bg-muted flex items-center justify-center mb-3"><Folder className="size-6 text-muted-foreground" /></div>
-                            <p className="text-sm text-muted-foreground">
+                        <div className={cn("nd-flex nd-flex-col nd-items-center nd-justify-center nd-py-12 nd-text-center nd-flex-1", className)}>
+                            <div className="nd-size-12 nd-rounded-full nd-bg-muted nd-flex nd-items-center nd-justify-center nd-mb-3"><Folder className="nd-size-6 nd-text-muted-foreground" /></div>
+                            <p className="nd-text-sm nd-text-muted-foreground">
                                 {currentView === 'SEARCH' ? 'No files match your search' :
                                     currentView === 'TRASH' ? 'Trash is empty' : 'No files found'}
                             </p>
@@ -328,11 +328,11 @@ export const DriveExplorer = (props: Readonly<{
                     <ContextMenuContent>
                         {currentView === 'BROWSE' ? (
                             <ContextMenuItem onClick={() => setDialogs(prev => ({ ...prev, newFolder: true }))}>
-                                <FolderPlus className="mr-2 size-4" /> New Folder
+                                <FolderPlus className="nd-mr-2 nd-size-4" /> New Folder
                             </ContextMenuItem>
                         ) : (
-                            <div className="px-2 py-6 text-center">
-                                <p className="text-xs text-muted-foreground">No actions available</p>
+                            <div className="nd-px-2 nd-py-6 nd-text-center">
+                                <p className="nd-text-xs nd-text-muted-foreground">No actions available</p>
                             </div>
                         )}
                     </ContextMenuContent>
@@ -345,39 +345,39 @@ export const DriveExplorer = (props: Readonly<{
 
     return (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragOver={handleDragOver} onDragEnd={handleDragEnd}>
-            <div className="flex flex-col h-full w-full overflow-hidden bg-background/50 dark:bg-background/30 relative">
+            <div className="nd-drive-root nd-flex nd-flex-col nd-h-full nd-w-full nd-overflow-hidden nd-bg-background/50 dark:nd-bg-background/30 nd-relative">
                 {/* Top Progress Bar */}
                 <DriveContentProgress />
 
                 {/* Header Row */}
-                <div className="h-12 px-3 sm:px-4 border-b bg-background/95 dark:bg-background/80 backdrop-blur-sm flex items-center gap-3">
-                    <DriveSidebar className="lg:hidden" />
-                    <DrivePathBar className="hidden lg:flex flex-1" />
+                <div className="nd-h-12 nd-px-3 sm:nd-px-4 nd-border-b nd-bg-background/95 dark:nd-bg-background/80 nd-backdrop-blur-sm nd-flex nd-items-center nd-gap-3">
+                    <DriveSidebar className="lg:nd-hidden" />
+                    <DrivePathBar className="nd-hidden lg:nd-flex nd-flex-1" />
                     <DriveUpload compact accept={mimeFilter} />
                 </div>
 
                 {/* Path Bar - Mobile */}
-                <div className="lg:hidden px-3 py-2 border-b bg-background/95 dark:bg-background/80 backdrop-blur-sm">
+                <div className="lg:nd-hidden nd-px-3 nd-py-2 nd-border-b nd-bg-background/95 dark:nd-bg-background/80 nd-backdrop-blur-sm">
                     <DrivePathBar />
                 </div>
 
                 {stateContent || (
                     <ContextMenu>
                         <ContextMenuTrigger asChild>
-                            <div className={cn("flex-1 overflow-y-auto min-h-0 container mx-auto p-2 sm:p-3 md:p-4", className)}>
-                                <div className="space-y-4 sm:space-y-6 pb-8 sm:pb-12">
+                            <div className={cn("nd-flex-1 nd-overflow-y-auto nd-min-h-0 nd-container nd-mx-auto nd-p-2 sm:nd-p-3 md:nd-p-4", className)}>
+                                <div className="nd-space-y-4 sm:nd-space-y-6 nd-pb-8 sm:nd-pb-12">
                                     {Object.entries(groupedItems).map(([groupName, groupItems]) => (
-                                        <div key={groupName} className="space-y-3">
+                                        <div key={groupName} className="nd-space-y-3">
                                             {groupBy !== 'NONE' && (
-                                                <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                                                    {groupName} <span className="text-xs opacity-50">({groupItems.length})</span>
+                                                <h3 className="nd-text-sm nd-font-medium nd-text-muted-foreground nd-flex nd-items-center nd-gap-2">
+                                                    {groupName} <span className="nd-text-xs nd-opacity-50">({groupItems.length})</span>
                                                 </h3>
                                             )}
                                             <SortableContext items={groupItems.map(i => i.id)} strategy={rectSortingStrategy} disabled={!enableDrag}>
                                                 <div className={cn(
                                                     viewMode === 'GRID'
-                                                        ? "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-2 sm:gap-3 md:gap-4"
-                                                        : "flex flex-col gap-1"
+                                                        ? "nd-grid nd-grid-cols-2 sm:nd-grid-cols-3 md:nd-grid-cols-4 lg:nd-grid-cols-5 xl:nd-grid-cols-6 2xl:nd-grid-cols-7 nd-gap-2 sm:nd-gap-3 md:nd-gap-4"
+                                                        : "nd-flex nd-flex-col nd-gap-1"
                                                 )}>
                                                     {groupItems.map(item => {
                                                         const isSelected = selectedFileIds.includes(item.id);
@@ -396,12 +396,12 @@ export const DriveExplorer = (props: Readonly<{
                                                                     <ContextMenuTrigger>
                                                                         <div
                                                                             className={cn(
-                                                                                "group relative cursor-pointer transition-all focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2",
+                                                                                "group nd-relative nd-cursor-pointer nd-transition-all focus:nd-outline-none focus:nd-ring-2 focus:nd-ring-primary focus:nd-ring-offset-2",
                                                                                 viewMode === 'GRID'
-                                                                                    ? "flex flex-col rounded-xl border bg-card dark:bg-card/50 hover:bg-accent/50 dark:hover:bg-accent/30 hover:shadow-sm overflow-hidden"
-                                                                                    : "flex items-center p-2 rounded-lg hover:bg-accent/50 dark:hover:bg-accent/30 gap-3 border border-transparent hover:border-border",
-                                                                                isSelected && "ring-2 ring-primary border-primary/50 bg-accent/30 dark:bg-accent/20",
-                                                                                isDragOver && "ring-2 ring-primary border-primary scale-[1.02] bg-primary/10 shadow-lg transition-transform"
+                                                                                    ? "nd-flex nd-flex-col nd-rounded-xl nd-border nd-bg-card dark:nd-bg-card/50 hover:nd-bg-accent/50 dark:hover:nd-bg-accent/30 hover:nd-shadow-sm nd-overflow-hidden"
+                                                                                    : "nd-flex nd-items-center nd-p-2 nd-rounded-lg hover:nd-bg-accent/50 dark:hover:nd-bg-accent/30 nd-gap-3 nd-border nd-border-transparent hover:nd-border-border",
+                                                                                isSelected && "nd-ring-2 nd-ring-primary nd-border-primary/50 nd-bg-accent/30 dark:nd-bg-accent/20",
+                                                                                isDragOver && "nd-ring-2 nd-ring-primary nd-border-primary nd-scale-[1.02] nd-bg-primary/10 nd-shadow-lg nd-transition-transform"
                                                                             )}
                                                                             onClick={(e) => handleItemClick(e, item)}
                                                                             onTouchEnd={(e) => {
@@ -414,47 +414,47 @@ export const DriveExplorer = (props: Readonly<{
                                                                         >
                                                                             {viewMode === 'GRID' ? (
                                                                                 <>
-                                                                                    <div className="aspect-square w-full bg-muted/20 dark:bg-muted/10 flex items-center justify-center overflow-hidden relative">
+                                                                                    <div className="nd-aspect-square nd-w-full nd-bg-muted/20 dark:nd-bg-muted/10 nd-flex nd-items-center nd-justify-center nd-overflow-hidden nd-relative">
                                                                                         {isThumbnailable ? (
-                                                                                            <img src={thumbnailUrl} alt={item.name} className="size-full object-contain transition-transform group-hover:scale-105 duration-300" loading="lazy" />
+                                                                                            <img src={thumbnailUrl} alt={item.name} className="nd-size-full nd-object-contain nd-transition-transform group-hover:nd-scale-105 nd-duration-300" loading="lazy" />
                                                                                         ) : (
-                                                                                            <div className="transition-transform group-hover:scale-110 duration-200">
-                                                                                                {getFileIcon(item.information.type === 'FILE' ? item.information.mime : '', isFolder, "size-10 text-muted-foreground/70")}
+                                                                                            <div className="nd-transition-transform group-hover:nd-scale-110 nd-duration-200">
+                                                                                                {getFileIcon(item.information.type === 'FILE' ? item.information.mime : '', isFolder, "nd-size-10 nd-text-muted-foreground/70")}
                                                                                             </div>
                                                                                         )}
                                                                                         {isSelected && (
-                                                                                            <div className="absolute top-2 right-2 size-5 bg-primary rounded-full flex items-center justify-center shadow-sm animate-in zoom-in-50">
-                                                                                                <div className="size-2 bg-primary-foreground rounded-full" />
+                                                                                            <div className="nd-absolute nd-top-2 nd-right-2 nd-size-5 nd-bg-primary nd-rounded-full nd-flex nd-items-center nd-justify-center nd-shadow-sm nd-animate-in nd-zoom-in-50">
+                                                                                                <div className="nd-size-2 nd-bg-primary-foreground nd-rounded-full" />
                                                                                             </div>
                                                                                         )}
                                                                                         {isFolder && currentView === 'BROWSE' && (
-                                                                                            <div className="absolute bottom-2 right-2 lg:hidden size-6 bg-primary/90 rounded-full flex items-center justify-center shadow-md">
-                                                                                                <ChevronRight className="size-3.5 text-primary-foreground" />
+                                                                                            <div className="nd-absolute nd-bottom-2 nd-right-2 lg:nd-hidden nd-size-6 nd-bg-primary/90 nd-rounded-full nd-flex nd-items-center nd-justify-center nd-shadow-md">
+                                                                                                <ChevronRight className="nd-size-3.5 nd-text-primary-foreground" />
                                                                                             </div>
                                                                                         )}
                                                                                     </div>
-                                                                                    <div className="p-2.5">
-                                                                                        <p className="text-sm font-medium truncate" title={item.name}>{item.name}</p>
-                                                                                        <p className="text-xs text-muted-foreground mt-0.5">
+                                                                                    <div className="nd-p-2.5">
+                                                                                        <p className="nd-text-sm nd-font-medium nd-truncate" title={item.name}>{item.name}</p>
+                                                                                        <p className="nd-text-xs nd-text-muted-foreground nd-mt-0.5">
                                                                                             {isFolder ? 'Folder' : formatBytes(item.information.type === 'FILE' ? item.information.sizeInBytes : 0)}
                                                                                         </p>
                                                                                     </div>
                                                                                 </>
                                                                             ) : (
                                                                                 <>
-                                                                                    <div className="size-9 shrink-0 rounded-md overflow-hidden bg-muted/40 dark:bg-muted/20 flex items-center justify-center border">
+                                                                                    <div className="nd-size-9 nd-shrink-0 nd-rounded-md nd-overflow-hidden nd-bg-muted/40 dark:nd-bg-muted/20 nd-flex nd-items-center nd-justify-center nd-border">
                                                                                         {isThumbnailable ? (
-                                                                                            <img src={thumbnailUrl} alt={item.name} className="size-full object-contain" loading="lazy" />
+                                                                                            <img src={thumbnailUrl} alt={item.name} className="nd-size-full nd-object-contain" loading="lazy" />
                                                                                         ) : (
-                                                                                            getFileIcon(item.information.type === 'FILE' ? item.information.mime : '', isFolder, "size-4 text-muted-foreground")
+                                                                                            getFileIcon(item.information.type === 'FILE' ? item.information.mime : '', isFolder, "nd-size-4 nd-text-muted-foreground")
                                                                                         )}
                                                                                     </div>
-                                                                                    <span className="text-sm font-medium truncate flex-1" title={item.name}>{item.name}</span>
-                                                                                    <span className="text-xs text-muted-foreground w-20 text-right shrink-0">
+                                                                                    <span className="nd-text-sm nd-font-medium nd-truncate nd-flex-1" title={item.name}>{item.name}</span>
+                                                                                    <span className="nd-text-xs nd-text-muted-foreground nd-w-20 nd-text-right nd-shrink-0">
                                                                                         {isFolder ? '-' : formatBytes(item.information.type === 'FILE' ? item.information.sizeInBytes : 0)}
                                                                                     </span>
                                                                                     {isFolder && currentView === 'BROWSE' && (
-                                                                                        <ChevronRight className="size-4 text-muted-foreground lg:hidden shrink-0" />
+                                                                                        <ChevronRight className="nd-size-4 nd-text-muted-foreground lg:nd-hidden nd-shrink-0" />
                                                                                     )}
                                                                                 </>
                                                                             )}
@@ -464,14 +464,14 @@ export const DriveExplorer = (props: Readonly<{
                                                                         {currentView === 'TRASH' ? (
                                                                             <>
                                                                                 <ContextMenuItem onClick={() => restoreItem(item.id)}>
-                                                                                    <RotateCcw className="mr-2 size-4" /> Restore
+                                                                                    <RotateCcw className="nd-mr-2 nd-size-4" /> Restore
                                                                                 </ContextMenuItem>
                                                                                 <ContextMenuSeparator />
-                                                                                <ContextMenuItem className="text-destructive focus:text-destructive" onClick={() => {
+                                                                                <ContextMenuItem className="nd-text-destructive focus:nd-text-destructive" onClick={() => {
                                                                                     setItemToDelete(item);
                                                                                     setDialogs(prev => ({ ...prev, delete: true }));
                                                                                 }}>
-                                                                                    <Trash2 className="mr-2 size-4" /> Delete Forever
+                                                                                    <Trash2 className="nd-mr-2 nd-size-4" /> Delete Forever
                                                                                 </ContextMenuItem>
                                                                             </>
                                                                         ) : (
@@ -480,14 +480,14 @@ export const DriveExplorer = (props: Readonly<{
                                                                                     setItemToRename(item);
                                                                                     setDialogs(prev => ({ ...prev, rename: true }));
                                                                                 }}>
-                                                                                    <Pencil className="mr-2 size-4" /> Rename
+                                                                                    <Pencil className="nd-mr-2 nd-size-4" /> Rename
                                                                                 </ContextMenuItem>
                                                                                 <ContextMenuSeparator />
-                                                                                <ContextMenuItem className="text-destructive focus:text-destructive" onClick={() => {
+                                                                                <ContextMenuItem className="nd-text-destructive focus:nd-text-destructive" onClick={() => {
                                                                                     setItemToDelete(item);
                                                                                     setDialogs(prev => ({ ...prev, delete: true }));
                                                                                 }}>
-                                                                                    <Trash2 className="mr-2 size-4" /> Delete
+                                                                                    <Trash2 className="nd-mr-2 nd-size-4" /> Delete
                                                                                 </ContextMenuItem>
                                                                             </>
                                                                         )}
@@ -503,9 +503,9 @@ export const DriveExplorer = (props: Readonly<{
                                 </div>
                                 {/* Infinite Scroll Sentinel */}
                                 {hasMore && (
-                                    <div ref={observerTarget} className="flex justify-center py-4">
-                                        {isLoadingMore && <Loader2 className="size-6 animate-spin text-muted-foreground" />}
-                                        {!isLoadingMore && <div className="h-4 w-full" />}
+                                    <div ref={observerTarget} className="nd-flex nd-justify-center nd-py-4">
+                                        {isLoadingMore && <Loader2 className="nd-size-6 nd-animate-spin nd-text-muted-foreground" />}
+                                        {!isLoadingMore && <div className="nd-h-4 nd-w-full" />}
                                     </div>
                                 )}
                             </div>
@@ -513,11 +513,11 @@ export const DriveExplorer = (props: Readonly<{
                         <ContextMenuContent>
                             {currentView === 'BROWSE' ? (
                                 <ContextMenuItem onClick={() => setDialogs(prev => ({ ...prev, newFolder: true }))}>
-                                    <FolderPlus className="mr-2 size-4" /> New Folder
+                                    <FolderPlus className="nd-mr-2 nd-size-4" /> New Folder
                                 </ContextMenuItem>
                             ) : (
-                                <div className="px-2 py-6 text-center">
-                                    <p className="text-xs text-muted-foreground">No actions available</p>
+                                <div className="nd-px-2 nd-py-6 nd-text-center">
+                                    <p className="nd-text-xs nd-text-muted-foreground">No actions available</p>
                                 </div>
                             )}
                         </ContextMenuContent>

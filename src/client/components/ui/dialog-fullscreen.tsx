@@ -32,9 +32,9 @@ function Dialog2Content({
             <DialogPrimitive.Overlay
                 data-slot="dialog2-overlay"
                 className={cn(
-                    "fixed inset-0 z-50 bg-black/60 backdrop-blur-sm",
-                    "data-[state=open]:animate-in data-[state=closed]:animate-out",
-                    "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
+                    "nd-fixed nd-inset-0 nd-z-50 nd-bg-black/60 nd-backdrop-blur-sm",
+                    "data-[state=open]:nd-animate-in data-[state=closed]:nd-animate-out",
+                    "data-[state=closed]:nd-fade-out-0 data-[state=open]:nd-fade-in-0"
                 )}
             />
             {/* Content: Fullscreen on mobile, centered modal on desktop */}
@@ -42,19 +42,19 @@ function Dialog2Content({
                 data-slot="dialog2-content"
                 className={cn(
                     // Base styles
-                    "fixed z-50 flex flex-col bg-background shadow-2xl outline-none",
+                    "nd-fixed nd-z-50 nd-flex nd-flex-col nd-bg-background nd-shadow-2xl nd-outline-none",
                     // Mobile: Full screen
-                    "inset-0 rounded-none",
+                    "nd-inset-0 nd-rounded-none",
                     // Desktop: Centered modal with max dimensions
-                    "md:inset-auto md:top-[50%] md:left-[50%] md:translate-x-[-50%] md:translate-y-[-50%]",
-                    "md:max-w-5xl md:w-[95vw] md:max-h-[90vh] md:rounded-xl md:border",
+                    "md:nd-inset-auto md:nd-top-[50%] md:nd-left-[50%] md:nd-translate-x-[-50%] md:nd-translate-y-[-50%]",
+                    "md:nd-max-w-5xl md:nd-w-[95vw] md:nd-max-h-[90vh] md:nd-rounded-xl md:nd-border",
                     // Animations
-                    "data-[state=open]:animate-in data-[state=closed]:animate-out",
-                    "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
-                    "data-[state=closed]:slide-out-to-bottom-2 data-[state=open]:slide-in-from-bottom-2",
-                    "md:data-[state=closed]:zoom-out-95 md:data-[state=open]:zoom-in-95",
-                    "md:data-[state=closed]:slide-out-to-bottom-0 md:data-[state=open]:slide-in-from-bottom-0",
-                    "duration-200",
+                    "data-[state=open]:nd-animate-in data-[state=closed]:nd-animate-out",
+                    "data-[state=closed]:nd-fade-out-0 data-[state=open]:nd-fade-in-0",
+                    "data-[state=closed]:nd-slide-out-to-bottom-2 data-[state=open]:nd-slide-in-from-bottom-2",
+                    "md:data-[state=closed]:nd-zoom-out-95 md:data-[state=open]:nd-zoom-in-95",
+                    "md:data-[state=closed]:nd-slide-out-to-bottom-0 md:data-[state=open]:nd-slide-in-from-bottom-0",
+                    "nd-duration-200",
                     className
                 )}
                 {...props}
@@ -64,15 +64,15 @@ function Dialog2Content({
                     <DialogPrimitive.Close
                         data-slot="dialog2-close"
                         className={cn(
-                            "absolute top-3 right-3 z-10",
-                            "flex items-center justify-center size-8 rounded-full",
-                            "bg-muted/80 hover:bg-muted text-muted-foreground hover:text-foreground",
-                            "transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
-                            "md:top-4 md:right-4 md:size-7 md:rounded-md md:bg-transparent"
+                            "nd-absolute nd-top-3 nd-right-3 nd-z-10",
+                            "nd-flex nd-items-center nd-justify-center nd-size-8 nd-rounded-full",
+                            "nd-bg-muted/80 hover:nd-bg-muted nd-text-muted-foreground hover:nd-text-foreground",
+                            "nd-transition-colors focus:nd-outline-none focus:nd-ring-2 focus:nd-ring-ring focus:nd-ring-offset-2",
+                            "md:nd-top-4 md:nd-right-4 md:nd-size-7 md:nd-rounded-md md:nd-bg-transparent"
                         )}
                     >
-                        <X className="size-4" />
-                        <span className="sr-only">Close</span>
+                        <X className="nd-size-4" />
+                        <span className="nd-sr-only">Close</span>
                     </DialogPrimitive.Close>
                 )}
             </DialogPrimitive.Content>
@@ -85,7 +85,7 @@ function Dialog2Header({ className, ...props }: React.ComponentProps<"div">) {
         <div
             data-slot="dialog2-header"
             className={cn(
-                "flex items-center justify-between shrink-0 px-4 h-14 border-b bg-background/95 backdrop-blur-sm",
+                "nd-flex nd-items-center nd-justify-between nd-shrink-0 nd-px-4 nd-h-14 nd-border-b nd-bg-background/95 nd-backdrop-blur-sm",
                 className
             )}
             {...props}
@@ -97,7 +97,7 @@ function Dialog2Body({ className, ...props }: React.ComponentProps<"div">) {
     return (
         <div
             data-slot="dialog2-body"
-            className={cn("flex-1 min-h-0 overflow-hidden", className)}
+            className={cn("nd-flex-1 nd-min-h-0 nd-overflow-hidden", className)}
             {...props}
         />
     )
@@ -108,7 +108,7 @@ function Dialog2Footer({ className, ...props }: React.ComponentProps<"div">) {
         <div
             data-slot="dialog2-footer"
             className={cn(
-                "flex items-center justify-end gap-2 shrink-0 px-4 py-3 border-t bg-background/95 backdrop-blur-sm",
+                "nd-flex nd-items-center nd-justify-end nd-gap-2 nd-shrink-0 nd-px-4 nd-py-3 nd-border-t nd-bg-background/95 nd-backdrop-blur-sm",
                 className
             )}
             {...props}
@@ -123,7 +123,7 @@ function Dialog2Title({
     return (
         <DialogPrimitive.Title
             data-slot="dialog2-title"
-            className={cn("text-base font-semibold", className)}
+            className={cn("nd-text-base nd-font-semibold", className)}
             {...props}
         />
     )
@@ -136,7 +136,7 @@ function Dialog2Description({
     return (
         <DialogPrimitive.Description
             data-slot="dialog2-description"
-            className={cn("text-sm text-muted-foreground", className)}
+            className={cn("nd-text-sm nd-text-muted-foreground", className)}
             {...props}
         />
     )

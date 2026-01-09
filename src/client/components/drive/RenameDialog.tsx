@@ -106,14 +106,14 @@ export const RenameDialog = (props: Readonly<{
 
                     {errors.name && (
                         <Alert variant="destructive">
-                            <AlertCircle className="h-4 w-4" />
+                            <AlertCircle className="nd-h-4 nd-w-4" />
                             <AlertTitle>Error</AlertTitle>
                             <AlertDescription>{errors.name.message}</AlertDescription>
                         </Alert>
                     )}
 
-                    <div className="grid gap-4 py-4">
-                        <div className="grid gap-2">
+                    <div className="nd-grid nd-gap-4 nd-py-4">
+                        <div className="nd-grid nd-gap-2">
                             <Label htmlFor="rename-input">Name</Label>
                             <Input
                                 id="rename-input"

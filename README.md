@@ -85,6 +85,8 @@ sudo apt install ffmpeg
 
 Styles are **automatically injected** when you import components from `@muhgholy/next-drive/client`. No additional CSS import is required!
 
+All CSS classes are prefixed with `nd-` to avoid conflicts with your project's styles. CSS variables are scoped to the `.nd-drive-root` container class.
+
 If styles are not loading (e.g., with certain bundler configurations), you can manually import:
 
 ```tsx

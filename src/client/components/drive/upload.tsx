@@ -17,15 +17,15 @@ const UploadStatusIcon = (props: Readonly<{ status: TDriveUploadState['status'] 
 
     switch (status) {
         case 'complete':
-            return <CheckCircle2 className="size-4 text-emerald-500" />;
+            return <CheckCircle2 className="nd-size-4 nd-text-emerald-500" />;
         case 'error':
-            return <AlertCircle className="size-4 text-destructive" />;
+            return <AlertCircle className="nd-size-4 nd-text-destructive" />;
         case 'cancelled':
-            return <X className="size-4 text-muted-foreground" />;
+            return <X className="nd-size-4 nd-text-muted-foreground" />;
         case 'uploading':
-            return <Loader2 className="size-4 text-primary animate-spin" />;
+            return <Loader2 className="nd-size-4 nd-text-primary nd-animate-spin" />;
         default:
-            return <Clock className="size-4 text-muted-foreground" />;
+            return <Clock className="nd-size-4 nd-text-muted-foreground" />;
     }
 };
 
@@ -51,11 +51,11 @@ const LogViewerDialog = (props: Readonly<{ upload: TDriveUploadState; open: bool
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-lg p-0 gap-0 max-h-[85vh] flex flex-col">
-                <DialogHeader className="px-4 py-3 border-b">
-                    <DialogTitle className="text-base truncate">{upload.name}</DialogTitle>
+            <DialogContent className="sm:nd-max-w-lg nd-p-0 nd-gap-0 nd-max-h-[85vh] nd-flex nd-flex-col">
+                <DialogHeader className="nd-px-4 nd-py-3 nd-border-b">
+                    <DialogTitle className="nd-text-base nd-truncate">{upload.name}</DialogTitle>
                 </DialogHeader>
-                <div className="sticky top-0 z-10 bg-background px-4 py-2 border-b flex items-center gap-2">
+                <div className="nd-sticky nd-top-0 nd-z-10 nd-bg-background nd-px-4 nd-py-2 nd-border-b nd-flex nd-items-center nd-gap-2">
                     <Button
                         type="button"
                         size="sm"
@@ -75,31 +75,31 @@ const LogViewerDialog = (props: Readonly<{ upload: TDriveUploadState; open: bool
                         Download
                     </Button>
                 </div>
-                <div className="flex-1 overflow-y-auto p-4 space-y-2">
+                <div className="nd-flex-1 nd-overflow-y-auto nd-p-4 nd-space-y-2">
                     {logs.length === 0 && (
-                        <p className="text-sm text-muted-foreground text-center py-8">No logs available</p>
+                        <p className="nd-text-sm nd-text-muted-foreground nd-text-center nd-py-8">No logs available</p>
                     )}
                     {logs.map((log, index) => (
                         <div
                             key={index}
                             className={cn(
-                                "flex items-start gap-2 p-2 rounded-md border text-sm",
-                                log.type === 'error' && "bg-destructive/5 border-destructive/20",
-                                log.type === 'warning' && "bg-yellow-500/5 border-yellow-500/20",
-                                log.type === 'success' && "bg-emerald-500/5 border-emerald-500/20",
-                                log.type === 'info' && "bg-muted/50 border-border"
+                                "nd-flex nd-items-start nd-gap-2 nd-p-2 nd-rounded-md nd-border nd-text-sm",
+                                log.type === 'error' && "nd-bg-destructive/5 nd-border-destructive/20",
+                                log.type === 'warning' && "nd-bg-yellow-500/5 nd-border-yellow-500/20",
+                                log.type === 'success' && "nd-bg-emerald-500/5 nd-border-emerald-500/20",
+                                log.type === 'info' && "nd-bg-muted/50 nd-border-border"
                             )}
                         >
                             <div className={cn(
-                                "shrink-0 size-1.5 rounded-full mt-1.5",
-                                log.type === 'error' && "bg-destructive",
-                                log.type === 'warning' && "bg-yellow-500",
-                                log.type === 'success' && "bg-emerald-500",
-                                log.type === 'info' && "bg-muted-foreground"
+                                "nd-shrink-0 nd-size-1.5 nd-rounded-full nd-mt-1.5",
+                                log.type === 'error' && "nd-bg-destructive",
+                                log.type === 'warning' && "nd-bg-yellow-500",
+                                log.type === 'success' && "nd-bg-emerald-500",
+                                log.type === 'info' && "nd-bg-muted-foreground"
                             )} />
-                            <div className="flex-1 min-w-0 space-y-1">
-                                <p className="break-words whitespace-pre-wrap">{log.message}</p>
-                                <p className="text-xs text-muted-foreground">
+                            <div className="nd-flex-1 nd-min-w-0 nd-space-y-1">
+                                <p className="nd-break-words nd-whitespace-pre-wrap">{log.message}</p>
+                                <p className="nd-text-xs nd-text-muted-foreground">
                                     {new Date(log.timestamp).toLocaleTimeString()}
                                 </p>
                             </div>
@@ -179,15 +179,15 @@ export const DriveUpload = (props: Readonly<{
 
     const renderDialog = () => (
         <Dialog open={showUploadsDialog} onOpenChange={setShowUploadsDialog}>
-            <DialogContent className="sm:max-w-md p-0 gap-0" showCloseButton={false}>
-                <DialogHeader className="px-4 py-3 border-b flex-row items-center justify-between space-y-0">
-                    <DialogTitle className="text-base">Upload Status</DialogTitle>
+            <DialogContent className="sm:nd-max-w-md nd-p-0 nd-gap-0" showCloseButton={false}>
+                <DialogHeader className="nd-px-4 nd-py-3 nd-border-b nd-flex-row nd-items-center nd-justify-between nd-space-y-0">
+                    <DialogTitle className="nd-text-base">Upload Status</DialogTitle>
                     {hasUploadsInProgress && (
                         <Button
                             type="button"
                             size="sm"
                             variant="ghost"
-                            className="text-destructive hover:text-destructive"
+                            className="nd-text-destructive hover:nd-text-destructive"
                             onClick={cancelAllUploads}
                         >
                             Cancel All
@@ -195,21 +195,21 @@ export const DriveUpload = (props: Readonly<{
                     )}
                 </DialogHeader>
 
-                <div className="divide-y max-h-80 overflow-y-auto">
+                <div className="nd-divide-y nd-max-h-80 nd-overflow-y-auto">
                     {uploads.length === 0 && (
-                        <div className="p-4 text-center text-sm text-muted-foreground">No uploads</div>
+                        <div className="nd-p-4 nd-text-center nd-text-sm nd-text-muted-foreground">No uploads</div>
                     )}
                     {uploads.map((upload) => {
                         const percent = upload.status === 'complete' ? 100 : (upload.status === 'error' || !upload.totalChunks) ? 0 : Math.round((upload.currentChunk / upload.totalChunks) * 100);
                         return (
-                            <div key={upload.id} className="px-4 py-2.5">
-                                <div className="flex items-start gap-2 mb-1.5">
+                            <div key={upload.id} className="nd-px-4 nd-py-2.5">
+                                <div className="nd-flex nd-items-start nd-gap-2 nd-mb-1.5">
                                     <UploadStatusIcon status={upload.status} />
-                                    <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-medium truncate">{upload.name}</p>
+                                    <div className="nd-flex-1 nd-min-w-0">
+                                        <p className="nd-text-sm nd-font-medium nd-truncate">{upload.name}</p>
                                         <p className={cn(
-                                            "text-xs break-words",
-                                            upload.status === 'error' ? "text-destructive" : "text-muted-foreground"
+                                            "nd-text-xs nd-break-words",
+                                            upload.status === 'error' ? "nd-text-destructive" : "nd-text-muted-foreground"
                                         )}>
                                             {upload.status === 'uploading' && 'Uploading...'}
                                             {upload.status === 'queued' && 'Waiting in queue'}
@@ -219,17 +219,17 @@ export const DriveUpload = (props: Readonly<{
                                             {upload.status === 'cancelled' && 'Upload cancelled'}
                                         </p>
                                     </div>
-                                    <div className="flex items-center gap-1 shrink-0">
+                                    <div className="nd-flex nd-items-center nd-gap-1 nd-shrink-0">
                                         {(upload.logs && upload.logs.length > 0) && (
                                             <Button
                                                 type="button"
                                                 size="icon"
                                                 variant="ghost"
-                                                className="text-muted-foreground hover:text-foreground"
+                                                className="nd-text-muted-foreground hover:nd-text-foreground"
                                                 onClick={() => setLogViewerUpload(upload)}
                                                 title="View logs"
                                             >
-                                                <FileText className="size-3.5" />
+                                                <FileText className="nd-size-3.5" />
                                             </Button>
                                         )}
                                         {['uploading', 'queued', 'pending'].includes(upload.status) && (
@@ -237,19 +237,19 @@ export const DriveUpload = (props: Readonly<{
                                                 type="button"
                                                 size="icon"
                                                 variant="ghost"
-                                                className="text-muted-foreground hover:text-destructive"
+                                                className="nd-text-muted-foreground hover:nd-text-destructive"
                                                 onClick={() => cancelUpload(upload.id)}
                                                 title="Cancel"
                                             >
-                                                <X className="size-3.5" />
+                                                <X className="nd-size-3.5" />
                                             </Button>
                                         )}
                                     </div>
                                 </div>
                                 {upload.status === 'uploading' && (
-                                    <div className="flex items-center gap-2 pl-6">
-                                        <Progress value={percent} className="flex-1" />
-                                        <span className="text-xs tabular-nums text-muted-foreground w-8">
+                                    <div className="nd-flex nd-items-center nd-gap-2 nd-pl-6">
+                                        <Progress value={percent} className="nd-flex-1" />
+                                        <span className="nd-text-xs nd-tabular-nums nd-text-muted-foreground nd-w-8">
                                             {percent}%
                                         </span>
                                     </div>
@@ -272,14 +272,14 @@ export const DriveUpload = (props: Readonly<{
                         onOpenChange={(open) => !open && setLogViewerUpload(null)}
                     />
                 )}
-                <div className="flex items-center gap-2">
+                <div className="nd-flex nd-items-center nd-gap-2">
                     <input
                         ref={inputRef}
                         type="file"
                         multiple
                         accept={accept}
                         onChange={(e) => { handleFiles(e.target.files); e.target.value = ''; }}
-                        className="hidden"
+                        className="nd-hidden"
                         aria-hidden="true"
                     />
                     {activeAccountId && (
@@ -291,7 +291,7 @@ export const DriveUpload = (props: Readonly<{
                             disabled={isLoading}
                             title="Refresh"
                         >
-                            <RefreshCw className={cn("!size-4 shrink-0", isLoading && "animate-spin")} />
+                            <RefreshCw className={cn("!nd-size-4 nd-shrink-0", isLoading && "nd-animate-spin")} />
                         </Button>
                     )}
                     <Button
@@ -300,7 +300,7 @@ export const DriveUpload = (props: Readonly<{
                         size="sm"
                         disabled={hasUploadsInProgress}
                     >
-                        <UploadIcon className="!size-4 shrink-0" />
+                        <UploadIcon className="!nd-size-4 nd-shrink-0" />
                         <span>Upload</span>
                     </Button>
 
@@ -312,9 +312,9 @@ export const DriveUpload = (props: Readonly<{
                             onClick={() => { setManuallyOpened(true); setShowUploadsDialog(true); }}
                         >
                             {activeUploads.length > 0 ? (
-                                <Loader2 className="!size-4 shrink-0 animate-spin" />
+                                <Loader2 className="!nd-size-4 nd-shrink-0 nd-animate-spin" />
                             ) : (
-                                <CheckCircle2 className="!size-4 shrink-0" />
+                                <CheckCircle2 className="!nd-size-4 nd-shrink-0" />
                             )}
                             <span>
                                 {activeUploads.length > 0
@@ -331,11 +331,11 @@ export const DriveUpload = (props: Readonly<{
     }
 
     return (
-        <div className="w-full">
+        <div className="nd-w-full">
             <div
                 className={cn(
-                    "flex flex-col items-center justify-center p-8 border-2 border-dashed rounded-lg cursor-pointer transition-colors",
-                    isDragging ? "border-primary bg-primary/5" : "border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/50"
+                    "nd-flex nd-flex-col nd-items-center nd-justify-center nd-p-8 nd-border-2 nd-border-dashed nd-rounded-lg nd-cursor-pointer nd-transition-colors",
+                    isDragging ? "nd-border-primary nd-bg-primary/5" : "nd-border-muted-foreground/25 hover:nd-border-primary/50 hover:nd-bg-muted/50"
                 )}
                 onDragEnter={(e) => handleDrag(e, true)} onDragLeave={(e) => handleDrag(e, false)} onDragOver={(e) => handleDrag(e, true)} onDrop={handleDrop}
                 onClick={() => inputRef.current?.click()} role="button" tabIndex={0}
@@ -347,21 +347,21 @@ export const DriveUpload = (props: Readonly<{
                     multiple
                     accept={accept}
                     onChange={(e) => { handleFiles(e.target.files); e.target.value = ''; }}
-                    className="hidden"
+                    className="nd-hidden"
                     aria-hidden="true"
                 />
-                <div className="flex flex-col items-center gap-2 text-center">
-                    <div className="p-3 rounded-full bg-background border shadow-sm">
-                        <UploadIcon className="size-6 text-muted-foreground" />
+                <div className="nd-flex nd-flex-col nd-items-center nd-gap-2 nd-text-center">
+                    <div className="nd-p-3 nd-rounded-full nd-bg-background nd-border nd-shadow-sm">
+                        <UploadIcon className="nd-size-6 nd-text-muted-foreground" />
                     </div>
-                    <div className="text-sm font-medium text-foreground">
+                    <div className="nd-text-sm nd-font-medium nd-text-foreground">
                         {isDragging ? 'Drop files here' : 'Click or drag files to upload'}
                     </div>
                 </div>
             </div>
 
             {hasUploadsInProgress && (
-                <div className="mt-4 text-center">
+                <div className="nd-mt-4 nd-text-center">
                     <Button variant="link" onClick={() => { setManuallyOpened(true); setShowUploadsDialog(true); }}>View Upload Progress</Button>
                 </div>
             )}

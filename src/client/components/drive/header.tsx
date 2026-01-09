@@ -28,18 +28,18 @@ export const DriveHeader = ({ className }: { className?: string }) => {
     const [dialogs, setDialogs] = useState({ delete: false, emptyTrash: false, newFolder: false });
 
     return (
-        <div className={cn("flex flex-wrap items-center gap-2 bg-muted/30 dark:bg-muted/20 p-2", className)}>
+        <div className={cn("nd-flex nd-flex-wrap nd-items-center nd-gap-2 nd-bg-muted/30 dark:nd-bg-muted/20 nd-p-2", className)}>
             {/* New Folder Button - Only in BROWSE view */}
             {currentView === 'BROWSE' && (
                 <Button
                     type="button"
                     variant="outline"
                     size="sm"
-                    className="gap-1.5"
+                    className="nd-gap-1.5"
                     onClick={() => setDialogs(prev => ({ ...prev, newFolder: true }))}
                 >
-                    <FolderPlus className="size-4" />
-                    <span className="hidden sm:inline">New Folder</span>
+                    <FolderPlus className="nd-size-4" />
+                    <span className="nd-hidden sm:nd-inline">New Folder</span>
                 </Button>
             )}
 
@@ -51,9 +51,9 @@ export const DriveHeader = ({ className }: { className?: string }) => {
                             type="button"
                             variant="outline"
                             size="sm"
-                            className="gap-1.5"
+                            className="nd-gap-1.5"
                         >
-                            <Menu className="size-4" />
+                            <Menu className="nd-size-4" />
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="start">
@@ -67,7 +67,7 @@ export const DriveHeader = ({ className }: { className?: string }) => {
                                     setSelectedFileIds([]);
                                 }}
                             >
-                                <RotateCcw className="size-3.5 mr-2" />
+                                <RotateCcw className="nd-size-3.5 nd-mr-2" />
                                 Restore ({selectedFileIds.length})
                             </DropdownMenuItem>
                         )}
@@ -76,9 +76,9 @@ export const DriveHeader = ({ className }: { className?: string }) => {
                         {selectedFileIds.length > 0 && (
                             <DropdownMenuItem
                                 onClick={() => setDialogs(prev => ({ ...prev, delete: true }))}
-                                className="text-destructive focus:text-destructive"
+                                className="nd-text-destructive focus:nd-text-destructive"
                             >
-                                <Trash2 className="size-3.5 mr-2" />
+                                <Trash2 className="nd-size-3.5 nd-mr-2" />
                                 {currentView === 'TRASH' ? 'Delete Forever' : 'Delete'} ({selectedFileIds.length})
                             </DropdownMenuItem>
                         )}
@@ -87,9 +87,9 @@ export const DriveHeader = ({ className }: { className?: string }) => {
                         {currentView === 'TRASH' && selectedFileIds.length === 0 && (
                             <DropdownMenuItem
                                 onClick={() => setDialogs(prev => ({ ...prev, emptyTrash: true }))}
-                                className="text-destructive focus:text-destructive"
+                                className="nd-text-destructive focus:nd-text-destructive"
                             >
-                                <Trash2 className="size-3.5 mr-2" />
+                                <Trash2 className="nd-size-3.5 nd-mr-2" />
                                 Empty Trash
                             </DropdownMenuItem>
                         )}
@@ -104,24 +104,24 @@ export const DriveHeader = ({ className }: { className?: string }) => {
                         type="button"
                         variant={groupBy !== "NONE" ? "secondary" : "ghost"}
                         size="sm"
-                        className="gap-1.5"
+                        className="nd-gap-1.5"
                     >
-                        <Group className="size-3.5" />
-                        <span className="hidden sm:inline">
+                        <Group className="nd-size-3.5" />
+                        <span className="nd-hidden sm:nd-inline">
                             {groupBy === "NONE" ? 'Group' : 'Grouped'}
                         </span>
                     </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start">
                     <DropdownMenuItem onClick={() => setGroupBy("NONE")}>
-                        {groupBy === "NONE" && <Check className="size-3.5 mr-2" />}
-                        <span className={cn(groupBy !== "NONE" && "pl-5.5")}>
+                        {groupBy === "NONE" && <Check className="nd-size-3.5 nd-mr-2" />}
+                        <span className={cn(groupBy !== "NONE" && "nd-pl-5.5")}>
                             No Grouping
                         </span>
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => setGroupBy("CREATED_AT")}>
-                        {groupBy === "CREATED_AT" && <Check className="size-3.5 mr-2" />}
-                        <span className={cn(groupBy !== "CREATED_AT" && "pl-5.5")}>
+                        {groupBy === "CREATED_AT" && <Check className="nd-size-3.5 nd-mr-2" />}
+                        <span className={cn(groupBy !== "CREATED_AT" && "nd-pl-5.5")}>
                             Created Date
                         </span>
                     </DropdownMenuItem>
@@ -129,11 +129,11 @@ export const DriveHeader = ({ className }: { className?: string }) => {
             </DropdownMenu>
 
             {/* Search */}
-            <div className="flex-1 min-w-0 sm:min-w-50 relative">
+            <div className="nd-flex-1 nd-min-w-0 sm:nd-min-w-50 nd-relative">
                 <Input
                     type="text"
                     placeholder="Search files..."
-                    className="w-full pl-8 pr-7 h-9"
+                    className="nd-w-full nd-pl-8 nd-pr-7 nd-h-9"
                     value={searchQuery}
                     onChange={(e) => {
                         const val = e.target.value;
@@ -148,7 +148,7 @@ export const DriveHeader = ({ className }: { className?: string }) => {
                         }
                     }}
                 />
-                <div className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none">
+                <div className="nd-absolute nd-left-2.5 nd-top-1/2 -nd-translate-y-1/2 nd-text-muted-foreground nd-pointer-events-none">
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-search"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>
                 </div>
                 {searchQuery && (
@@ -156,7 +156,7 @@ export const DriveHeader = ({ className }: { className?: string }) => {
                         type="button"
                         variant="ghost"
                         size="icon"
-                        className="absolute right-0.5 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground"
+                        className="nd-absolute nd-right-0.5 nd-top-1/2 -nd-translate-y-1/2 nd-h-7 nd-w-7 nd-text-muted-foreground"
                         onClick={() => {
                             setSearchQuery('');
                             setCurrentView(searchScope === 'TRASH' ? 'TRASH' : 'BROWSE');
@@ -170,9 +170,9 @@ export const DriveHeader = ({ className }: { className?: string }) => {
             {/* Sort Dropdown */}
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                    <Button type="button" variant="ghost" size="sm" className="gap-1.5">
-                        <ArrowUpDown className="size-3.5" />
-                        <span className="hidden sm:inline max-w-24 truncate">
+                    <Button type="button" variant="ghost" size="sm" className="nd-gap-1.5">
+                        <ArrowUpDown className="nd-size-3.5" />
+                        <span className="nd-hidden sm:nd-inline nd-max-w-24 nd-truncate">
                             {sortBy.field === "id" ? 'Default' :
                                 sortBy.field === "order" ? 'Custom' :
                                     sortBy.field === "createdAt" ? (sortBy.order === -1 ? 'Date: Newest' : 'Date: Oldest') :
@@ -184,80 +184,80 @@ export const DriveHeader = ({ className }: { className?: string }) => {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                     <DropdownMenuItem onClick={() => setSortBy({ field: "order", order: 1 })}>
-                        {sortBy.field === "order" && <Check className="size-3.5 mr-2" />}
-                        <span className={cn(sortBy.field !== "order" && "pl-5.5")}>Custom Order</span>
+                        {sortBy.field === "order" && <Check className="nd-size-3.5 nd-mr-2" />}
+                        <span className={cn(sortBy.field !== "order" && "nd-pl-5.5")}>Custom Order</span>
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => setSortBy({ field: "id", order: 1 })}>
-                        {sortBy.field === "id" && <Check className="size-3.5 mr-2" />}
-                        <span className={cn(sortBy.field !== "id" && "pl-5.5")}>Default</span>
+                        {sortBy.field === "id" && <Check className="nd-size-3.5 nd-mr-2" />}
+                        <span className={cn(sortBy.field !== "id" && "nd-pl-5.5")}>Default</span>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={() => setSortBy({ field: "createdAt", order: -1 })}>
-                        {sortBy.field === "createdAt" && sortBy.order === -1 && <Check className="size-3.5 mr-2" />}
-                        <Calendar className={cn("size-3.5 mr-2", sortBy.field === "createdAt" && sortBy.order === -1 ? "" : "ml-5.5")} />
+                        {sortBy.field === "createdAt" && sortBy.order === -1 && <Check className="nd-size-3.5 nd-mr-2" />}
+                        <Calendar className={cn("nd-size-3.5 nd-mr-2", sortBy.field === "createdAt" && sortBy.order === -1 ? "" : "nd-ml-5.5")} />
                         Date: Newest
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => setSortBy({ field: "createdAt", order: 1 })}>
-                        {sortBy.field === "createdAt" && sortBy.order === 1 && <Check className="size-3.5 mr-2" />}
-                        <Calendar className={cn("size-3.5 mr-2", sortBy.field === "createdAt" && sortBy.order === 1 ? "" : "ml-5.5")} />
+                        {sortBy.field === "createdAt" && sortBy.order === 1 && <Check className="nd-size-3.5 nd-mr-2" />}
+                        <Calendar className={cn("nd-size-3.5 nd-mr-2", sortBy.field === "createdAt" && sortBy.order === 1 ? "" : "nd-ml-5.5")} />
                         Date: Oldest
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={() => setSortBy({ field: "name", order: 1 })}>
-                        {sortBy.field === "name" && sortBy.order === 1 && <Check className="size-3.5 mr-2" />}
-                        <ArrowDownAZ className={cn("size-3.5 mr-2", sortBy.field === "name" && sortBy.order === 1 ? "" : "ml-5.5")} />
+                        {sortBy.field === "name" && sortBy.order === 1 && <Check className="nd-size-3.5 nd-mr-2" />}
+                        <ArrowDownAZ className={cn("nd-size-3.5 nd-mr-2", sortBy.field === "name" && sortBy.order === 1 ? "" : "nd-ml-5.5")} />
                         Name: A to Z
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => setSortBy({ field: "name", order: -1 })}>
-                        {sortBy.field === "name" && sortBy.order === -1 && <Check className="size-3.5 mr-2" />}
-                        <ArrowUpAZ className={cn("size-3.5 mr-2", sortBy.field === "name" && sortBy.order === -1 ? "" : "ml-5.5")} />
+                        {sortBy.field === "name" && sortBy.order === -1 && <Check className="nd-size-3.5 nd-mr-2" />}
+                        <ArrowUpAZ className={cn("nd-size-3.5 nd-mr-2", sortBy.field === "name" && sortBy.order === -1 ? "" : "nd-ml-5.5")} />
                         Name: Z to A
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={() => setSortBy({ field: "size", order: -1 })}>
-                        {sortBy.field === "size" && sortBy.order === -1 && <Check className="size-3.5 mr-2" />}
-                        <ArrowDown01 className={cn("size-3.5 mr-2", sortBy.field === "size" && sortBy.order === -1 ? "" : "ml-5.5")} />
+                        {sortBy.field === "size" && sortBy.order === -1 && <Check className="nd-size-3.5 nd-mr-2" />}
+                        <ArrowDown01 className={cn("nd-size-3.5 nd-mr-2", sortBy.field === "size" && sortBy.order === -1 ? "" : "nd-ml-5.5")} />
                         Size: Large
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => setSortBy({ field: "size", order: 1 })}>
-                        {sortBy.field === "size" && sortBy.order === 1 && <Check className="size-3.5 mr-2" />}
-                        <ArrowUp01 className={cn("size-3.5 mr-2", sortBy.field === "size" && sortBy.order === 1 ? "" : "ml-5.5")} />
+                        {sortBy.field === "size" && sortBy.order === 1 && <Check className="nd-size-3.5 nd-mr-2" />}
+                        <ArrowUp01 className={cn("nd-size-3.5 nd-mr-2", sortBy.field === "size" && sortBy.order === 1 ? "" : "nd-ml-5.5")} />
                         Size: Small
                     </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
 
-            <div className="w-px h-5 bg-border" />
+            <div className="nd-w-px nd-h-5 nd-bg-border" />
 
             {/* View Toggles */}
-            <div className="flex bg-muted/50 dark:bg-muted/30 rounded-md p-0.5 gap-0.5">
+            <div className="nd-flex nd-bg-muted/50 dark:nd-bg-muted/30 nd-rounded-md nd-p-0.5 nd-gap-0.5">
                 <Button
                     type="button"
                     variant={"ghost"}
                     size="icon"
                     className={cn(
-                        "h-8 w-8",
-                        viewMode === "GRID" && "bg-background shadow-sm hover:bg-background dark:bg-background/80"
+                        "nd-h-8 nd-w-8",
+                        viewMode === "GRID" && "nd-bg-background nd-shadow-sm hover:nd-bg-background dark:nd-bg-background/80"
                     )}
                     onClick={() => setViewMode("GRID")}
                     aria-label="Grid View"
                     aria-pressed={viewMode === "GRID"}
                 >
-                    <LayoutGrid className="size-4" />
+                    <LayoutGrid className="nd-size-4" />
                 </Button>
                 <Button
                     type="button"
                     variant={"ghost"}
                     size="icon"
                     className={cn(
-                        "h-8 w-8",
-                        viewMode === "LIST" && "bg-background shadow-sm hover:bg-background dark:bg-background/80"
+                        "nd-h-8 nd-w-8",
+                        viewMode === "LIST" && "nd-bg-background nd-shadow-sm hover:nd-bg-background dark:nd-bg-background/80"
                     )}
                     onClick={() => setViewMode("LIST")}
                     aria-label="List View"
                     aria-pressed={viewMode === "LIST"}
                 >
-                    <List className="size-4" />
+                    <List className="nd-size-4" />
                 </Button>
             </div>
 
@@ -314,11 +314,11 @@ export const DriveContentProgress = () => {
     if (!isLoading) return null;
 
     return (
-        <div className="h-1 w-full shrink-0">
+        <div className="nd-h-1 nd-w-full nd-shrink-0">
             <Progress
                 indeterminate
-                className="h-full rounded-none bg-primary/10"
-                indicatorClassName="bg-primary"
+                className="nd-h-full nd-rounded-none nd-bg-primary/10"
+                indicatorClassName="nd-bg-primary"
             />
         </div>
     );

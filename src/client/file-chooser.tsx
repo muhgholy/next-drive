@@ -176,58 +176,58 @@ const ChooserSidebar = (props: Readonly<{ onNavigate?: () => void }>) => {
     };
 
     return (
-        <div className="flex flex-col h-full w-full bg-muted/5 dark:bg-muted/10">
+        <div className="nd-flex nd-flex-col nd-h-full nd-w-full nd-bg-muted/5 dark:nd-bg-muted/10">
             {/* Account Switcher */}
-            <div className="p-2 border-b border-border/50">
-                <div className="flex items-center gap-1">
+            <div className="nd-p-2 nd-border-b nd-border-border/50">
+                <div className="nd-flex nd-items-center nd-gap-1">
                     {isDropdownDisabled ? (
                         /* Static display when no accounts and no providers */
-                        <div className="flex-1 flex items-center gap-2 px-2 h-11 min-w-0">
-                            <div className="size-7 rounded-md flex items-center justify-center shrink-0 bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400">
-                                <HardDrive className="size-3.5" />
+                        <div className="nd-flex-1 nd-flex nd-items-center nd-gap-2 nd-px-2 nd-h-11 nd-min-w-0">
+                            <div className="nd-size-7 nd-rounded-md nd-flex nd-items-center nd-justify-center nd-shrink-0 nd-bg-emerald-500/10 nd-text-emerald-600 dark:nd-bg-emerald-500/20 dark:nd-text-emerald-400">
+                                <HardDrive className="nd-size-3.5" />
                             </div>
-                            <div className="flex flex-col min-w-0">
-                                <span className="text-sm font-medium truncate">Local Storage</span>
-                                <span className="text-[11px] text-muted-foreground truncate">On this device</span>
+                            <div className="nd-flex nd-flex-col nd-min-w-0">
+                                <span className="nd-text-sm nd-font-medium nd-truncate">Local Storage</span>
+                                <span className="nd-text-[11px] nd-text-muted-foreground nd-truncate">On this device</span>
                             </div>
                         </div>
                     ) : (
                         <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
                             <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" className="flex-1 min-w-0 justify-between px-2 h-11 hover:bg-muted/50 dark:hover:bg-muted/30">
-                                    <div className="flex items-center gap-2 text-left min-w-0 flex-1">
+                                <Button variant="ghost" className="nd-flex-1 nd-min-w-0 nd-justify-between nd-px-2 nd-h-11 hover:nd-bg-muted/50 dark:hover:nd-bg-muted/30">
+                                    <div className="nd-flex nd-items-center nd-gap-2 nd-text-left nd-min-w-0 nd-flex-1">
                                         <div className={cn(
-                                            "size-7 rounded-md flex items-center justify-center shrink-0",
-                                            activeAccountId ? "bg-blue-500/10 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400" : "bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400"
+                                            "nd-size-7 nd-rounded-md nd-flex nd-items-center nd-justify-center nd-shrink-0",
+                                            activeAccountId ? "nd-bg-blue-500/10 nd-text-blue-600 dark:nd-bg-blue-500/20 dark:nd-text-blue-400" : "nd-bg-emerald-500/10 nd-text-emerald-600 dark:nd-bg-emerald-500/20 dark:nd-text-emerald-400"
                                         )}>
-                                            {activeAccountId ? <Database className="size-3.5" /> : <HardDrive className="size-3.5" />}
+                                            {activeAccountId ? <Database className="nd-size-3.5" /> : <HardDrive className="nd-size-3.5" />}
                                         </div>
-                                        <div className="flex flex-col min-w-0">
-                                            <span className="text-sm font-medium truncate">{currentAccountName}</span>
-                                            <span className="text-[11px] text-muted-foreground truncate">{currentAccountEmail}</span>
+                                        <div className="nd-flex nd-flex-col nd-min-w-0">
+                                            <span className="nd-text-sm nd-font-medium nd-truncate">{currentAccountName}</span>
+                                            <span className="nd-text-[11px] nd-text-muted-foreground nd-truncate">{currentAccountEmail}</span>
                                         </div>
                                     </div>
-                                    <ChevronsUpDown className="size-3.5 text-muted-foreground/60 shrink-0" />
+                                    <ChevronsUpDown className="nd-size-3.5 nd-text-muted-foreground/60 nd-shrink-0" />
                                 </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent className="w-56" align="start">
-                                <DropdownMenuLabel className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Storage</DropdownMenuLabel>
-                                <DropdownMenuItem onClick={() => { setActiveAccountId(null); setCurrentView('BROWSE'); onNavigate?.(); }} className="gap-2 py-2">
-                                    <span className="flex-1 text-sm">Local Storage</span>
-                                    {activeAccountId === null && <Check className="size-3.5 text-primary" />}
+                            <DropdownMenuContent className="nd-w-56" align="start">
+                                <DropdownMenuLabel className="nd-text-[11px] nd-font-medium nd-text-muted-foreground nd-uppercase nd-tracking-wide">Storage</DropdownMenuLabel>
+                                <DropdownMenuItem onClick={() => { setActiveAccountId(null); setCurrentView('BROWSE'); onNavigate?.(); }} className="nd-gap-2 nd-py-2">
+                                    <span className="nd-flex-1 nd-text-sm">Local Storage</span>
+                                    {activeAccountId === null && <Check className="nd-size-3.5 nd-text-primary" />}
                                 </DropdownMenuItem>
                                 {accounts.length > 0 && <DropdownMenuSeparator />}
                                 {accounts.map(account => (
                                     <DropdownMenuItem
                                         key={account.id}
                                         onClick={() => { setActiveAccountId(account.id); setCurrentView('BROWSE'); onNavigate?.(); }}
-                                        className="gap-2 py-2"
+                                        className="nd-gap-2 nd-py-2"
                                     >
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-sm truncate">{account.name}</p>
-                                            <p className="text-[10px] text-muted-foreground truncate">{account.email}</p>
+                                        <div className="nd-flex-1 nd-min-w-0">
+                                            <p className="nd-text-sm nd-truncate">{account.name}</p>
+                                            <p className="nd-text-[10px] nd-text-muted-foreground nd-truncate">{account.email}</p>
                                         </div>
-                                        {activeAccountId === account.id && <Check className="size-3.5 text-primary" />}
+                                        {activeAccountId === account.id && <Check className="nd-size-3.5 nd-text-primary" />}
                                     </DropdownMenuItem>
                                 ))}
                                 {/* Add Account - only show if any provider is available */}
@@ -235,7 +235,7 @@ const ChooserSidebar = (props: Readonly<{ onNavigate?: () => void }>) => {
                                     <>
                                         <DropdownMenuSeparator />
                                         <DropdownMenuSub>
-                                            <DropdownMenuSubTrigger className="gap-2"><Plus className="size-3.5" /><span className="text-sm">Add Account</span></DropdownMenuSubTrigger>
+                                            <DropdownMenuSubTrigger className="nd-gap-2"><Plus className="nd-size-3.5" /><span className="nd-text-sm">Add Account</span></DropdownMenuSubTrigger>
                                             <DropdownMenuSubContent>
                                                 {availableProviders.google && (
                                                     <DropdownMenuItem onClick={openOAuthPopup}>Google Drive</DropdownMenuItem>
@@ -252,23 +252,23 @@ const ChooserSidebar = (props: Readonly<{ onNavigate?: () => void }>) => {
                     {currentAccount && (
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="size-9 shrink-0 hover:bg-muted/50 dark:hover:bg-muted/30">
-                                    <Settings2 className="size-4 text-muted-foreground" />
+                                <Button variant="ghost" size="icon" className="nd-size-9 nd-shrink-0 hover:nd-bg-muted/50 dark:hover:nd-bg-muted/30">
+                                    <Settings2 className="nd-size-4 nd-text-muted-foreground" />
                                 </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-40">
-                                <DropdownMenuLabel className="text-xs text-muted-foreground truncate">
+                            <DropdownMenuContent align="end" className="nd-w-40">
+                                <DropdownMenuLabel className="nd-text-xs nd-text-muted-foreground nd-truncate">
                                     {currentAccount.name}
                                 </DropdownMenuLabel>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem onClick={() => { setRenameDialog({ open: true, account: currentAccount }); }}>
-                                    <Pencil className="size-3.5 mr-2" /> Rename
+                                    <Pencil className="nd-size-3.5 nd-mr-2" /> Rename
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onClick={openOAuthPopup}>
-                                    <RefreshCw className="size-3.5 mr-2" /> Reconnect
+                                    <RefreshCw className="nd-size-3.5 nd-mr-2" /> Reconnect
                                 </DropdownMenuItem>
-                                <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => setDeleteDialog({ open: true, account: currentAccount })}>
-                                    <Trash className="size-3.5 mr-2" /> Disconnect
+                                <DropdownMenuItem className="nd-text-destructive focus:nd-text-destructive" onClick={() => setDeleteDialog({ open: true, account: currentAccount })}>
+                                    <Trash className="nd-size-3.5 nd-mr-2" /> Disconnect
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
@@ -277,25 +277,25 @@ const ChooserSidebar = (props: Readonly<{ onNavigate?: () => void }>) => {
             </div>
 
             {/* Navigation */}
-            <nav className="flex-1 p-2 space-y-0.5">
+            <nav className="nd-flex-1 nd-p-2 nd-space-y-0.5">
                 <Button
                     variant="ghost"
-                    className={cn("w-full justify-start gap-2.5 h-9 px-2.5 font-medium", currentView !== 'TRASH' ? "bg-primary/10 text-primary hover:bg-primary/15" : "hover:bg-muted/50")}
+                    className={cn("nd-w-full nd-justify-start nd-gap-2.5 nd-h-9 nd-px-2.5 nd-font-medium", currentView !== 'TRASH' ? "nd-bg-primary/10 nd-text-primary hover:nd-bg-primary/15" : "hover:nd-bg-muted/50")}
                     onClick={() => { setCurrentView('BROWSE'); onNavigate?.(); }}
                 >
-                    <FolderOpen className="size-4" /> My Files
+                    <FolderOpen className="nd-size-4" /> My Files
                 </Button>
                 <Button
                     variant="ghost"
-                    className={cn("w-full justify-start gap-2.5 h-9 px-2.5 font-medium", currentView === 'TRASH' ? "bg-destructive/10 text-destructive hover:bg-destructive/15" : "hover:bg-muted/50")}
+                    className={cn("nd-w-full nd-justify-start nd-gap-2.5 nd-h-9 nd-px-2.5 nd-font-medium", currentView === 'TRASH' ? "nd-bg-destructive/10 nd-text-destructive hover:nd-bg-destructive/15" : "hover:nd-bg-muted/50")}
                     onClick={() => { setCurrentView('TRASH'); onNavigate?.(); }}
                 >
-                    <Trash2 className="size-4" /> Trash
+                    <Trash2 className="nd-size-4" /> Trash
                 </Button>
             </nav>
 
             {/* Storage */}
-            <div className="p-2.5 border-t border-border/50 bg-background/50 dark:bg-background/30">
+            <div className="nd-p-2.5 nd-border-t nd-border-border/50 nd-bg-background/50 dark:nd-bg-background/30">
                 <DriveStorageIndicator />
             </div>
 
@@ -317,12 +317,12 @@ const ChooserSidebar = (props: Readonly<{ onNavigate?: () => void }>) => {
 
             {/* OAuth Loading Dialog */}
             <Dialog open={oauthLoading} onOpenChange={(open) => !open && cancelOAuth()}>
-                <DialogContent className="sm:max-w-xs" showCloseButton={false}>
-                    <div className="flex flex-col items-center gap-4 py-4">
-                        <Loader2 className="size-8 text-primary animate-spin" />
-                        <div className="text-center">
-                            <DialogTitle className="text-base">Connecting...</DialogTitle>
-                            <DialogDescription className="text-sm mt-1">
+                <DialogContent className="sm:nd-max-w-xs" showCloseButton={false}>
+                    <div className="nd-flex nd-flex-col nd-items-center nd-gap-4 nd-py-4">
+                        <Loader2 className="nd-size-8 nd-text-primary nd-animate-spin" />
+                        <div className="nd-text-center">
+                            <DialogTitle className="nd-text-base">Connecting...</DialogTitle>
+                            <DialogDescription className="nd-text-sm nd-mt-1">
                                 Preparing Google authentication
                             </DialogDescription>
                         </div>
@@ -345,13 +345,13 @@ const MobileSidebarSheet = () => {
     return (
         <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
             <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="size-9 md:hidden shrink-0">
-                    <Menu className="size-5" />
+                <Button variant="ghost" size="icon" className="nd-size-9 md:nd-hidden nd-shrink-0">
+                    <Menu className="nd-size-5" />
                 </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-72 p-0" hideCloseButton>
-                <SheetTitle className="sr-only">Navigation</SheetTitle>
-                <SheetDescription className="sr-only">Storage and navigation</SheetDescription>
+            <SheetContent side="left" className="nd-w-72 nd-p-0" hideCloseButton>
+                <SheetTitle className="nd-sr-only">Navigation</SheetTitle>
+                <SheetDescription className="nd-sr-only">Storage and navigation</SheetDescription>
                 <ChooserSidebar onNavigate={() => setSheetOpen(false)} />
             </SheetContent>
         </Sheet>
@@ -416,7 +416,7 @@ export const DriveFileChooser = (props: Readonly<{
     const displayFiles = useMemo(() => !value ? [] : Array.isArray(value) ? value : [value], [value]);
 
     return (
-        <div className={cn("w-full", className)}>
+        <div className={cn("nd-w-full", className)}>
             {/* Trigger Button */}
             {!hasSelection ? (
                 <Button
@@ -425,44 +425,44 @@ export const DriveFileChooser = (props: Readonly<{
                     onClick={() => setIsOpen(true)}
                     disabled={disabled}
                     className={cn(
-                        "w-full h-auto justify-start gap-3 px-3 py-2.5 border-dashed",
-                        error && "border-destructive"
+                        "nd-w-full nd-h-auto nd-justify-start nd-gap-3 nd-px-3 nd-py-2.5 nd-border-dashed",
+                        error && "nd-border-destructive"
                     )}
                 >
                     <div className={cn(
-                        "size-9 rounded-lg flex items-center justify-center shrink-0",
-                        error ? "bg-destructive/10 text-destructive" : "bg-muted/50 text-muted-foreground"
+                        "nd-size-9 nd-rounded-lg nd-flex nd-items-center nd-justify-center nd-shrink-0",
+                        error ? "nd-bg-destructive/10 nd-text-destructive" : "nd-bg-muted/50 nd-text-muted-foreground"
                     )}>
-                        <UploadIcon className="size-4" />
+                        <UploadIcon className="nd-size-4" />
                     </div>
-                    <div className="flex-1 min-w-0 text-left">
-                        <p className={cn("text-sm font-medium", error && "text-destructive")}>
+                    <div className="nd-flex-1 nd-min-w-0 nd-text-left">
+                        <p className={cn("nd-text-sm nd-font-medium", error && "nd-text-destructive")}>
                             {multiple ? "Select files" : "Select a file"}
                         </p>
-                        <p className="text-xs text-muted-foreground font-normal truncate">{placeholder}</p>
+                        <p className="nd-text-xs nd-text-muted-foreground nd-font-normal nd-truncate">{placeholder}</p>
                     </div>
                 </Button>
             ) : (
                 /* Selected Files Display */
-                <div className={cn("rounded-lg border", error ? "border-destructive" : "border-border", disabled && "opacity-50")}>
+                <div className={cn("nd-rounded-lg nd-border", error ? "nd-border-destructive" : "nd-border-border", disabled && "nd-opacity-50")}>
                     {!multiple && displayFiles[0] && (
-                        <div className="flex items-center gap-3 p-2.5">
-                            <div className="size-12 rounded-lg overflow-hidden bg-muted/30 flex items-center justify-center shrink-0">
+                        <div className="nd-flex nd-items-center nd-gap-3 nd-p-2.5">
+                            <div className="nd-size-12 nd-rounded-lg nd-overflow-hidden nd-bg-muted/30 nd-flex nd-items-center nd-justify-center nd-shrink-0">
                                 {displayFiles[0].file.mime.startsWith('image/') ? (
-                                    <img src={createUrl(displayFiles[0], { quality: 'low', format: 'webp' })} alt={displayFiles[0].file.name} className="size-full object-cover" />
+                                    <img src={createUrl(displayFiles[0], { quality: 'low', format: 'webp' })} alt={displayFiles[0].file.name} className="nd-size-full nd-object-cover" />
                                 ) : (
-                                    getFileIcon(displayFiles[0].file.mime, false, "size-6 text-muted-foreground")
+                                    getFileIcon(displayFiles[0].file.mime, false, "nd-size-6 nd-text-muted-foreground")
                                 )}
                             </div>
-                            <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium truncate">{displayFiles[0].file.name}</p>
-                                <p className="text-xs text-muted-foreground">{displayFiles[0].file.mime || 'File'}</p>
+                            <div className="nd-flex-1 nd-min-w-0">
+                                <p className="nd-text-sm nd-font-medium nd-truncate">{displayFiles[0].file.name}</p>
+                                <p className="nd-text-xs nd-text-muted-foreground">{displayFiles[0].file.mime || 'File'}</p>
                             </div>
-                            <div className="flex items-center gap-1 shrink-0">
+                            <div className="nd-flex nd-items-center nd-gap-1 nd-shrink-0">
                                 <Button type="button" variant="ghost" size="sm" onClick={() => setIsOpen(true)} disabled={disabled}>Change</Button>
                                 {!disabled && (
-                                    <Button type="button" variant="ghost" size="icon" className="size-8" onClick={() => handleRemove(displayFiles[0].id)}>
-                                        <X className="size-4" />
+                                    <Button type="button" variant="ghost" size="icon" className="nd-size-8" onClick={() => handleRemove(displayFiles[0].id)}>
+                                        <X className="nd-size-4" />
                                     </Button>
                                 )}
                             </div>
@@ -471,27 +471,27 @@ export const DriveFileChooser = (props: Readonly<{
 
                     {multiple && (
                         <>
-                            <div className="flex items-center justify-between px-3 py-2 border-b bg-muted/20">
-                                <span className="text-xs text-muted-foreground font-medium">{displayFiles.length} file{displayFiles.length !== 1 ? 's' : ''} selected</span>
-                                <div className="flex items-center gap-1">
-                                    <Button type="button" variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setIsOpen(true)} disabled={disabled}>Add more</Button>
-                                    {!disabled && <Button type="button" variant="ghost" size="sm" className="h-7 text-xs text-muted-foreground" onClick={() => onChange([])}>Clear</Button>}
+                            <div className="nd-flex nd-items-center nd-justify-between nd-px-3 nd-py-2 nd-border-b nd-bg-muted/20">
+                                <span className="nd-text-xs nd-text-muted-foreground nd-font-medium">{displayFiles.length} file{displayFiles.length !== 1 ? 's' : ''} selected</span>
+                                <div className="nd-flex nd-items-center nd-gap-1">
+                                    <Button type="button" variant="ghost" size="sm" className="nd-h-7 nd-text-xs" onClick={() => setIsOpen(true)} disabled={disabled}>Add more</Button>
+                                    {!disabled && <Button type="button" variant="ghost" size="sm" className="nd-h-7 nd-text-xs nd-text-muted-foreground" onClick={() => onChange([])}>Clear</Button>}
                                 </div>
                             </div>
-                            <div className="max-h-40 overflow-y-auto divide-y divide-border/50">
+                            <div className="nd-max-h-40 nd-overflow-y-auto nd-divide-y nd-divide-border/50">
                                 {displayFiles.map((file) => (
-                                    <div key={file.id} className="flex items-center gap-2.5 px-3 py-2 hover:bg-muted/20">
-                                        <div className="size-8 rounded overflow-hidden bg-muted/30 flex items-center justify-center shrink-0">
+                                    <div key={file.id} className="nd-flex nd-items-center nd-gap-2.5 nd-px-3 nd-py-2 hover:nd-bg-muted/20">
+                                        <div className="nd-size-8 nd-rounded nd-overflow-hidden nd-bg-muted/30 nd-flex nd-items-center nd-justify-center nd-shrink-0">
                                             {file.file.mime.startsWith('image/') ? (
-                                                <img src={createUrl(file, { quality: 'ultralow', format: 'webp' })} alt={file.file.name} className="size-full object-cover" />
+                                                <img src={createUrl(file, { quality: 'ultralow', format: 'webp' })} alt={file.file.name} className="nd-size-full nd-object-cover" />
                                             ) : (
-                                                getFileIcon(file.file.mime, false, "size-4 text-muted-foreground")
+                                                getFileIcon(file.file.mime, false, "nd-size-4 nd-text-muted-foreground")
                                             )}
                                         </div>
-                                        <span className="flex-1 text-sm truncate">{file.file.name}</span>
+                                        <span className="nd-flex-1 nd-text-sm nd-truncate">{file.file.name}</span>
                                         {!disabled && (
-                                            <Button type="button" variant="ghost" size="icon" className="size-7 shrink-0" onClick={() => handleRemove(file.id)}>
-                                                <X className="size-3.5" />
+                                            <Button type="button" variant="ghost" size="icon" className="nd-size-7 nd-shrink-0" onClick={() => handleRemove(file.id)}>
+                                                <X className="nd-size-3.5" />
                                             </Button>
                                         )}
                                     </div>
@@ -502,36 +502,36 @@ export const DriveFileChooser = (props: Readonly<{
                 </div>
             )}
 
-            {error && helperText && <p className="text-xs text-destructive mt-1.5">{helperText}</p>}
+            {error && helperText && <p className="nd-text-xs nd-text-destructive nd-mt-1.5">{helperText}</p>}
 
             {/* File Picker Dialog */}
             <Dialog2 open={isOpen} onOpenChange={setIsOpen}>
-                <Dialog2Content showCloseButton={false}>
+                <Dialog2Content showCloseButton={false} className="nd-drive-root">
                     {/* Header */}
-                    <Dialog2Header className="gap-2">
+                    <Dialog2Header className="nd-gap-2">
                         <MobileSidebarSheet />
-                        <Dialog2Title className="flex-1">Select {multiple ? 'Files' : 'File'}</Dialog2Title>
-                        <Button type="button" variant="ghost" size="icon" className="size-8" onClick={() => setIsOpen(false)}>
-                            <X className="size-4" />
+                        <Dialog2Title className="nd-flex-1">Select {multiple ? 'Files' : 'File'}</Dialog2Title>
+                        <Button type="button" variant="ghost" size="icon" className="nd-size-8" onClick={() => setIsOpen(false)}>
+                            <X className="nd-size-4" />
                         </Button>
                     </Dialog2Header>
 
                     {/* Body */}
-                    <Dialog2Body className="flex flex-col md:flex-row">
+                    <Dialog2Body className="nd-flex nd-flex-col md:nd-flex-row">
                         {/* Sidebar - Desktop */}
-                        <div className="hidden md:flex w-52 lg:w-56 border-r shrink-0">
+                        <div className="nd-hidden md:nd-flex nd-w-52 lg:nd-w-56 nd-border-r nd-shrink-0">
                             <ChooserSidebar />
                         </div>
 
                         {/* Main Content */}
                         <DriveDndProvider>
-                            <div className="flex-1 flex flex-col min-w-0 min-h-0">
-                                <DriveHeader className="border-b" />
-                                <div className="flex items-center gap-2 px-3 py-2 border-b bg-muted/20 dark:bg-muted/10">
-                                    <DrivePathBar className="flex-1" />
+                            <div className="nd-flex-1 nd-flex nd-flex-col nd-min-w-0 nd-min-h-0">
+                                <DriveHeader className="nd-border-b" />
+                                <div className="nd-flex nd-items-center nd-gap-2 nd-px-3 nd-py-2 nd-border-b nd-bg-muted/20 dark:nd-bg-muted/10">
+                                    <DrivePathBar className="nd-flex-1" />
                                     <DriveUpload compact accept={accept} />
                                 </div>
-                                <DriveFileGrid mimeFilter={accept} className="flex-1" />
+                                <DriveFileGrid mimeFilter={accept} className="nd-flex-1" />
                             </div>
                         </DriveDndProvider>
                     </Dialog2Body>
