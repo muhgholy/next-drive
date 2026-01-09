@@ -20,8 +20,8 @@ export default defineConfig({
         options.jsx = 'automatic';
     },
     onSuccess: async () => {
-        // Compile Tailwind CSS and overwrite the tsup-generated CSS
-        execSync(`npx tailwindcss -i src/client/styles.css -o dist/client/index.css --minify`, {
+        // Compile Tailwind CSS v4 and overwrite the tsup-generated CSS
+        execSync(`npx @tailwindcss/cli -i src/client/styles.build.css -o dist/client/index.css --minify`, {
             stdio: 'inherit',
         });
 

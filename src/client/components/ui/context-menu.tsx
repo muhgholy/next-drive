@@ -27,14 +27,14 @@ const ContextMenuSubTrigger = React.forwardRef<
     <ContextMenuPrimitive.SubTrigger
         ref={ref}
         className={cn(
-            "nd-flex nd-cursor-default nd-select-none nd-items-center nd-rounded-sm nd-px-2 nd-py-1.5 nd-text-sm nd-outline-none focus:nd-bg-accent focus:nd-text-accent-foreground data-[state=open]:nd-bg-accent data-[state=open]:nd-text-accent-foreground",
-            inset && "nd-pl-8",
+            "nd:flex nd:cursor-default nd:select-none nd:items-center nd:rounded-sm nd:px-2 nd:py-1.5 nd:text-sm nd:outline-none nd:focus:bg-accent nd:focus:text-accent-foreground nd:data-[state=open]:bg-accent nd:data-[state=open]:text-accent-foreground",
+            inset && "nd:pl-8",
             className
         )}
         {...props}
     >
         {children}
-        <ChevronRight className="nd-ml-auto nd-h-4 nd-w-4" />
+        <ChevronRight className="nd:ml-auto nd:h-4 nd:w-4" />
     </ContextMenuPrimitive.SubTrigger>
 ))
 ContextMenuSubTrigger.displayName = ContextMenuPrimitive.SubTrigger.displayName
@@ -46,7 +46,7 @@ const ContextMenuSubContent = React.forwardRef<
     <ContextMenuPrimitive.SubContent
         ref={ref}
         className={cn(
-            "nd-z-50 nd-min-w-[8rem] nd-overflow-hidden nd-rounded-md nd-border nd-bg-popover nd-p-1 nd-text-popover-foreground nd-shadow-md data-[state=open]:nd-animate-in data-[state=closed]:nd-animate-out data-[state=closed]:nd-fade-out-0 data-[state=open]:nd-fade-in-0 data-[state=closed]:nd-zoom-out-95 data-[state=open]:nd-zoom-in-95 data-[side=bottom]:nd-slide-in-from-top-2 data-[side=left]:nd-slide-in-from-right-2 data-[side=right]:nd-slide-in-from-left-2 data-[side=top]:nd-slide-in-from-bottom-2",
+            "nd:z-50 nd:min-w-[8rem] nd:overflow-hidden nd:rounded-md nd:border nd:bg-popover nd:p-1 nd:text-popover-foreground nd:shadow-md nd:data-[state=open]:animate-in nd:data-[state=closed]:animate-out nd:data-[state=closed]:fade-out-0 nd:data-[state=open]:fade-in-0 nd:data-[state=closed]:zoom-out-95 nd:data-[state=open]:zoom-in-95 nd:data-[side=bottom]:slide-in-from-top-2 nd:data-[side=left]:slide-in-from-right-2 nd:data-[side=right]:slide-in-from-left-2 nd:data-[side=top]:slide-in-from-bottom-2",
             className
         )}
         {...props}
@@ -62,7 +62,7 @@ const ContextMenuContent = React.forwardRef<
         <ContextMenuPrimitive.Content
             ref={ref}
             className={cn(
-                "nd-z-50 nd-min-w-[8rem] nd-overflow-hidden nd-rounded-md nd-border nd-bg-popover nd-p-1 nd-text-popover-foreground nd-shadow-md nd-animate-in nd-fade-in-80 data-[state=open]:nd-animate-in data-[state=closed]:nd-animate-out data-[state=closed]:nd-fade-out-0 data-[state=open]:nd-fade-in-0 data-[state=closed]:nd-zoom-out-95 data-[state=open]:nd-zoom-in-95 data-[side=bottom]:nd-slide-in-from-top-2 data-[side=left]:nd-slide-in-from-right-2 data-[side=right]:nd-slide-in-from-left-2 data-[side=top]:nd-slide-in-from-bottom-2",
+                "nd:z-50 nd:min-w-[8rem] nd:overflow-hidden nd:rounded-md nd:border nd:bg-popover nd:p-1 nd:text-popover-foreground nd:shadow-md nd:animate-in nd:fade-in-80 nd:data-[state=open]:animate-in nd:data-[state=closed]:animate-out nd:data-[state=closed]:fade-out-0 nd:data-[state=open]:fade-in-0 nd:data-[state=closed]:zoom-out-95 nd:data-[state=open]:zoom-in-95 nd:data-[side=bottom]:slide-in-from-top-2 nd:data-[side=left]:slide-in-from-right-2 nd:data-[side=right]:slide-in-from-left-2 nd:data-[side=top]:slide-in-from-bottom-2",
                 className
             )}
             {...props}
@@ -80,8 +80,8 @@ const ContextMenuItem = React.forwardRef<
     <ContextMenuPrimitive.Item
         ref={ref}
         className={cn(
-            "nd-relative nd-flex nd-cursor-default nd-select-none nd-items-center nd-rounded-sm nd-px-2 nd-py-1.5 nd-text-sm nd-outline-none focus:nd-bg-accent focus:nd-text-accent-foreground data-[disabled]:nd-pointer-events-none data-[disabled]:nd-opacity-50",
-            inset && "nd-pl-8",
+            "nd:relative nd:flex nd:cursor-default nd:select-none nd:items-center nd:rounded-sm nd:px-2 nd:py-1.5 nd:text-sm nd:outline-none nd:focus:bg-accent nd:focus:text-accent-foreground nd:data-[disabled]:pointer-events-none nd:data-[disabled]:opacity-50",
+            inset && "nd:pl-8",
             className
         )}
         {...props}
@@ -96,15 +96,15 @@ const ContextMenuCheckboxItem = React.forwardRef<
     <ContextMenuPrimitive.CheckboxItem
         ref={ref}
         className={cn(
-            "nd-relative nd-flex nd-cursor-default nd-select-none nd-items-center nd-rounded-sm nd-px-2 nd-py-1.5 nd-text-sm nd-outline-none focus:nd-bg-accent focus:nd-text-accent-foreground data-[disabled]:nd-pointer-events-none data-[disabled]:nd-opacity-50",
+            "nd:relative nd:flex nd:cursor-default nd:select-none nd:items-center nd:rounded-sm nd:px-2 nd:py-1.5 nd:text-sm nd:outline-none nd:focus:bg-accent nd:focus:text-accent-foreground nd:data-[disabled]:pointer-events-none nd:data-[disabled]:opacity-50",
             className
         )}
         checked={checked}
         {...props}
     >
-        <span className="nd-absolute nd-left-2 nd-flex nd-h-3.5 nd-w-3.5 nd-items-center nd-justify-center">
+        <span className="nd:absolute nd:left-2 nd:flex nd:h-3.5 nd:w-3.5 nd:items-center nd:justify-center">
             <ContextMenuPrimitive.ItemIndicator>
-                <Check className="nd-h-4 nd-w-4" />
+                <Check className="nd:h-4 nd:w-4" />
             </ContextMenuPrimitive.ItemIndicator>
         </span>
         {children}
@@ -120,14 +120,14 @@ const ContextMenuRadioItem = React.forwardRef<
     <ContextMenuPrimitive.RadioItem
         ref={ref}
         className={cn(
-            "nd-relative nd-flex nd-cursor-default nd-select-none nd-items-center nd-rounded-sm nd-px-2 nd-py-1.5 nd-text-sm nd-outline-none focus:nd-bg-accent focus:nd-text-accent-foreground data-[disabled]:nd-pointer-events-none data-[disabled]:nd-opacity-50",
+            "nd:relative nd:flex nd:cursor-default nd:select-none nd:items-center nd:rounded-sm nd:px-2 nd:py-1.5 nd:text-sm nd:outline-none nd:focus:bg-accent nd:focus:text-accent-foreground nd:data-[disabled]:pointer-events-none nd:data-[disabled]:opacity-50",
             className
         )}
         {...props}
     >
-        <span className="nd-absolute nd-left-2 nd-flex nd-h-3.5 nd-w-3.5 nd-items-center nd-justify-center">
+        <span className="nd:absolute nd:left-2 nd:flex nd:h-3.5 nd:w-3.5 nd:items-center nd:justify-center">
             <ContextMenuPrimitive.ItemIndicator>
-                <Circle className="nd-h-2 nd-w-2 nd-fill-current" />
+                <Circle className="nd:h-2 nd:w-2 nd:fill-current" />
             </ContextMenuPrimitive.ItemIndicator>
         </span>
         {children}
@@ -144,8 +144,8 @@ const ContextMenuLabel = React.forwardRef<
     <ContextMenuPrimitive.Label
         ref={ref}
         className={cn(
-            "nd-px-2 nd-py-1.5 nd-text-sm nd-font-semibold nd-text-foreground",
-            inset && "nd-pl-8",
+            "nd:px-2 nd:py-1.5 nd:text-sm nd:font-semibold nd:text-foreground",
+            inset && "nd:pl-8",
             className
         )}
         {...props}
@@ -159,7 +159,7 @@ const ContextMenuSeparator = React.forwardRef<
 >(({ className, ...props }, ref) => (
     <ContextMenuPrimitive.Separator
         ref={ref}
-        className={cn("-nd-mx-1 nd-my-1 nd-h-px nd-bg-border", className)}
+        className={cn("-nd:mx-1 nd:my-1 nd:h-px nd:bg-border", className)}
         {...props}
     />
 ))
@@ -172,7 +172,7 @@ const ContextMenuShortcut = ({
     return (
         <span
             className={cn(
-                "nd-ml-auto nd-text-xs nd-tracking-widest nd-text-muted-foreground",
+                "nd:ml-auto nd:text-xs nd:tracking-widest nd:text-muted-foreground",
                 className
             )}
             {...props}

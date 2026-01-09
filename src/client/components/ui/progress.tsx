@@ -21,7 +21,7 @@ function Progress({
         <ProgressPrimitive.Root
             data-slot="progress"
             className={cn(
-                "nd-bg-primary/20 nd-relative nd-h-2 nd-w-full nd-overflow-hidden nd-rounded-full",
+                "nd:bg-primary/20 nd:relative nd:h-2 nd:w-full nd:overflow-hidden nd:rounded-full",
                 className
             )}
             {...props}
@@ -29,9 +29,9 @@ function Progress({
             <ProgressPrimitive.Indicator
                 data-slot="progress-indicator"
                 className={cn(
-                    "nd-bg-primary nd-h-full nd-flex-1 nd-transition-all",
-                    isIndeterminate && "nd-w-1/3 nd-animate-[indeterminate_1.5s_ease-in-out_infinite]",
-                    !isIndeterminate && "nd-w-full",
+                    "nd:bg-primary nd:h-full nd:flex-1 nd:transition-all",
+                    isIndeterminate && "nd:w-1/3 nd:animate-[indeterminate_1.5s_ease-in-out_infinite]",
+                    !isIndeterminate && "nd:w-full",
                     indicatorClassName
                 )}
                 style={isIndeterminate ? undefined : { transform: `translateX(-${100 - (value || 0)}%)` }}

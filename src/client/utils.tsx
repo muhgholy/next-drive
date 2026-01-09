@@ -21,16 +21,16 @@ import type { ReactNode } from 'react';
 import { File, Folder, Image, Video, Music, FileText, Package, FileCode, FileArchive } from 'lucide-react';
 
 // ** Get file icon based on mime type
-export const getFileIcon = (mime: string, isFolder: boolean, className = "nd-w-6 nd-h-6"): ReactNode => {
-    if (isFolder) return <Folder className={cn("nd-text-blue-500 nd-fill-blue-500/20", className)} />;
-    if (mime.startsWith('image/')) return <Image className={cn("nd-text-purple-500", className)} />;
-    if (mime.startsWith('video/')) return <Video className={cn("nd-text-red-500", className)} />;
-    if (mime.startsWith('audio/')) return <Music className={cn("nd-text-yellow-500", className)} />;
-    if (mime === 'application/pdf') return <FileText className={cn("nd-text-orange-500", className)} />;
-    if (mime.includes('text') || mime.includes('document')) return <FileText className={cn("nd-text-slate-500", className)} />;
-    if (mime.includes('zip') || mime.includes('compressed')) return <FileArchive className={cn("nd-text-amber-500", className)} />;
-    if (mime.includes('javascript') || mime.includes('typescript') || mime.includes('json') || mime.includes('html') || mime.includes('css')) return <FileCode className={cn("nd-text-green-500", className)} />;
-    return <File className={cn("nd-text-gray-400", className)} />;
+export const getFileIcon = (mime: string, isFolder: boolean, className = "nd:w-6 nd:h-6"): ReactNode => {
+    if (isFolder) return <Folder className={cn("nd:text-blue-500 nd:fill-blue-500/20", className)} />;
+    if (mime.startsWith('image/')) return <Image className={cn("nd:text-purple-500", className)} />;
+    if (mime.startsWith('video/')) return <Video className={cn("nd:text-red-500", className)} />;
+    if (mime.startsWith('audio/')) return <Music className={cn("nd:text-yellow-500", className)} />;
+    if (mime === 'application/pdf') return <FileText className={cn("nd:text-orange-500", className)} />;
+    if (mime.includes('text') || mime.includes('document')) return <FileText className={cn("nd:text-slate-500", className)} />;
+    if (mime.includes('zip') || mime.includes('compressed')) return <FileArchive className={cn("nd:text-amber-500", className)} />;
+    if (mime.includes('javascript') || mime.includes('typescript') || mime.includes('json') || mime.includes('html') || mime.includes('css')) return <FileCode className={cn("nd:text-green-500", className)} />;
+    return <File className={cn("nd:text-gray-400", className)} />;
 };
 
 // ** Check if file matches mime filter (supports native accept format)

@@ -129,16 +129,16 @@ export const DialogConfirmation = <T extends readonly TInputDefinition[] | undef
 
                 {error && (
                     <Alert variant="destructive">
-                        <AlertCircle className="nd-h-4 nd-w-4" />
+                        <AlertCircle className="nd:h-4 nd:w-4" />
                         <AlertTitle>Error</AlertTitle>
                         <AlertDescription>{error}</AlertDescription>
                     </Alert>
                 )}
 
                 {inputs && inputs.length > 0 && (
-                    <div className="nd-grid nd-gap-4 nd-py-4">
+                    <div className="nd:grid nd:gap-4 nd:py-4">
                         {inputs.map((input, index) => (
-                            <div key={input.id} className="nd-grid nd-gap-2">
+                            <div key={input.id} className="nd:grid nd:gap-2">
                                 <Label htmlFor={input.id}>{input.name}</Label>
                                 <Input
                                     id={input.id}

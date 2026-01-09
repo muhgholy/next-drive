@@ -1,0 +1,11 @@
+/* Build entry point - includes @import tailwindcss for standalone compilation */
+@import "tailwindcss" prefix(nd);
+
+/* Scan source files for class detection */
+@source "./**/*.{ts,tsx}";
+
+/* Custom dark mode variant scoped to .dark class */
+@custom-variant dark (&:is(.dark *));
+
+/* Import CSS variables and theme config */
+@import "./styles.css";
