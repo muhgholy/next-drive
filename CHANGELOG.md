@@ -1,3 +1,10 @@
+# [4.2.0](https://github.com/muhgholy/next-drive/compare/v4.1.0...v4.2.0) (2026-01-09)
+
+
+### Features
+
+* disable Tailwind preflight to prevent global CSS reset conflicts ([74086f3](https://github.com/muhgholy/next-drive/commit/74086f3fdc1df9938757cb81c552b6b2765ac5e9))
+
 # [4.1.0](https://github.com/muhgholy/next-drive/compare/v4.0.0...v4.1.0) (2026-01-09)
 
 
