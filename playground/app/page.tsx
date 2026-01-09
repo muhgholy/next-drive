@@ -50,7 +50,7 @@ export default function Home() {
                         </span>
                     </h1>
                     <p className="text-muted-foreground text-lg max-w-2xl leading-relaxed">
-                        Experience the power of Next Drive&apos;s file chooser component. 
+                        Experience the power of Next Drive&apos;s file chooser component.
                         Upload, browse, and select files with a beautiful, intuitive interface.
                     </p>
                 </div>
@@ -137,9 +137,9 @@ export default function Home() {
                                                 </svg>
                                             </div>
                                             <div className="flex-1 min-w-0">
-                                                <p className="font-medium truncate">{selectedFile.name}</p>
+                                                <p className="font-medium truncate">{selectedFile.file.name}</p>
                                                 <p className="text-xs text-muted-foreground">
-                                                    {selectedFile.mimeType || 'Unknown type'}
+                                                    {selectedFile.file.mime || 'Unknown type'}
                                                 </p>
                                             </div>
                                         </div>
