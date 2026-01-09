@@ -1,3 +1,10 @@
+# [3.13.0](https://github.com/muhgholy/next-drive/compare/v3.12.0...v3.13.0) (2026-01-09)
+
+
+### Features
+
+* pre-compile Tailwind CSS for zero-config styling ([af8c369](https://github.com/muhgholy/next-drive/commit/af8c3696366a16cee3a08ce135d1affb496b6076))
+
 # [3.12.0](https://github.com/muhgholy/next-drive/compare/v3.11.0...v3.12.0) (2026-01-08)
 
 
