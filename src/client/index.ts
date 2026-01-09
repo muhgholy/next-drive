@@ -1,5 +1,3 @@
-import './styles.css'; // Auto-inject styles
-
 export * from './context';
 export * from './hooks/useUpload';
 export * from '@/client/file-chooser';

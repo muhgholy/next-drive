@@ -1,5 +1,6 @@
 /* Build entry point - includes @import tailwindcss for standalone compilation */
-@import "tailwindcss" prefix(nd);
+@import "tailwindcss/utilities" prefix(nd);
+@import "tailwindcss/theme" prefix(nd);
 
 /* Scan source files for class detection */
 @source "./**/*.{ts,tsx}";
