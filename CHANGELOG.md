@@ -1,3 +1,15 @@
+# [4.0.0](https://github.com/muhgholy/next-drive/compare/v3.13.0...v4.0.0) (2026-01-09)
+
+
+### Features
+
+* add nd- prefix to all Tailwind classes for style isolation ([fcf6b3d](https://github.com/muhgholy/next-drive/commit/fcf6b3d37ad427986f9242e8345e3435dd0e58c6))
+
+
+### BREAKING CHANGES
+
+* All Tailwind classes now use nd- prefix (e.g., nd-flex, nd-bg-primary)
+
 # [3.13.0](https://github.com/muhgholy/next-drive/compare/v3.12.0...v3.13.0) (2026-01-09)
 
 
