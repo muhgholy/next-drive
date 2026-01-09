@@ -1,3 +1,10 @@
+# [4.1.0](https://github.com/muhgholy/next-drive/compare/v4.0.0...v4.1.0) (2026-01-09)
+
+
+### Features
+
+* migrate to Tailwind CSS v4 with nd: prefix variant ([32fa17f](https://github.com/muhgholy/next-drive/commit/32fa17fea0651501a400110fc17164875dce3c49))
+
 # [4.0.0](https://github.com/muhgholy/next-drive/compare/v3.13.0...v4.0.0) (2026-01-09)
 
 
