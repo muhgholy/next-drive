@@ -22,13 +22,12 @@ npm install @muhgholy/next-drive
 
 ### Requirements
 
-| Dependency   | Version |
-| ------------ | ------- |
-| Next.js      | >= 14   |
-| React        | >= 18   |
-| Mongoose     | >= 7    |
-| Tailwind CSS | >= 3    |
-| TypeScript   | >= 5    |
+| Dependency | Version |
+| ---------- | ------- |
+| Next.js    | >= 14   |
+| React      | >= 18   |
+| Mongoose   | >= 7    |
+| TypeScript | >= 5    |
 
 **TypeScript Configuration:**
 
@@ -82,18 +81,15 @@ sudo apt install ffmpeg
 # Download from https://ffmpeg.org and add to PATH
 ```
 
-### Tailwind Setup
+### Styles
 
-Add the package to your Tailwind content config:
+Styles are **automatically injected** when you import components from `@muhgholy/next-drive/client`. No additional CSS import is required!
 
-```js
-// tailwind.config.js
-export default {
-	content: ["./app/**/*.{js,ts,jsx,tsx,mdx}", "./pages/**/*.{js,ts,jsx,tsx,mdx}", "./components/**/*.{js,ts,jsx,tsx,mdx}", "./node_modules/@muhgholy/next-drive/dist/**/*.{js,mjs}"],
-};
+If styles are not loading (e.g., with certain bundler configurations), you can manually import:
+
+```tsx
+import "@muhgholy/next-drive/client/styles.css";
 ```
-
-> CSS is auto-injected when importing from `@muhgholy/next-drive/client`.
 
 ---
 

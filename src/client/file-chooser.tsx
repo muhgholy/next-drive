@@ -386,7 +386,7 @@ export const DriveFileChooser = (props: Readonly<{
         if (isOpen) {
             // Trigger API fetch when dialog opens (for lazy mode)
             triggerFetch();
-            
+
             if (!value) setSelectedFileIds([]);
             else if (Array.isArray(value)) setSelectedFileIds(value.map(f => f.id));
             else setSelectedFileIds([value.id]);

@@ -24,8 +24,11 @@
 			"import": "./dist/schemas.js",
 			"require": "./dist/schemas.cjs"
 		},
-		"./client/styles.css": "./dist/client/styles.css"
+		"./client/styles.css": "./dist/client/index.css"
 	},
+	"sideEffects": [
+		"*.css"
+	],
 	"files": [
 		"dist",
 		"README.md"
@@ -82,10 +85,13 @@
 		"@types/react": "^18.0.0",
 		"@types/react-dom": "^18.0.0",
 		"@vitest/coverage-v8": "^4.0.16",
+		"autoprefixer": "^10.4.20",
 		"eslint": "^8.0.0",
 		"jsdom": "^27.3.0",
 		"mongoose": ">=7.0.0",
+		"postcss": "^8.4.49",
 		"semantic-release": "^24.2.9",
+		"tailwindcss": "^3.4.17",
 		"tsc-alias": "^1.8.16",
 		"tsup": "^8.0.0",
 		"typescript": "^5.0.0",

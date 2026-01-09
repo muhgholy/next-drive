@@ -1,6 +1,6 @@
 import { defineConfig } from 'tsup';
-import { copyFileSync, mkdirSync } from 'fs';
-import { dirname } from 'path';
+import { execSync } from 'child_process';
+import { readFileSync, writeFileSync } from 'fs';
 
 export default defineConfig({
     entry: {
@@ -20,11 +20,25 @@ export default defineConfig({
         options.jsx = 'automatic';
     },
     onSuccess: async () => {
-        // Copy CSS file to dist
-        const cssSource = 'src/client/styles.css';
-        const cssTarget = 'dist/client/styles.css';
-        mkdirSync(dirname(cssTarget), { recursive: true });
-        copyFileSync(cssSource, cssTarget);
-        console.log('✓ Copied styles.css to dist');
+        // Compile Tailwind CSS and overwrite the tsup-generated CSS
+        execSync(`npx tailwindcss -i src/client/styles.css -o dist/client/index.css --minify`, {
+            stdio: 'inherit',
+        });
+
+        // Inject CSS import at the top of the JS files so styles auto-load
+        const esmFile = 'dist/client/index.js';
+        const cjsFile = 'dist/client/index.cjs';
+
+        const esmContent = readFileSync(esmFile, 'utf-8');
+        if (!esmContent.includes('./index.css')) {
+            writeFileSync(esmFile, `import './index.css';\n${esmContent}`);
+        }
+
+        const cjsContent = readFileSync(cjsFile, 'utf-8');
+        if (!cjsContent.includes('./index.css')) {
+            writeFileSync(cjsFile, `require('./index.css');\n${cjsContent}`);
+        }
+
+        console.log('✓ Compiled Tailwind CSS and injected imports');
     },
 });
