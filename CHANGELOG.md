@@ -1,3 +1,10 @@
+# [4.5.0](https://github.com/muhgholy/next-drive/compare/v4.4.0...v4.5.0) (2026-01-10)
+
+
+### Features
+
+* image optimization and lazy fetching ([aab0d60](https://github.com/muhgholy/next-drive/commit/aab0d60d6c30320dfea02fb047a50b5623e3a896))
+
 # [4.4.0](https://github.com/muhgholy/next-drive/compare/v4.3.0...v4.4.0) (2026-01-10)
 
 
