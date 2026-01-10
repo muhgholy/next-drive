@@ -10,7 +10,8 @@ import { z } from 'zod';
 import { getDriveConfig, getDriveInformation, driveConfiguration } from '@/server/config';
 import Drive from '@/server/database/mongoose/schema/drive';
 import StorageAccount from '@/server/database/mongoose/schema/storage/account';
-import { validateMimeType } from '@/server/utils';
+import { validateMimeType, parseQuality } from '@/server/utils';
+import sharp from 'sharp';
 import * as schemas from '@/server/zod/schemas';
 import { getSafeErrorMessage, sanitizeContentDispositionFilename } from '@/server/security/cryptoUtils';
 import type { TDatabaseDrive } from '@/types/server';
@@ -180,11 +181,88 @@ export const driveAPIHandler = async (req: NextApiRequest, res: NextApiResponse)
             if (action === 'serve') {
                 const { stream, mime, size } = await itemProvider.openStream(drive, itemAccountId);
                 const safeFilename = sanitizeContentDispositionFilename(drive.name);
+
+                // ** Image Transformation
+                const format = req.query.format as string;
+                const quality = req.query.quality as string;
+
+                const isImage = mime.startsWith('image/');
+                const shouldTransform = isImage && (format || quality);
+
                 res.setHeader('Content-Disposition', `inline; filename="${safeFilename}"`);
-                res.setHeader('Content-Type', mime);
+
                 if (config.cors?.enabled) {
                     res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
                 }
+
+                if (shouldTransform) {
+                    try {
+                        const qValue = parseQuality(quality);
+                        let targetFormat = format || mime.split('/')[1];
+                        if (targetFormat === 'jpg') targetFormat = 'jpeg';
+
+                        // ** Cache Logic
+                        const cacheDir = path.join(config.storage.path, 'file', drive._id.toString(), 'cache');
+                        const cacheFilename = `optimized_q${qValue}_${targetFormat}.bin`;
+                        const cachePath = path.join(cacheDir, cacheFilename);
+
+                        // 1. Check Cache
+                        if (fs.existsSync(cachePath)) {
+                            const cacheStat = fs.statSync(cachePath);
+                            res.setHeader('Content-Type', `image/${targetFormat}`);
+                            res.setHeader('Content-Length', cacheStat.size);
+                            res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+                            if (config.cors?.enabled) {
+                                res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+                            }
+                            // Close original stream as we don't need it
+                            if ('destroy' in stream) (stream as any).destroy();
+
+                            fs.createReadStream(cachePath).pipe(res);
+                            return;
+                        }
+
+                        // 2. Transform & Cache
+                        if (!fs.existsSync(cacheDir)) fs.mkdirSync(cacheDir, { recursive: true });
+
+                        const pipeline = sharp();
+
+                        // Format & Quality
+                        if (targetFormat === 'jpeg') {
+                            pipeline.jpeg({ quality: qValue, mozjpeg: true });
+                            res.setHeader('Content-Type', 'image/jpeg');
+                        } else if (targetFormat === 'png') {
+                            pipeline.png({ quality: qValue });
+                            res.setHeader('Content-Type', 'image/png');
+                        } else if (targetFormat === 'webp') {
+                            pipeline.webp({ quality: qValue });
+                            res.setHeader('Content-Type', 'image/webp');
+                        } else if (targetFormat === 'avif') {
+                            pipeline.avif({ quality: qValue });
+                            res.setHeader('Content-Type', 'image/avif');
+                        }
+
+                        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+
+                        // Pipe stream -> pipeline
+                        stream.pipe(pipeline);
+
+                        // Fork 1: Cache (Async)
+                        pipeline.clone()
+                            .toFile(cachePath)
+                            .catch(e => console.error('[next-drive] Cache write failed:', e));
+
+                        // Fork 2: Response
+                        pipeline.clone().pipe(res);
+                        return;
+                    } catch (e) {
+                        console.error('[next-drive] Image transformation failed:', e);
+                        // Fallback to raw serve handled below
+                    }
+                }
+
+                // Default Raw Serve
+                res.setHeader('Content-Type', mime);
                 if (size) res.setHeader('Content-Length', size);
                 stream.pipe(res);
                 return;

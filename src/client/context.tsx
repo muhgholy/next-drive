@@ -91,7 +91,7 @@ export const DriveProvider = (props: Readonly<{
         initialSelectionMode = { type: 'SINGLE' },
         defaultSelectedFileIds = [],
         withCredentials = false,
-        lazyFetch = false
+        lazyFetch = true
     } = props;
 
     // Track if initial fetch has been triggered (for lazy mode)

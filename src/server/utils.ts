@@ -47,3 +47,12 @@ export const ownerMatches = (a: Record<string, unknown> | null, b: Record<string
     if (a === null || b === null) return false;
     return JSON.stringify(a) === JSON.stringify(b);
 };
+
+export const parseQuality = (q: string | undefined): number => {
+    if (!q) return 80;
+    if (q === 'low') return 40;
+    if (q === 'medium') return 60;
+    if (q === 'high') return 80;
+    const n = parseInt(q, 10);
+    return isNaN(n) ? 80 : Math.min(100, Math.max(1, n));
+};
