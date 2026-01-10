@@ -1,3 +1,10 @@
+# [4.3.0](https://github.com/muhgholy/next-drive/compare/v4.2.0...v4.3.0) (2026-01-10)
+
+
+### Features
+
+* restructure storage paths to file/{id}/data.bin with migration system ([dc1ea0a](https://github.com/muhgholy/next-drive/commit/dc1ea0a926cbd15cfa5199c5631270e35488072d))
+
 # [4.2.0](https://github.com/muhgholy/next-drive/compare/v4.1.0...v4.2.0) (2026-01-09)
 
 
