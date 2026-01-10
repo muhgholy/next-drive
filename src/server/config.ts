@@ -5,26 +5,26 @@ import type { TDriveConfiguration, TDriveConfigInformation } from '@/types/serve
 import { runMigrations } from '@/server/utils/migration';
 
 let globalConfig: TDriveConfiguration | null = null;
-let migrationRun = false;
+let migrationPromise: Promise<void> | null = null;
+let configInitialized = false;
 
 // ** Initialize configuration
 export const driveConfiguration = async (config: TDriveConfiguration): Promise<TDriveConfiguration> => {
-    // Check database connection
+    // ** Check database connection
     if (mongoose.connection.readyState !== 1) {
         throw new Error('Database not connected. Please connect to Mongoose before initializing next-drive.');
     }
 
-    // ** Run migrations once on first initialization
-    if (!migrationRun) {
-        await runMigrations(config.storage.path);
-        migrationRun = true;
+    // ** If already initialized, just wait for migration and return
+    if (configInitialized && globalConfig) {
+        if (migrationPromise) await migrationPromise;
+        return globalConfig;
     }
 
     const mode = config.mode || 'NORMAL';
 
-    // Apply default values based on mode
+    // ** Set globalConfig FIRST (before migrations) so it's available during migration
     if (mode === 'ROOT') {
-        // ROOT mode: All fields optional with sensible defaults
         globalConfig = {
             ...config,
             mode: 'ROOT',
@@ -33,9 +33,7 @@ export const driveConfiguration = async (config: TDriveConfiguration): Promise<T
                 allowedMimeTypes: ['*/*'],
             },
         };
-        return globalConfig;
     } else {
-        // NORMAL mode: Ensure required fields are present
         if (!config.information) {
             throw new Error('information callback is required in NORMAL mode');
         }
@@ -51,8 +49,18 @@ export const driveConfiguration = async (config: TDriveConfiguration): Promise<T
             },
             information: config.information,
         };
-        return globalConfig;
     }
+
+    // ** Mark as initialized immediately to prevent race conditions
+    configInitialized = true;
+
+    // ** Run migrations once (all concurrent callers share the same promise)
+    if (!migrationPromise) {
+        migrationPromise = runMigrations(config.storage.path);
+    }
+    await migrationPromise;
+
+    return globalConfig;
 };
 
 // ** Get current configuration

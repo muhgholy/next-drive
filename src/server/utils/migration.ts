@@ -2,12 +2,47 @@
 // ** Handles one-time migrations for storage structure changes
 import fs from 'fs';
 import path from 'path';
+import mongoose from 'mongoose';
 import Drive from '@/server/database/mongoose/schema/drive';
 import type { TMigration } from '@/types/server/migration';
 
 // ** Migration version tracking
 const MIGRATION_FILE = '.migration-version';
 const CURRENT_VERSION = 1;
+
+// ** Check if system is ready for migration
+const isReadyForMigration = (): boolean => {
+    // ** Database must be connected
+    if (mongoose.connection.readyState !== 1) {
+        console.warn('[next-drive] Migration skipped: Database not connected');
+        return false;
+    }
+    return true;
+};
+
+// ** Check if this is a new installation (no existing files to migrate)
+const isNewInstallation = (storagePath: string): boolean => {
+    // ** If storage path doesn't exist, it's a new installation
+    if (!fs.existsSync(storagePath)) return true;
+
+    // ** Check if there are any old-style directories to migrate
+    const hasOldDriveDir = fs.existsSync(path.join(storagePath, 'drive'));
+    const hasOldCacheDir = fs.existsSync(path.join(storagePath, 'cache', 'thumbnails'));
+    const hasOldLibraryDir = fs.existsSync(path.join(storagePath, 'library', 'google'));
+
+    // ** Check for files directly in storage root (old format: {id}/data.ext)
+    const hasRootLevelFiles = fs.existsSync(storagePath) &&
+        fs.readdirSync(storagePath).some(entry => {
+            const entryPath = path.join(storagePath, entry);
+            // ** Look for directories that look like MongoDB ObjectIds (24 hex chars)
+            return fs.statSync(entryPath).isDirectory() &&
+                /^[a-f0-9]{24}$/i.test(entry) &&
+                entry !== 'file'; // Exclude new 'file' directory
+        });
+
+    // ** If none of these exist, it's effectively a new installation
+    return !hasOldDriveDir && !hasOldCacheDir && !hasOldLibraryDir && !hasRootLevelFiles;
+};
 
 // ** Migration definitions (add new migrations here)
 const migrations: TMigration[] = [
@@ -160,6 +195,16 @@ const migrations: TMigration[] = [
 
 // ** Run pending migrations
 export const runMigrations = async (storagePath: string): Promise<void> => {
+    // ** Check readiness before attempting migration
+    if (!isReadyForMigration()) {
+        return;
+    }
+
+    // ** Ensure storage path exists
+    if (!fs.existsSync(storagePath)) {
+        fs.mkdirSync(storagePath, { recursive: true });
+    }
+
     const versionFile = path.join(storagePath, MIGRATION_FILE);
     let currentVersion = 0;
 
@@ -175,9 +220,11 @@ export const runMigrations = async (storagePath: string): Promise<void> => {
     // ** Skip if already at current version
     if (currentVersion >= CURRENT_VERSION) return;
 
-    // ** Ensure storage path exists
-    if (!fs.existsSync(storagePath)) {
-        fs.mkdirSync(storagePath, { recursive: true });
+    // ** For new installations, just write the version file and skip migration
+    if (isNewInstallation(storagePath)) {
+        console.log('[next-drive] New installation detected, skipping migration');
+        fs.writeFileSync(versionFile, String(CURRENT_VERSION));
+        return;
     }
 
     // ** Run pending migrations
