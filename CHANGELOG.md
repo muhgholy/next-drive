@@ -1,3 +1,10 @@
+# [4.4.0](https://github.com/muhgholy/next-drive/compare/v4.3.0...v4.4.0) (2026-01-10)
+
+
+### Features
+
+* improve migration system with readiness checks ([99bdd2c](https://github.com/muhgholy/next-drive/commit/99bdd2cf4d555a3f43ab5768a236ea30b6001d20))
+
 # [4.3.0](https://github.com/muhgholy/next-drive/compare/v4.2.0...v4.3.0) (2026-01-10)
 
 
