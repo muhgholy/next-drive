@@ -271,10 +271,10 @@ export const driveAPIHandler = async (req: NextApiRequest, res: NextApiResponse)
                     const oauth2 = google.oauth2({ version: 'v2', auth: oAuth2Client });
                     const userInfo = await oauth2.userinfo.get();
 
-                    // Save Account
+                    // ** Save Account
                     const existing = await StorageAccount.findOne({ owner, 'metadata.google.email': userInfo.data.email, 'metadata.provider': 'GOOGLE' });
                     if (existing) {
-                        existing.metadata.google.credentials = tokens;
+                        existing.metadata.google.credentials = tokens as Record<string, unknown>;
                         existing.markModified('metadata');
                         await existing.save();
                     } else {
@@ -285,7 +285,7 @@ export const driveAPIHandler = async (req: NextApiRequest, res: NextApiResponse)
                                 provider: 'GOOGLE',
                                 google: {
                                     email: userInfo.data.email,
-                                    credentials: tokens,
+                                    credentials: tokens as Record<string, unknown>,
                                 },
                             },
                         });
@@ -647,13 +647,8 @@ export const driveAPIHandler = async (req: NextApiRequest, res: NextApiResponse)
 
                             // Set initial path based on ID - providers will resolve final path/ID
                             if (meta.providerName === 'LOCAL' && drive.information.type === 'FILE') {
-                                // Preserve original file extension (sanitized)
-                                let ext = path.extname(meta.name) || '.bin';
-                                // Sanitize: only allow alphanumeric and common safe characters, max 10 chars
-                                ext = ext.replace(/[^a-zA-Z0-9.]/g, '').slice(0, 11);
-                                if (!ext.startsWith('.')) ext = '.bin';
-                                // Path is relative to storage.path - no prefix needed
-                                drive.information.path = path.join(String(drive._id), `data${ext}`);
+                                // Path is relative to storage.path - use new structure
+                                drive.information.path = path.join('file', String(drive._id), 'data.bin');
                             }
 
                             await drive.save();
@@ -890,6 +885,6 @@ export const driveAPIHandler = async (req: NextApiRequest, res: NextApiResponse)
 export { driveConfiguration, getDriveConfig, getDriveInformation };
 export { driveGetUrl, driveReadFile, driveFilePath, driveUpload, driveDelete, driveList, driveInfo } from '@/server/controllers/drive';
 export { driveFileSchemaZod } from '@/server/zod/schemas';
-export { driveCreateUrl, driveCreateSrcSet } from '@/client/utils';
-export type { TDriveFile, TDriveInformation, TImageQuality, TImageFormat } from '@/types/client';
+export { driveCreateUrl } from '@/client/utils';
+export type { TDriveFile, TDriveInformation } from '@/types/client';
 export type * from '@/types/server';

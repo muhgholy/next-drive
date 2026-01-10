@@ -213,7 +213,8 @@ export const DriveExplorer = (props: Readonly<{
                 return 0; // Maintain array index order
             }
 
-            let valA: any, valB: any;
+            let valA: string | number;
+            let valB: string | number;
 
             if (field === 'name') {
                 valA = a.name.toLowerCase();

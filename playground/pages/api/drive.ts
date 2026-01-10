@@ -1,8 +1,10 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { driveAPIHandler } from '@muhgholy/next-drive/server';
-import '@/lib/drive'; // Initialize configuration
+import { driveConfigPromise } from '@/lib/drive';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+    // ** Ensure drive configuration is initialized (runs migrations once)
+    await driveConfigPromise;
     // Manually parse JSON body because bodyParser is disabled (for uploads)
     if (req.headers['content-type']?.includes('application/json')) {
         try {

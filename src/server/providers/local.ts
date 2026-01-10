@@ -55,7 +55,8 @@ export const LocalStorageProvider: TStorageProvider = {
 
     openStream: async (item: IDatabaseDriveDocument, accountId?: string) => {
         if (item.information.type !== 'FILE') throw new Error('Cannot stream folder');
-        const filePath = path.join(getDriveConfig().storage.path, item.information.path);
+        const storagePath = getDriveConfig().storage.path;
+        const filePath = path.join(storagePath, 'file', item._id.toString(), 'data.bin');
 
         if (!fs.existsSync(filePath)) {
             throw new Error('File not found on disk');
@@ -75,8 +76,10 @@ export const LocalStorageProvider: TStorageProvider = {
         if (item.information.type !== 'FILE') throw new Error('No thumbnail for folder');
 
         const storagePath = getDriveConfig().storage.path;
-        const originalPath = path.join(storagePath, item.information.path);
-        const thumbPath = path.join(storagePath, 'cache', 'thumbnails', `${item._id.toString()}.webp`);
+        const fileDir = path.join(storagePath, 'file', item._id.toString());
+        const originalPath = path.join(fileDir, 'data.bin');
+        const thumbDir = path.join(fileDir, 'cache');
+        const thumbPath = path.join(thumbDir, 'thumbnail.webp');
 
         if (!fs.existsSync(originalPath)) throw new Error('Original file not found');
 
@@ -85,7 +88,7 @@ export const LocalStorageProvider: TStorageProvider = {
         }
 
         // Generate thumbnail
-        if (!fs.existsSync(path.dirname(thumbPath))) fs.mkdirSync(path.dirname(thumbPath), { recursive: true });
+        if (!fs.existsSync(thumbDir)) fs.mkdirSync(thumbDir, { recursive: true });
 
         if (item.information.mime.startsWith('image/')) {
             await sharp(originalPath).resize(300, 300, { fit: 'inside' }).toFormat('webp', { quality: 80 }).toFile(thumbPath);
@@ -132,8 +135,8 @@ export const LocalStorageProvider: TStorageProvider = {
         if (drive.information.type !== 'FILE') throw new Error('Invalid drive type');
 
         const storagePath = getDriveConfig().storage.path;
-        const destPath = path.join(storagePath, drive.information.path);
-        const dirPath = path.dirname(destPath);
+        const destDir = path.join(storagePath, 'file', String(drive._id));
+        const destPath = path.join(destDir, 'data.bin');
 
         // Ensure source file exists
         if (!fs.existsSync(filePath)) {
@@ -141,8 +144,8 @@ export const LocalStorageProvider: TStorageProvider = {
         }
 
         // Create destination directory if it doesn't exist
-        if (!fs.existsSync(dirPath)) {
-            fs.mkdirSync(dirPath, { recursive: true });
+        if (!fs.existsSync(destDir)) {
+            fs.mkdirSync(destDir, { recursive: true });
         }
 
         // Move file: try rename first (fast), fallback to copy+delete for cross-device
@@ -172,6 +175,7 @@ export const LocalStorageProvider: TStorageProvider = {
         }
 
         drive.status = 'READY';
+        drive.information.path = path.join('file', String(drive._id), 'data.bin');
         drive.information.hash = await computeFileHash(destPath);
 
         if (drive.information.mime.startsWith('image/')) {
@@ -189,35 +193,37 @@ export const LocalStorageProvider: TStorageProvider = {
     delete: async (ids, owner, accountId) => {
         const items = await Drive.find({ _id: { $in: ids }, owner }).lean();
 
-        // Helper to recursively get all children
-        const getAllChildren = async (folderIds: string[]): Promise<any[]> => {
+        // ** Helper to recursively get all children
+        type TDriveItem = { _id: mongoose.Types.ObjectId; information: { type: string; path?: string } };
+
+        const getAllChildren = async (folderIds: string[]): Promise<TDriveItem[]> => {
             const children = await Drive.find({ parentId: { $in: folderIds }, owner }).lean();
             if (children.length === 0) return [];
 
-            const subFolderIds = children.filter(c => c.information.type === 'FOLDER').map(c => c._id.toString());
+            const subFolderIds = children
+                .filter(c => c.information.type === 'FOLDER')
+                .map(c => c._id.toString());
 
             const subChildren = await getAllChildren(subFolderIds);
-            return [...children, ...subChildren];
+            return [...children, ...subChildren] as TDriveItem[];
         };
 
         const folderIds = items.filter(i => i.information.type === 'FOLDER').map(i => i._id.toString());
         const allChildren = await getAllChildren(folderIds);
-        const allItemsToDelete = [...items, ...allChildren];
+        const allItemsToDelete = [...items, ...allChildren] as TDriveItem[];
 
-        // Delete files from disk
+        // ** Delete files from disk
         for (const item of allItemsToDelete) {
             if (item.information.type === 'FILE' && item.information.path) {
-                // Check if any other file points to this path (shouldn't happen in simple model but good hygiene)
-                // Actually in this model, path is unique per file
-                const fullPath = path.join(getDriveConfig().storage.path, item.information.path);
-                const dirPath = path.dirname(fullPath); // .../drive/ID/
-                if (fs.existsSync(dirPath)) {
-                    fs.rmSync(dirPath, { recursive: true, force: true });
+                // ** Delete entire file directory (includes cache)
+                const fileDir = path.join(getDriveConfig().storage.path, 'file', item._id.toString());
+                if (fs.existsSync(fileDir)) {
+                    fs.rmSync(fileDir, { recursive: true, force: true });
                 }
             }
         }
 
-        // Delete from DB
+        // ** Delete from DB
         await Drive.deleteMany({ _id: { $in: allItemsToDelete.map(i => i._id) } });
     },
 
@@ -243,26 +249,11 @@ export const LocalStorageProvider: TStorageProvider = {
         const item = await Drive.findOne({ _id: id, owner });
         if (!item) throw new Error('Item not found');
 
-        // Update DB
-        const oldParentId = item.parentId;
+        // ** Update DB
         item.parentId = newParentId === 'root' || !newParentId ? null : new mongoose.Types.ObjectId(newParentId);
 
-        // For LOCAL, we might store files in flat structure or hierarchical?
-        // Looking at uploadFile (lines 124): path.join(STORAGE_PATH, drive.information.path)
-        // And line 171: path.join(STORAGE_PATH, item.information.path)
-        // And line 374 in index.ts: drive.information.path = path.join('drive', String(drive._id), 'data.bin');
-        // It seems path is ID-based: drive/<ID>/data.bin.
-        // So moving a file DOES NOT change its physical path on disk if path is ID-based and flat?
-        // Let's verify 'createFolder'. It just creates DB entry.
-        // So hierarchy is virtual in DB. Physical storage is flat-ish (by ID).
-        // IF so, 'move' is just DB update!
-
-        // Let's double check implementation of 'uploadFile' in local.ts
-        // Line 124: destPath = path.join(STORAGE_PATH, drive.information.path);
-        // And 'path' seems to be set in index.ts line 374: `path.join('drive', String(drive._id), 'data.bin')`
-        // So yes, physical path is detached from folder structure.
-
-        // So for Local, only DB update is needed.
+        // ** For LOCAL storage, physical path is ID-based: file/{ID}/data.bin
+        // ** Folder hierarchy is virtual (in DB only), so move is just a DB update
         await item.save();
         return item.toClient();
     },

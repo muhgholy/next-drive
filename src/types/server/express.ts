@@ -2,7 +2,7 @@
 import type { Request } from 'express';
 
 // ** Re-export common types
-export type { TDriveConfigInformation, TDriveSecurityConfig, TDriveImageConfig, TDriveStorageConfig, TDriveDatabase, TDriveCorsConfig, TDriveMode } from './config';
+export type { TDriveConfigInformation, TDriveSecurityConfig, TDriveStorageConfig, TDriveDatabase, TDriveCorsConfig, TDriveMode } from './config';
 
 // ** Base Express configuration
 type TDriveConfigurationExpressBase = {
@@ -14,10 +14,6 @@ type TDriveConfigurationExpressBase = {
             clientSecret: string;
             redirectUri: string;
         };
-    };
-    image?: {
-        formats: Array<'webp' | 'jpeg' | 'png'>;
-        qualities: Array<'ultralow' | 'low' | 'medium' | 'high' | 'normal'>;
     };
     cors?: {
         enabled: boolean;

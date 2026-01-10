@@ -2,7 +2,6 @@ import fs from 'fs';
 import path from 'path';
 import os from 'os';
 import crypto from 'crypto';
-import formidable from 'formidable';
 import type { Readable } from 'stream';
 import Drive from '@/server/database/mongoose/schema/drive';
 import { getDriveConfig } from '@/server/config';
@@ -219,7 +218,7 @@ export const driveFilePath = async (
 
     // For LOCAL files, return the existing path directly
     if (providerType === 'LOCAL') {
-        const filePath = path.join(STORAGE_PATH, drive.information.path);
+        const filePath = path.join(STORAGE_PATH, 'file', String(drive._id), 'data.bin');
 
         if (!fs.existsSync(filePath)) {
             throw new Error(`Local file not found on disk: ${filePath}`);
@@ -234,11 +233,10 @@ export const driveFilePath = async (
         });
     }
 
-    // For GOOGLE files, download to cache library folder
+    // For GOOGLE files, download to file directory
     if (providerType === 'GOOGLE') {
-        const libraryDir = path.join(STORAGE_PATH, 'library', 'google');
-        const fileName = `${drive._id}${path.extname(drive.name)}`;
-        const cachedFilePath = path.join(libraryDir, fileName);
+        const fileDir = path.join(STORAGE_PATH, 'file', String(drive._id));
+        const cachedFilePath = path.join(fileDir, 'data.bin');
 
         // Check if already cached
         if (fs.existsSync(cachedFilePath)) {
@@ -263,9 +261,9 @@ export const driveFilePath = async (
         const accountId = drive.storageAccountId?.toString();
         const { stream } = await GoogleDriveProvider.openStream(drive, accountId);
 
-        // Create library directory if it doesn't exist
-        if (!fs.existsSync(libraryDir)) {
-            fs.mkdirSync(libraryDir, { recursive: true });
+        // Create file directory if it doesn't exist
+        if (!fs.existsSync(fileDir)) {
+            fs.mkdirSync(fileDir, { recursive: true });
         }
 
         // Download to temp file first, then move (atomic operation)
@@ -301,38 +299,6 @@ export const driveFilePath = async (
     }
 
     throw new Error(`Unsupported provider: ${providerType}`);
-};
-
-export const processChunk = async (drive: any, chunkFile: formidable.File | formidable.File[] | undefined, chunkIndex: number, totalChunks: number, STORAGE_PATH: string) => {
-    if (!chunkFile || drive.information.type !== 'FILE') return;
-
-    const file = Array.isArray(chunkFile) ? chunkFile[0] : chunkFile;
-    const destPath = path.join(STORAGE_PATH, drive.information.path);
-    const chunkData = fs.readFileSync(file.filepath);
-
-    if (chunkIndex === 0) {
-        fs.writeFileSync(destPath, chunkData);
-    } else {
-        fs.appendFileSync(destPath, chunkData);
-    }
-
-    fs.rmSync(file.filepath, { force: true });
-    drive.currentChunk = chunkIndex + 1;
-
-    if (drive.currentChunk >= totalChunks || chunkIndex === totalChunks - 1) {
-        drive.status = 'READY';
-        drive.information.hash = await computeFileHash(destPath);
-
-        if (drive.information.mime.startsWith('image/')) {
-            const meta = await extractImageMetadata(destPath);
-            if (meta) {
-                drive.information.width = meta.width;
-                drive.information.height = meta.height;
-            }
-        }
-    }
-
-    await drive.save();
 };
 
 /**
@@ -643,10 +609,7 @@ export const driveUpload = async (
 
         // Set initial path for LOCAL provider
         if (provider.name === 'LOCAL' && drive.information.type === 'FILE') {
-            let sanitizedExt = path.extname(options.name) || '.bin';
-            sanitizedExt = sanitizedExt.replace(/[^a-zA-Z0-9.]/g, '').slice(0, 11);
-            if (!sanitizedExt.startsWith('.')) sanitizedExt = '.bin';
-            drive.information.path = path.join(String(drive._id), `data${sanitizedExt}`);
+            drive.information.path = path.join('file', String(drive._id), 'data.bin');
         }
 
         await drive.save();

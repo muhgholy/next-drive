@@ -25,12 +25,6 @@ export type TDriveSecurityConfig = {
     trash?: { retentionDays: number };
 };
 
-// ** Image processing configuration
-export type TDriveImageConfig = {
-    formats: Array<'webp' | 'jpeg' | 'png'>;
-    qualities: Array<'ultralow' | 'low' | 'medium' | 'high' | 'normal'>;
-};
-
 // ** Storage configuration
 export type TDriveStorageConfig = {
     path: string;
@@ -56,7 +50,6 @@ export type TDriveCorsConfig = {
 type TDriveConfigurationBase = {
     database: TDriveDatabase;
     storage: TDriveStorageConfig;
-    image?: TDriveImageConfig;
     cors?: TDriveCorsConfig;
     apiUrl: string;
 };

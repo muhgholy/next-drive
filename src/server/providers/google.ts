@@ -1,5 +1,6 @@
 import fs from 'fs';
-import { google } from 'googleapis';
+import path from 'path';
+import { google, type drive_v3 } from 'googleapis';
 import { Readable } from 'stream';
 import mongoose from 'mongoose';
 import Drive from '@/server/database/mongoose/schema/drive';
@@ -10,13 +11,12 @@ import type { IDatabaseDriveDocument } from '@/server/database/mongoose/schema/d
 import type { TDatabaseDrive } from '@/types/lib/database/drive';
 
 const createAuthClient = async (owner: Record<string, unknown> | null, accountId?: string) => {
-    // 1. Get credentials from StorageAccount
-    const query: any = { owner, 'metadata.provider': 'GOOGLE' };
+    // ** Get credentials from StorageAccount
+    const query: Record<string, unknown> = { owner, 'metadata.provider': 'GOOGLE' };
     if (accountId) query._id = accountId;
 
-    // If multiple accounts and no accountId, we might pick a random one?
-    // Ideally we should enforce accountId.
-    const account = await StorageAccount.findOne(query); // Pick first one if no ID specificied
+    // ** If multiple accounts and no accountId, pick first one
+    const account = await StorageAccount.findOne(query);
     if (!account) throw new Error('Google Drive account not connected');
 
     const config = getDriveConfig();
@@ -26,24 +26,14 @@ const createAuthClient = async (owner: Record<string, unknown> | null, accountId
 
     const oAuth2Client = new google.auth.OAuth2(clientId, clientSecret, redirectUri);
 
-    // Verify it's a google account and metadata exists
-    // Note: StorageAccount schema might still use metadata.provider or just provider?
-    // Based on previous grep, context.tsx had { provider: 'GOOGLE' }.
-    // Usually StorageAccount keys are consistent.
-    // If we only refactored Drive schema, StorageAccount might be unchanged.
-    // But `src/server/database/mongoose/schema/drive.ts` was refactored.
-    // I need to be careful about StorageAccount.
-    // Let's assume StorageAccount is NOT changed in this refactor unless user asked.
-    // User only mentioned "Drive Schema".
-    // But my code in createAuthClient uses account.metadata.provider.
-    // Let's keep it as is if StorageAccount wasn't refactored.
+    // ** Verify it's a google account and metadata exists
     if (account.metadata.provider !== 'GOOGLE' || !account.metadata.google) {
         throw new Error('Invalid Google Account Metadata');
     }
 
-    oAuth2Client.setCredentials(account.metadata.google.credentials);
+    oAuth2Client.setCredentials(account.metadata.google.credentials as Parameters<typeof oAuth2Client.setCredentials>[0]);
 
-    // Update tokens listener
+    // ** Update tokens listener
     oAuth2Client.on('tokens', async tokens => {
         if (tokens.refresh_token) {
             account.metadata.google.credentials = { ...account.metadata.google.credentials, ...tokens };
@@ -73,22 +63,22 @@ export const GoogleDriveProvider: TStorageProvider = {
             }
         }
 
-        // List files from Google
-        // Implement pagination loop
-        let nextPageToken: string | undefined = undefined;
-        // Keep track of all synced IDs to identify deletions
+        // ** List files from Google with pagination
+        let pageToken: string | undefined = undefined;
         const allSyncedGoogleIds = new Set<string>();
 
         do {
-            const res: any = await drive.files.list({
+            const listParams: drive_v3.Params$Resource$Files$List = {
                 q: `'${googleParentId}' in parents and trashed = false`,
                 fields: 'nextPageToken, files(id, name, mimeType, size, webViewLink, iconLink, thumbnailLink, createdTime)',
                 pageSize: 1000,
-                pageToken: nextPageToken,
-            });
+                pageToken,
+            };
+            const res = await drive.files.list(listParams);
+            const responseData = res.data;
 
-            nextPageToken = res.data.nextPageToken || undefined;
-            const files = res.data.files || [];
+            pageToken = responseData.nextPageToken ?? undefined;
+            const files = responseData.files ?? [];
 
             // Upsert to MongoDB
             for (const file of files) {
@@ -140,9 +130,9 @@ export const GoogleDriveProvider: TStorageProvider = {
                     { upsert: true, new: true, setDefaultsOnInsert: true },
                 );
             }
-        } while (nextPageToken);
+        } while (pageToken);
 
-        // Handle deletions - remove items in DB that were NOT in the gathered list
+        // ** Handle deletions - remove items in DB that were NOT in the gathered list
         const dbItems = await Drive.find({
             owner,
             storageAccountId: foundAccountId,
@@ -161,31 +151,34 @@ export const GoogleDriveProvider: TStorageProvider = {
 
     syncTrash: async (owner, accountId) => {
         const { client, accountId: foundAccountId } = await createAuthClient(owner, accountId);
-        const drive = google.drive({ version: 'v3', auth: client });
+        const driveApi = google.drive({ version: 'v3', auth: client });
 
-        // List trashed files from Google
-        let nextPageToken: string | undefined = undefined;
-
-        do {
-            const res: any = await drive.files.list({
+        // ** Helper to fetch trashed files with pagination
+        const fetchTrashedFiles = async (pageToken?: string) => {
+            return driveApi.files.list({
                 q: 'trashed = true',
                 fields: 'nextPageToken, files(id, name, mimeType, size, webViewLink, iconLink, thumbnailLink, createdTime)',
-                pageSize: 100, // Limit sync for performance
-                pageToken: nextPageToken,
+                pageSize: 100,
+                pageToken,
             });
+        };
 
-            nextPageToken = res.data.nextPageToken || undefined;
-            const files = res.data.files || [];
+        // ** List trashed files from Google with pagination
+        let nextToken: string | undefined = undefined;
+
+        do {
+            const listResult = await fetchTrashedFiles(nextToken);
+            const files = listResult.data.files || [];
 
             for (const file of files) {
                 if (!file.id || !file.name || !file.mimeType) continue;
 
-                // RELAXED FILTER: Allow Google Docs (application/vnd.google-apps.*)
+                // ** RELAXED FILTER: Allow Google Docs (application/vnd.google-apps.*)
                 const isFolder = file.mimeType === 'application/vnd.google-apps.folder';
 
                 const sizeInBytes = file.size ? parseInt(file.size) : 0;
 
-                // Use source file's createdTime for createdAt on insert
+                // ** Use source file's createdTime for createdAt on insert
                 const insertData = file.createdTime ? { createdAt: new Date(file.createdTime) } : {};
 
                 await Drive.findOneAndUpdate(
@@ -216,7 +209,10 @@ export const GoogleDriveProvider: TStorageProvider = {
                     { upsert: true, setDefaultsOnInsert: true },
                 );
             }
-        } while (nextPageToken);
+
+            // ** Update pagination state
+            nextToken = listResult.data.nextPageToken ?? undefined;
+        } while (nextToken);
     },
 
     search: async (query, owner, accountId) => {
@@ -328,7 +324,7 @@ export const GoogleDriveProvider: TStorageProvider = {
         try {
             const { client } = await createAuthClient(owner, accountId);
             const drive = google.drive({ version: 'v3', auth: client });
-            const res: any = await drive.about.get({ fields: 'storageQuota' });
+            const res = await drive.about.get({ fields: 'storageQuota' });
             return {
                 usedInBytes: parseInt(res.data.storageQuota?.usage || '0'),
                 quotaInBytes: parseInt(res.data.storageQuota?.limit || '0'),
@@ -344,10 +340,13 @@ export const GoogleDriveProvider: TStorageProvider = {
 
         if (!item.provider?.google?.id) throw new Error('Missing Google File ID');
 
-        // Check if we can stream functionality
+        // ** Check if we can stream functionality
         if (item.information.type === 'FOLDER') throw new Error('Cannot stream folder');
 
-        const res: any = await drive.files.get({ fileId: item.provider.google.id, alt: 'media' }, { responseType: 'stream' });
+        const res = await drive.files.get(
+            { fileId: item.provider.google.id, alt: 'media' },
+            { responseType: 'stream' }
+        );
 
         return {
             stream: res.data as Readable,
@@ -357,12 +356,52 @@ export const GoogleDriveProvider: TStorageProvider = {
     },
 
     getThumbnail: async (item: IDatabaseDriveDocument, accountId?: string) => {
-        const { client } = await createAuthClient(item.owner, accountId || item.storageAccountId?.toString());
+        const config = getDriveConfig();
+        const storagePath = config.storage.path;
+        const thumbDir = path.join(storagePath, 'file', item._id.toString(), 'cache');
+        const thumbPath = path.join(thumbDir, 'thumbnail.webp');
 
+        // ** Return cached thumbnail if exists
+        if (fs.existsSync(thumbPath)) {
+            return fs.createReadStream(thumbPath);
+        }
+
+        // ** Fetch from Google
+        const { client } = await createAuthClient(item.owner, accountId || item.storageAccountId?.toString());
         if (!item.provider?.google?.thumbnailLink) throw new Error('No thumbnail available');
 
-        const res: any = await client.request({ url: item.provider.google.thumbnailLink, responseType: 'stream' });
-        return res.data as Readable;
+        const res = await client.request<Readable>({ url: item.provider.google.thumbnailLink, responseType: 'stream' });
+
+        // ** Cache the thumbnail
+        if (!fs.existsSync(thumbDir)) {
+            fs.mkdirSync(thumbDir, { recursive: true });
+        }
+
+        const tempPath = `${thumbPath}.tmp`;
+        const writeStream = fs.createWriteStream(tempPath);
+
+        await new Promise<void>((resolve, reject) => {
+            (res.data as Readable).pipe(writeStream);
+            writeStream.on('finish', resolve);
+            writeStream.on('error', reject);
+        });
+
+        // ** Rename temp to final
+        try {
+            fs.renameSync(tempPath, thumbPath);
+        } catch {
+            // If rename fails, cleanup and return stream from Google
+            fs.unlinkSync(tempPath);
+        }
+
+        // ** Return the cached file
+        if (fs.existsSync(thumbPath)) {
+            return fs.createReadStream(thumbPath);
+        }
+
+        // ** Fallback: refetch from Google
+        const refetch = await client.request<Readable>({ url: item.provider.google.thumbnailLink, responseType: 'stream' });
+        return refetch.data as Readable;
     },
 
     createFolder: async (name, parentId, owner, accountId) => {
@@ -375,7 +414,7 @@ export const GoogleDriveProvider: TStorageProvider = {
             if (parent?.provider?.google?.id) googleParentId = parent.provider.google.id;
         }
 
-        const res: any = await drive.files.create({
+        const res = await drive.files.create({
             requestBody: {
                 name,
                 mimeType: 'application/vnd.google-apps.folder',
@@ -421,7 +460,7 @@ export const GoogleDriveProvider: TStorageProvider = {
         }
 
         try {
-            const res: any = await googleDrive.files.create({
+            const res = await googleDrive.files.create({
                 requestBody: {
                     name: drive.name,
                     parents: [googleParentId],
@@ -437,7 +476,7 @@ export const GoogleDriveProvider: TStorageProvider = {
             const gFile = res.data;
             if (!gFile.id) throw new Error('Upload to Google Drive failed');
 
-            // Update Drive record
+            // ** Update Drive record
             drive.status = 'READY';
             drive.provider = {
                 type: 'GOOGLE',
@@ -449,10 +488,10 @@ export const GoogleDriveProvider: TStorageProvider = {
                 },
             };
 
-            // Note: We don't delete the temp file here, index.ts handles cleanup
+            // ** Note: We don't delete the temp file here, index.ts handles cleanup
         } catch (error) {
             drive.status = 'FAILED';
-            console.error('Google Upload Error:', error);
+            console.error('[next-drive] Google Upload Error:', error);
             throw error;
         }
 
@@ -591,12 +630,12 @@ export const GoogleDriveProvider: TStorageProvider = {
     },
 
     revokeToken: async (owner, accountId) => {
-        if (!accountId) return; // Need specific account to revoke
+        if (!accountId) return; // ** Need specific account to revoke
         const { client } = await createAuthClient(owner, accountId);
         const account = await StorageAccount.findById(accountId);
         if (account?.metadata?.provider === 'GOOGLE' && account.metadata.google?.credentials) {
-            const creds = account.metadata.google.credentials;
-            if (typeof creds === 'object' && 'access_token' in creds) {
+            const creds = account.metadata.google.credentials as Record<string, unknown>;
+            if (typeof creds === 'object' && 'access_token' in creds && typeof creds.access_token === 'string') {
                 await client.revokeToken(creds.access_token);
             }
         }

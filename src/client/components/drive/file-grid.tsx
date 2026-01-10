@@ -222,7 +222,8 @@ export const DriveFileGrid = (props: Readonly<{
             if (a.information.type !== 'FOLDER' && b.information.type === 'FOLDER') return 1;
             if (sortBy.field === 'order') return 0;
 
-            let valA: any, valB: any;
+            let valA: string | number;
+            let valB: string | number;
             if (sortBy.field === 'name') {
                 valA = a.name.toLowerCase();
                 valB = b.name.toLowerCase();

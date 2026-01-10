@@ -1,12 +1,15 @@
 // ** Storage Account Types
+
+// ** Storage account metadata for Google provider
 export type TDatabaseStorageAccountMetadata = {
     provider: 'GOOGLE';
     google: {
         email: string;
-        credentials: Record<string, any>; // Stores access_token, refresh_token, etc.
+        credentials: Record<string, unknown>;
     };
 };
 
+// ** Storage account database record
 export type TDatabaseStorageAccount = {
     id: string;
     owner: Record<string, unknown> | null;

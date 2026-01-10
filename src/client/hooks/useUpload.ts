@@ -14,7 +14,7 @@ const getChunkSize = (fileSize: number) => {
     return 16 * 1024 * 1024;
 };
 
-export const useUpload = (apiEndpoint: string, activeAccountId: string | null, withCredentials: boolean = false, onUploadComplete?: (item: any) => void) => {
+export const useUpload = (apiEndpoint: string, activeAccountId: string | null, withCredentials: boolean = false, onUploadComplete?: (item: unknown) => void) => {
     const [uploads, setUploads] = useState<TDriveUploadState[]>([]);
     const abortControllers = useRef<Map<string, AbortController>>(new Map());
 
@@ -162,13 +162,14 @@ export const useUpload = (apiEndpoint: string, activeAccountId: string | null, w
             // So onUploadComplete is called there.
             // Wait, chunked upload response handling loop (lines 96-103) ONLY handles UPLOAD_STARTED.
             // I need to update the loop to checks for UPLOAD_COMPLETE too.
-        } catch (error: any) {
-            if (error.message === 'Cancelled') {
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            if (errorMessage === 'Cancelled') {
                 addLog(item.id, 'warning', 'Upload cancelled by user');
                 updateUpload(item.id, { status: 'cancelled' });
             } else {
-                addLog(item.id, 'error', `Upload failed: ${error.message}`);
-                updateUpload(item.id, { status: 'error', error: error.message });
+                addLog(item.id, 'error', `Upload failed: ${errorMessage}`);
+                updateUpload(item.id, { status: 'error', error: errorMessage });
             }
         } finally {
             abortControllers.current.delete(item.id);

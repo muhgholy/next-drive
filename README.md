@@ -260,18 +260,12 @@ import { useDrive } from "@muhgholy/next-drive/client";
 import type { TDriveFile } from "@muhgholy/next-drive/client";
 
 function MyComponent({ driveFile }: { driveFile: TDriveFile }) {
-	const { createUrl, createSrcSet } = useDrive();
+	const { createUrl } = useDrive();
 
-	// Basic URL
+	// Get file URL
 	const url = createUrl(driveFile);
 
-	// With quality and format
-	const optimizedUrl = createUrl(driveFile, { quality: "medium", format: "webp" });
-
-	// Responsive srcSet for images
-	const { srcSet, sizes } = createSrcSet(driveFile, "webp");
-
-	return <img src={optimizedUrl} srcSet={srcSet} sizes={sizes} alt={driveFile.file.name} />;
+	return <img src={url} alt={driveFile.file.name} />;
 }
 ```
 
@@ -513,15 +507,6 @@ security: {
 }
 ```
 
-### Image Processing
-
-```typescript
-image: {
-	formats: ['webp', 'jpeg', 'png'],
-	qualities: ['ultralow', 'low', 'medium', 'high', 'normal'],
-}
-```
-
 ### CORS (Cross-Origin)
 
 Required when client and API are on different domains:
@@ -602,21 +587,21 @@ GOOGLE_REDIRECT_URI=http://localhost:3000/api/drive?action=callback
 
 All operations use `?action=` query parameter:
 
-| Action            | Method | Description                      |
-| ----------------- | ------ | -------------------------------- |
-| `upload`          | POST   | Chunked file upload              |
-| `list`            | GET    | List folder contents             |
-| `serve`           | GET    | Serve file (with resize/convert) |
-| `thumbnail`       | GET    | Get file thumbnail               |
-| `rename`          | PATCH  | Rename file/folder               |
-| `trash`           | POST   | Move to trash                    |
-| `deletePermanent` | DELETE | Delete permanently               |
-| `restore`         | POST   | Restore from trash               |
-| `emptyTrash`      | DELETE | Empty all trash                  |
-| `createFolder`    | POST   | Create folder                    |
-| `move`            | POST   | Move to new parent               |
-| `search`          | GET    | Search by name                   |
-| `quota`           | GET    | Get storage usage                |
+| Action            | Method | Description          |
+| ----------------- | ------ | -------------------- |
+| `upload`          | POST   | Chunked file upload  |
+| `list`            | GET    | List folder contents |
+| `serve`           | GET    | Serve file content   |
+| `thumbnail`       | GET    | Get file thumbnail   |
+| `rename`          | PATCH  | Rename file/folder   |
+| `trash`           | POST   | Move to trash        |
+| `deletePermanent` | DELETE | Delete permanently   |
+| `restore`         | POST   | Restore from trash   |
+| `emptyTrash`      | DELETE | Empty all trash      |
+| `createFolder`    | POST   | Create folder        |
+| `move`            | POST   | Move to new parent   |
+| `search`          | GET    | Search by name       |
+| `quota`           | GET    | Get storage usage    |
 
 ---
 

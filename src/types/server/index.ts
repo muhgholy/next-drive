@@ -2,3 +2,5 @@
 export * from './config';
 export * from './drive';
 export * from './api';
+export * from './migration';
+export * from './metadata';

@@ -3,8 +3,8 @@
 
 import React, { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
 import type { TDatabaseDrive, TDriveAPIResponse } from '@/types/server';
-import type { TDrivePathItem, TDriveQuota, TDriveFile, TImageQuality, TImageFormat } from '@/types/client';
-import { driveCreateUrl, driveCreateSrcSet } from '@/client/utils';
+import type { TDrivePathItem, TDriveQuota, TDriveFile } from '@/types/client';
+import { driveCreateUrl } from '@/client/utils';
 
 // ** Context Types
 export type TDriveContext = {
@@ -61,8 +61,7 @@ export type TDriveContext = {
     loadMore: () => Promise<void>;
 
     // ** Utilities
-    createUrl: (driveFile: TDriveFile, options?: { quality?: TImageQuality; format?: TImageFormat }) => string;
-    createSrcSet: (driveFile: TDriveFile, format?: TImageFormat) => { srcSet: string; sizes: string };
+    createUrl: (driveFile: TDriveFile) => string;
     callAPI: <T>(action: string, options?: RequestInit & { query?: Record<string, string> }) => Promise<TDriveAPIResponse<T>>;
 
     // ** Actions (Optimistic)
@@ -357,12 +356,8 @@ export const DriveProvider = (props: Readonly<{
     // UTILITIES
     // =========================================================================
 
-    const createUrl = useCallback((driveFile: TDriveFile, options?: { quality?: TImageQuality; format?: TImageFormat }) => {
-        return driveCreateUrl(driveFile, apiEndpoint, options);
-    }, [apiEndpoint]);
-
-    const createSrcSet = useCallback((driveFile: TDriveFile, format?: TImageFormat) => {
-        return driveCreateSrcSet(driveFile, apiEndpoint, format);
+    const createUrl = useCallback((driveFile: TDriveFile) => {
+        return driveCreateUrl(driveFile, apiEndpoint);
     }, [apiEndpoint]);
 
     // =========================================================================
@@ -456,7 +451,6 @@ export const DriveProvider = (props: Readonly<{
 
             // Utilities
             createUrl,
-            createSrcSet,
             callAPI,
 
             // Optimistic Actions

@@ -55,8 +55,10 @@ export const DialogConfirmation = <T extends readonly TInputDefinition[] | undef
         setIsLoading(true);
         setError(null);
         try {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const response = await (inputs ? (onConfirm as any)(inputsValue) : (onConfirm as any)());
+            // ** TypeScript cannot narrow generic callback type at runtime, cast required
+            type TConfirmFn = (arg?: unknown) => Promise<[true] | [false, string]>;
+            const confirmFn = onConfirm as TConfirmFn;
+            const response = await (inputs ? confirmFn(inputsValue) : confirmFn());
             if (response[0]) {
                 onClose();
             } else {

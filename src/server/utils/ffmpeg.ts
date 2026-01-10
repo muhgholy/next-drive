@@ -1,19 +1,19 @@
 import ffmpeg from 'fluent-ffmpeg';
 import path from 'path';
 import fs from 'fs';
+import type { TVideoMetadata } from '@/types/server/metadata';
 
-// ============================================
-// Video Frame Extraction
-// ============================================
+// ** Video Frame Extraction
 
-/**
- * Extract a single frame from video for thumbnail
- */
-export async function extractVideoFrame(
-    sourcePath: string,
-    outputPath: string,
-    size: number
-): Promise<boolean> {
+// ** Extract a single frame from video for thumbnail
+export const extractVideoFrame = (props: Readonly<{
+    sourcePath: string;
+    outputPath: string;
+    size: number;
+}>): Promise<boolean> => {
+    // ** Deconstruct Props
+    const { sourcePath, outputPath, size } = props;
+
     const outputDir = path.dirname(outputPath);
     if (!fs.existsSync(outputDir)) {
         fs.mkdirSync(outputDir, { recursive: true });
@@ -29,7 +29,7 @@ export async function extractVideoFrame(
                 timemarks: ['00:00:01'],
             })
             .on('end', () => {
-                // Convert to webp for consistency
+                // ** Convert to webp for consistency
                 if (fs.existsSync(outputPath)) {
                     resolve(true);
                 } else {
@@ -41,24 +41,12 @@ export async function extractVideoFrame(
                 resolve(false);
             });
     });
-}
+};
 
-// ============================================
-// Video Metadata
-// ============================================
+// ** Video Metadata
 
-export interface VideoMetadata {
-    width: number;
-    height: number;
-    duration: number;
-}
-
-/**
- * Get video metadata using ffprobe
- */
-export async function getVideoMetadata(
-    filePath: string
-): Promise<VideoMetadata | null> {
+// ** Get video metadata using ffprobe
+export const getVideoMetadata = (filePath: string): Promise<TVideoMetadata | null> => {
     return new Promise((resolve) => {
         ffmpeg.ffprobe(filePath, (err, data) => {
             if (err) {
@@ -80,4 +68,4 @@ export async function getVideoMetadata(
             });
         });
     });
-}
+};

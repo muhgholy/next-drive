@@ -449,7 +449,7 @@ export const DriveFileChooser = (props: Readonly<{
                         <div className="nd:flex nd:items-center nd:gap-3 nd:p-2.5">
                             <div className="nd:size-12 nd:rounded-lg nd:overflow-hidden nd:bg-muted/30 nd:flex nd:items-center nd:justify-center nd:shrink-0">
                                 {displayFiles[0].file.mime.startsWith('image/') ? (
-                                    <img src={createUrl(displayFiles[0], { quality: 'low', format: 'webp' })} alt={displayFiles[0].file.name} className="nd:size-full nd:object-cover" />
+                                    <img src={createUrl(displayFiles[0])} alt={displayFiles[0].file.name} className="nd:size-full nd:object-cover" />
                                 ) : (
                                     getFileIcon(displayFiles[0].file.mime, false, "nd:size-6 nd:text-muted-foreground")
                                 )}
@@ -483,7 +483,7 @@ export const DriveFileChooser = (props: Readonly<{
                                     <div key={file.id} className="nd:flex nd:items-center nd:gap-2.5 nd:px-3 nd:py-2 nd:hover:bg-muted/20">
                                         <div className="nd:size-8 nd:rounded nd:overflow-hidden nd:bg-muted/30 nd:flex nd:items-center nd:justify-center nd:shrink-0">
                                             {file.file.mime.startsWith('image/') ? (
-                                                <img src={createUrl(file, { quality: 'ultralow', format: 'webp' })} alt={file.file.name} className="nd:size-full nd:object-cover" />
+                                                <img src={createUrl(file)} alt={file.file.name} className="nd:size-full nd:object-cover" />
                                             ) : (
                                                 getFileIcon(file.file.mime, false, "nd:size-4 nd:text-muted-foreground")
                                             )}

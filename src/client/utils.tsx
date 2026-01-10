@@ -120,52 +120,14 @@ export const getAcceptString = (filter?: string): string | undefined => {
     return filter;
 };
 
-import type { TDriveFile, TImageQuality, TImageFormat } from '@/types/client';
+import type { TDriveFile } from '@/types/client';
 
-// ** Create URL for drive file with optional quality and format
-export const driveCreateUrl = (
-    driveFile: TDriveFile,
-    apiEndpoint: string,
-    options?: { quality?: TImageQuality; format?: TImageFormat }
-): string => {
+// ** Create URL for drive file
+export const driveCreateUrl = (driveFile: TDriveFile, apiEndpoint: string): string => {
     const params = new URLSearchParams({
         action: 'serve',
         id: driveFile.id,
     });
 
-    if (options?.quality) params.set('q', options.quality);
-    if (options?.format) params.set('format', options.format);
-
     return `${apiEndpoint}?${params.toString()}`;
-};
-
-// ** Generate responsive image srcSet for drive file
-export const driveCreateSrcSet = (
-    driveFile: TDriveFile,
-    apiEndpoint: string,
-    format: TImageFormat = 'webp'
-): { srcSet: string; sizes: string } => {
-    const qualities: TImageQuality[] = ['ultralow', 'low', 'medium', 'high'];
-
-    // ** Quality to width mapping for srcSet
-    const qualityWidthMap: Record<TImageQuality, number> = {
-        ultralow: 200,
-        low: 400,
-        medium: 800,
-        high: 1200,
-        normal: 1600,
-    };
-
-    // ** Create srcSet for different qualities
-    const srcSet = qualities
-        .map(quality => {
-            const url = driveCreateUrl(driveFile, apiEndpoint, { quality, format });
-            return `${url} ${qualityWidthMap[quality]}w`;
-        })
-        .join(', ');
-
-    // ** Default sizes attribute for responsive images
-    const sizes = '(max-width: 320px) 200px, (max-width: 480px) 400px, (max-width: 768px) 800px, 1200px';
-
-    return { srcSet, sizes };
 };

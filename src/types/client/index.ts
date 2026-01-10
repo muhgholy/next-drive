@@ -31,10 +31,6 @@ export type TDriveInformation = {
     trashedAt?: Date | null;
 };
 
-// ** Image Options
-export type TImageQuality = 'ultralow' | 'low' | 'medium' | 'high' | 'normal';
-export type TImageFormat = 'webp' | 'jpeg' | 'png';
-
 // ** Re-export schema from universal location
 export { driveFileSchemaZod } from '../../schemas';
 

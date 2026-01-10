@@ -11,7 +11,7 @@ export const driveAPIHandlerExpress = driveAPIHandler as unknown as (req: Reques
 
 // ** Express Configuration
 // ** Type-cast wrapper that accepts Express Request in the information callback
-export const driveConfigurationExpress = driveConfiguration as unknown as (config: TDriveConfigurationExpress) => TDriveConfigurationExpress;
+export const driveConfigurationExpress = driveConfiguration as unknown as (config: TDriveConfigurationExpress) => Promise<TDriveConfigurationExpress>;
 
 // ** Re-export utilities that work with any framework
 export { driveGetUrl, driveReadFile, driveFilePath, driveUpload, driveDelete, driveList } from '@/server/controllers/drive';
@@ -20,4 +20,4 @@ export { getDriveConfig } from '@/server/config';
 
 // ** Re-export types
 export type { TDriveConfigurationExpress, TDriveConfigInformation } from '@/types/server/express';
-export type { TDriveFile, TDriveInformation, TImageQuality, TImageFormat } from '@/types/client';
+export type { TDriveFile, TDriveInformation } from '@/types/client';

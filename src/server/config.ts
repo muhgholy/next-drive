@@ -2,14 +2,22 @@
 import type { NextApiRequest } from 'next';
 import mongoose from 'mongoose';
 import type { TDriveConfiguration, TDriveConfigInformation } from '@/types/server';
+import { runMigrations } from '@/server/utils/migration';
 
 let globalConfig: TDriveConfiguration | null = null;
+let migrationRun = false;
 
 // ** Initialize configuration
-export const driveConfiguration = (config: TDriveConfiguration): TDriveConfiguration => {
+export const driveConfiguration = async (config: TDriveConfiguration): Promise<TDriveConfiguration> => {
     // Check database connection
     if (mongoose.connection.readyState !== 1) {
         throw new Error('Database not connected. Please connect to Mongoose before initializing next-drive.');
+    }
+
+    // ** Run migrations once on first initialization
+    if (!migrationRun) {
+        await runMigrations(config.storage.path);
+        migrationRun = true;
     }
 
     const mode = config.mode || 'NORMAL';
