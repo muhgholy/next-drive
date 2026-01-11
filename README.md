@@ -55,17 +55,6 @@ This package uses [subpath exports](https://nodejs.org/api/packages.html#subpath
 }
 ```
 
-**For projects using bundlers (Vite, Webpack, etc.):**
-
-```json
-{
-	"compilerOptions": {
-		"module": "esnext",
-		"moduleResolution": "bundler"
-	}
-}
-```
-
 > ⚠️ The legacy `"moduleResolution": "node"` is **not supported** and will cause build errors with subpath imports like `@muhgholy/next-drive/server`.
 
 **FFmpeg** (for video thumbnails):
@@ -583,25 +572,122 @@ GOOGLE_REDIRECT_URI=http://localhost:3000/api/drive?action=callback
 
 ---
 
-## API Endpoints
+## Image Optimization
 
-All operations use `?action=` query parameter:
+Serve optimized images with dynamic compression, resizing, and format conversion using query parameters.
 
-| Action            | Method | Description          |
-| ----------------- | ------ | -------------------- |
-| `upload`          | POST   | Chunked file upload  |
-| `list`            | GET    | List folder contents |
-| `serve`           | GET    | Serve file content   |
-| `thumbnail`       | GET    | Get file thumbnail   |
-| `rename`          | PATCH  | Rename file/folder   |
-| `trash`           | POST   | Move to trash        |
-| `deletePermanent` | DELETE | Delete permanently   |
-| `restore`         | POST   | Restore from trash   |
-| `emptyTrash`      | DELETE | Empty all trash      |
-| `createFolder`    | POST   | Create folder        |
-| `move`            | POST   | Move to new parent   |
-| `search`          | GET    | Search by name       |
-| `quota`           | GET    | Get storage usage    |
+### URL Format
+
+```
+/api/drive?action=serve&id={fileId}&quality={preset}&display={context}&size={preset}&format={format}
+```
+
+### Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `quality` | `low` / `medium` / `high` / `1-100` | Compression level |
+| `display` | string | Context-based quality adjustment |
+| `size` | string | Predefined dimensions preset |
+| `format` | `jpeg` / `webp` / `avif` / `png` | Output format |
+
+### Quality Presets
+
+| Preset | Base Quality | Use Case |
+|--------|--------------|----------|
+| `low` | 30 | Thumbnails, previews |
+| `medium` | 50 | General content |
+| `high` | 75 | High-quality display |
+| `1-100` | Custom | Fine-tuned control |
+
+> Quality is dynamically adjusted based on file size. Larger files get more aggressive compression.
+
+### Display Presets (Quality Context)
+
+| Display | Quality Factor | Use Case |
+|---------|----------------|----------|
+| `article-header` | 0.9 | Hero/banner images |
+| `article-image` | 0.85 | In-content images |
+| `thumbnail` | 0.7 | Small previews |
+| `avatar` | 0.8 | Profile pictures |
+| `logo` | 0.95 | Branding/logos |
+| `card` | 0.8 | Card components |
+| `gallery` | 0.85 | Gallery/grid |
+| `og` | 0.9 | Open Graph/social |
+| `icon` | 0.75 | Small icons |
+| `cover` | 0.9 | Full-width covers |
+| `story` | 0.85 | Story/vertical |
+
+### Size Presets (Dimensions)
+
+**Square Sizes:**
+| Size | Dimensions |
+|------|------------|
+| `xs` | 64×64 |
+| `sm` | 128×128 |
+| `md` | 256×256 |
+| `lg` | 512×512 |
+| `xl` | 1024×1024 |
+| `2xl` | 1600×1600 |
+| `icon` | 48×48 |
+| `thumb` | 150×150 |
+| `square` | 600×600 |
+| `avatar-sm` | 64×64 |
+| `avatar-md` | 128×128 |
+| `avatar-lg` | 256×256 |
+
+**Landscape (16:9):**
+| Size | Dimensions |
+|------|------------|
+| `landscape-sm` | 480×270 |
+| `landscape` | 800×450 |
+| `landscape-lg` | 1280×720 |
+| `landscape-xl` | 1920×1080 |
+
+**Portrait (9:16):**
+| Size | Dimensions |
+|------|------------|
+| `portrait-sm` | 270×480 |
+| `portrait` | 450×800 |
+| `portrait-lg` | 720×1280 |
+
+**Wide/Banner:**
+| Size | Dimensions | Ratio |
+|------|------------|-------|
+| `wide` | 1200×630 | OG standard |
+| `banner` | 1200×400 | 3:1 |
+| `banner-sm` | 800×200 | 4:1 |
+
+**Other:**
+| Size | Dimensions | Ratio |
+|------|------------|-------|
+| `photo-4x3` | 800×600 | 4:3 |
+| `photo-3x2` | 900×600 | 3:2 |
+| `story` | 1080×1920 | 9:16 |
+| `video` | 1280×720 | 16:9 |
+| `video-sm` | 640×360 | 16:9 |
+| `card-sm` | 300×200 | 3:2 |
+| `card` | 400×300 | 4:3 |
+| `card-lg` | 600×400 | 3:2 |
+
+### Examples
+
+```html
+<!-- Article header with OG dimensions -->
+<img src="/api/drive?action=serve&id=123&display=article-header&size=wide&format=webp">
+
+<!-- Thumbnail with aggressive compression -->
+<img src="/api/drive?action=serve&id=123&display=thumbnail&size=thumb&format=webp">
+
+<!-- Avatar -->
+<img src="/api/drive?action=serve&id=123&display=avatar&size=avatar-md&format=webp">
+
+<!-- Gallery image -->
+<img src="/api/drive?action=serve&id=123&display=gallery&size=landscape&format=webp">
+
+<!-- Just quality, no resize -->
+<img src="/api/drive?action=serve&id=123&quality=medium&format=webp">
+```
 
 ---
 

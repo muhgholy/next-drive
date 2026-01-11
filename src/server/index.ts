@@ -10,7 +10,7 @@ import { z } from 'zod';
 import { getDriveConfig, getDriveInformation, driveConfiguration } from '@/server/config';
 import Drive from '@/server/database/mongoose/schema/drive';
 import StorageAccount from '@/server/database/mongoose/schema/storage/account';
-import { validateMimeType, parseQuality } from '@/server/utils';
+import { validateMimeType, getImageSettings } from '@/server/utils';
 import sharp from 'sharp';
 import * as schemas from '@/server/zod/schemas';
 import { getSafeErrorMessage, sanitizeContentDispositionFilename } from '@/server/security/cryptoUtils';
@@ -179,15 +179,17 @@ export const driveAPIHandler = async (req: NextApiRequest, res: NextApiResponse)
             }
 
             if (action === 'serve') {
-                const { stream, mime, size } = await itemProvider.openStream(drive, itemAccountId);
+                const { stream, mime, size: fileSize } = await itemProvider.openStream(drive, itemAccountId);
                 const safeFilename = sanitizeContentDispositionFilename(drive.name);
 
-                // ** Image Transformation
+                // ** Image Transformation Parameters
                 const format = req.query.format as string;
                 const quality = req.query.quality as string;
+                const display = req.query.display as string;
+                const sizePreset = req.query.size as string;
 
                 const isImage = mime.startsWith('image/');
-                const shouldTransform = isImage && (format || quality);
+                const shouldTransform = isImage && (format || quality || display || sizePreset);
 
                 res.setHeader('Content-Disposition', `inline; filename="${safeFilename}"`);
 
@@ -197,14 +199,22 @@ export const driveAPIHandler = async (req: NextApiRequest, res: NextApiResponse)
 
                 if (shouldTransform) {
                     try {
-                        const qValue = parseQuality(quality);
+                        // Get all dynamic settings based on file size, quality, display, and size
+                        const settings = getImageSettings(fileSize, quality, display, sizePreset);
+
                         let targetFormat = format || mime.split('/')[1];
                         if (targetFormat === 'jpg') targetFormat = 'jpeg';
 
-                        // ** Cache Logic
+                        // ** Cache Logic - Include all parameters in cache key
                         const cacheDir = path.join(config.storage.path, 'file', drive._id.toString(), 'cache');
-                        const cacheFilename = `optimized_q${qValue}_${targetFormat}.bin`;
-                        const cachePath = path.join(cacheDir, cacheFilename);
+                        const cacheKey = [
+                            'opt',
+                            `q${settings.quality}`,
+                            `e${settings.effort}`,
+                            settings.width ? `${settings.width}x${settings.height}` : 'orig',
+                            targetFormat
+                        ].join('_');
+                        const cachePath = path.join(cacheDir, `${cacheKey}.bin`);
 
                         // 1. Check Cache
                         if (fs.existsSync(cachePath)) {
@@ -225,20 +235,28 @@ export const driveAPIHandler = async (req: NextApiRequest, res: NextApiResponse)
                         // 2. Transform & Cache
                         if (!fs.existsSync(cacheDir)) fs.mkdirSync(cacheDir, { recursive: true });
 
-                        const pipeline = sharp();
+                        let pipeline = sharp();
 
-                        // Format & Quality
+                        // Apply resize if dimensions specified
+                        if (settings.width && settings.height) {
+                            pipeline = pipeline.resize(settings.width, settings.height, {
+                                fit: 'inside',
+                                withoutEnlargement: true
+                            });
+                        }
+
+                        // Format & Quality - all settings are dynamic
                         if (targetFormat === 'jpeg') {
-                            pipeline.jpeg({ quality: qValue, mozjpeg: true });
+                            pipeline = pipeline.jpeg({ quality: settings.quality, mozjpeg: true });
                             res.setHeader('Content-Type', 'image/jpeg');
                         } else if (targetFormat === 'png') {
-                            pipeline.png({ quality: qValue });
+                            pipeline = pipeline.png({ compressionLevel: settings.pngCompression, adaptiveFiltering: true });
                             res.setHeader('Content-Type', 'image/png');
                         } else if (targetFormat === 'webp') {
-                            pipeline.webp({ quality: qValue });
+                            pipeline = pipeline.webp({ quality: settings.quality, effort: settings.effort });
                             res.setHeader('Content-Type', 'image/webp');
                         } else if (targetFormat === 'avif') {
-                            pipeline.avif({ quality: qValue });
+                            pipeline = pipeline.avif({ quality: settings.quality, effort: settings.effort });
                             res.setHeader('Content-Type', 'image/avif');
                         }
 
@@ -263,7 +281,7 @@ export const driveAPIHandler = async (req: NextApiRequest, res: NextApiResponse)
 
                 // Default Raw Serve
                 res.setHeader('Content-Type', mime);
-                if (size) res.setHeader('Content-Length', size);
+                if (fileSize) res.setHeader('Content-Length', fileSize);
                 stream.pipe(res);
                 return;
             }
