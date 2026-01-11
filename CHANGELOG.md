@@ -1,3 +1,10 @@
+# [4.9.0](https://github.com/muhgholy/next-drive/compare/v4.8.0...v4.9.0) (2026-01-11)
+
+
+### Features
+
+* add fit and position parameters for image resizing ([7540902](https://github.com/muhgholy/next-drive/commit/754090237c4b6c3f05c95bc35f0e01446221c0b2))
+
 # [4.8.0](https://github.com/muhgholy/next-drive/compare/v4.7.0...v4.8.0) (2026-01-11)
 
 
