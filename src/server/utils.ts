@@ -49,36 +49,66 @@ export const ownerMatches = (a: Record<string, unknown> | null, b: Record<string
 };
 
 /**
+ * Fit options for resizing (maps to Sharp's fit option)
+ */
+export type FitOption = 'cover' | 'contain' | 'fill' | 'inside' | 'outside';
+
+/**
+ * Position/gravity options for crop (maps to Sharp's position option)
+ */
+export type PositionOption = 'center' | 'top' | 'right top' | 'right' | 'right bottom' | 'bottom' | 'left bottom' | 'left' | 'left top' | 'attention' | 'entropy';
+
+/**
  * Image optimization settings returned by getImageSettings
  */
 export interface ImageSettings {
     quality: number;        // 1-100, lower = more compression
     effort: number;         // 0-9 for webp/avif, higher = slower but smaller
     pngCompression: number; // 0-9 for PNG, higher = more compression
-    width?: number;         // Max width (resize)
-    height?: number;        // Max height (resize)
+    width?: number;         // Target width (resize)
+    height?: number;        // Target height (resize)
+    fit?: FitOption;        // How to fit image into dimensions
+    position?: PositionOption; // Crop position when using cover fit
 }
 
 /**
- * Display presets - defines aspect ratio, base dimensions, and quality factor
+ * Display presets - defines aspect ratio, base dimensions, quality factor, and default fit
  */
-const DISPLAY_PRESETS: Record<string, { ratio: [number, number]; baseWidth: number; qualityFactor: number }> = {
-    'article-header': { ratio: [16, 9], baseWidth: 1200, qualityFactor: 0.9 },
-    'article-image': { ratio: [16, 9], baseWidth: 800, qualityFactor: 0.85 },
-    'thumbnail': { ratio: [1, 1], baseWidth: 150, qualityFactor: 0.7 },
-    'avatar': { ratio: [1, 1], baseWidth: 128, qualityFactor: 0.8 },
-    'logo': { ratio: [2, 1], baseWidth: 200, qualityFactor: 0.95 },
-    'card': { ratio: [4, 3], baseWidth: 400, qualityFactor: 0.8 },
-    'gallery': { ratio: [1, 1], baseWidth: 600, qualityFactor: 0.85 },
-    'og': { ratio: [1200, 630], baseWidth: 1200, qualityFactor: 0.9 },
-    'icon': { ratio: [1, 1], baseWidth: 48, qualityFactor: 0.75 },
-    'cover': { ratio: [16, 9], baseWidth: 1920, qualityFactor: 0.9 },
-    'story': { ratio: [9, 16], baseWidth: 1080, qualityFactor: 0.85 },
-    'video': { ratio: [16, 9], baseWidth: 1280, qualityFactor: 0.85 },
-    'banner': { ratio: [3, 1], baseWidth: 1200, qualityFactor: 0.9 },
-    'portrait': { ratio: [3, 4], baseWidth: 600, qualityFactor: 0.85 },
-    'landscape': { ratio: [4, 3], baseWidth: 800, qualityFactor: 0.85 },
+const DISPLAY_PRESETS: Record<string, {
+    ratio: [number, number];
+    baseWidth: number;
+    qualityFactor: number;
+    defaultFit: FitOption;
+}> = {
+    'article-header': { ratio: [16, 9], baseWidth: 1200, qualityFactor: 0.9, defaultFit: 'inside' },
+    'article-image': { ratio: [16, 9], baseWidth: 800, qualityFactor: 0.85, defaultFit: 'inside' },
+    'thumbnail': { ratio: [1, 1], baseWidth: 150, qualityFactor: 0.7, defaultFit: 'cover' },
+    'avatar': { ratio: [1, 1], baseWidth: 128, qualityFactor: 0.8, defaultFit: 'cover' },
+    'logo': { ratio: [2, 1], baseWidth: 200, qualityFactor: 0.95, defaultFit: 'contain' },
+    'card': { ratio: [4, 3], baseWidth: 400, qualityFactor: 0.8, defaultFit: 'cover' },
+    'gallery': { ratio: [1, 1], baseWidth: 600, qualityFactor: 0.85, defaultFit: 'cover' },
+    'og': { ratio: [1200, 630], baseWidth: 1200, qualityFactor: 0.9, defaultFit: 'cover' },
+    'icon': { ratio: [1, 1], baseWidth: 48, qualityFactor: 0.75, defaultFit: 'cover' },
+    'cover': { ratio: [16, 9], baseWidth: 1920, qualityFactor: 0.9, defaultFit: 'cover' },
+    'story': { ratio: [9, 16], baseWidth: 1080, qualityFactor: 0.85, defaultFit: 'cover' },
+    'video': { ratio: [16, 9], baseWidth: 1280, qualityFactor: 0.85, defaultFit: 'cover' },
+    'banner': { ratio: [3, 1], baseWidth: 1200, qualityFactor: 0.9, defaultFit: 'cover' },
+    'portrait': { ratio: [3, 4], baseWidth: 600, qualityFactor: 0.85, defaultFit: 'inside' },
+    'landscape': { ratio: [4, 3], baseWidth: 800, qualityFactor: 0.85, defaultFit: 'inside' },
 };
+
+/**
+ * Valid fit options
+ */
+const VALID_FIT_OPTIONS: FitOption[] = ['cover', 'contain', 'fill', 'inside', 'outside'];
+
+/**
+ * Valid position options (for cover/contain)
+ */
+const VALID_POSITION_OPTIONS: PositionOption[] = [
+    'center', 'top', 'right top', 'right', 'right bottom',
+    'bottom', 'left bottom', 'left', 'left top', 'attention', 'entropy'
+];
 
 /**
  * Size scale factors - multiplies the display's baseWidth
@@ -129,19 +159,23 @@ const STANDALONE_SIZES: Record<string, { width: number; height: number }> = {
 };
 
 /**
- * Calculates all image optimization settings based on file size, quality, display, and size.
+ * Calculates all image optimization settings based on file size, quality, display, size, fit, and position.
  * 
  * @param fileSizeInBytes - Original file size in bytes
  * @param qualityPreset - Quality preset ('low', 'medium', 'high') or number (1-100)
- * @param display - Display context preset (sets aspect ratio + quality factor)
+ * @param display - Display context preset (sets aspect ratio + quality factor + default fit)
  * @param size - Size scale (xs/sm/md/lg/xl) or standalone dimension preset
- * @returns Complete image settings including quality, effort, and optional dimensions
+ * @param fit - Fit mode (cover/contain/fill/inside/outside). Uses display default if not specified.
+ * @param position - Position for cover/contain (center/top/bottom/left/right/attention/entropy)
+ * @returns Complete image settings including quality, effort, dimensions, fit, and position
  */
 export const getImageSettings = (
     fileSizeInBytes: number | undefined,
     qualityPreset: string | undefined,
     display: string | undefined,
-    size: string | undefined
+    size: string | undefined,
+    fit?: string,
+    position?: string
 ): ImageSettings => {
     // 1. Parse base quality from preset
     let baseQuality = 80;
@@ -153,16 +187,18 @@ export const getImageSettings = (
         if (!isNaN(n)) baseQuality = Math.min(100, Math.max(1, n));
     }
 
-    // 2. Calculate dimensions and quality factor
+    // 2. Calculate dimensions, quality factor, and default fit
     let width: number | undefined;
     let height: number | undefined;
     let qualityFactor = 1.0;
+    let defaultFit: FitOption = 'inside';
 
     const displayPreset = display ? DISPLAY_PRESETS[display] : undefined;
 
     if (displayPreset) {
-        // Display is specified - use its aspect ratio
+        // Display is specified - use its aspect ratio and default fit
         qualityFactor = displayPreset.qualityFactor;
+        defaultFit = displayPreset.defaultFit;
         const [ratioW, ratioH] = displayPreset.ratio;
 
         // Apply size scale if it's a scale factor (xs/sm/md/lg/xl)
@@ -178,10 +214,19 @@ export const getImageSettings = (
         }
     }
 
+    // 3. Resolve fit and position
+    const resolvedFit: FitOption = fit && VALID_FIT_OPTIONS.includes(fit as FitOption)
+        ? (fit as FitOption)
+        : defaultFit;
+
+    const resolvedPosition: PositionOption | undefined = position && VALID_POSITION_OPTIONS.includes(position as PositionOption)
+        ? (position as PositionOption)
+        : undefined;
+
     // Apply quality factor from display
     baseQuality = Math.round(baseQuality * qualityFactor);
 
-    // 3. Apply file size dynamic adjustment
+    // 4. Apply file size dynamic adjustment
     let quality = baseQuality;
     let effort = 4;
     let pngCompression = 6;
@@ -216,7 +261,8 @@ export const getImageSettings = (
         quality: Math.max(1, Math.min(100, quality)),
         effort,
         pngCompression,
-        ...(width && height && { width, height }),
+        ...(width && height && { width, height, fit: resolvedFit }),
+        ...(resolvedPosition && { position: resolvedPosition }),
     };
 };
 

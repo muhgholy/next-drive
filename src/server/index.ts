@@ -187,9 +187,11 @@ export const driveAPIHandler = async (req: NextApiRequest, res: NextApiResponse)
                 const quality = req.query.quality as string;
                 const display = req.query.display as string;
                 const sizePreset = req.query.size as string;
+                const fit = req.query.fit as string;
+                const position = req.query.position as string;
 
                 const isImage = mime.startsWith('image/');
-                const shouldTransform = isImage && (format || quality || display || sizePreset);
+                const shouldTransform = isImage && (format || quality || display || sizePreset || fit);
 
 
                 res.setHeader('Content-Disposition', `inline; filename="${safeFilename}"`);
@@ -200,8 +202,8 @@ export const driveAPIHandler = async (req: NextApiRequest, res: NextApiResponse)
 
                 if (shouldTransform) {
                     try {
-                        // Get all dynamic settings based on file size, quality, display, and size
-                        const settings = getImageSettings(fileSize, quality, display, sizePreset);
+                        // Get all dynamic settings based on file size, quality, display, size, fit, and position
+                        const settings = getImageSettings(fileSize, quality, display, sizePreset, fit, position);
 
                         // Determine target format - ensure we handle common aliases
                         let targetFormat = format || mime.split('/')[1];
@@ -218,6 +220,8 @@ export const driveAPIHandler = async (req: NextApiRequest, res: NextApiResponse)
                             `q${settings.quality}`,
                             `e${settings.effort}`,
                             settings.width ? `${settings.width}x${settings.height}` : 'orig',
+                            settings.fit || 'none',
+                            settings.position || 'c',
                             targetFormat
                         ].join('_');
                         const cachePath = path.join(cacheDir, `${cacheKey}.bin`);
@@ -247,7 +251,8 @@ export const driveAPIHandler = async (req: NextApiRequest, res: NextApiResponse)
                         // Apply resize if dimensions specified
                         if (settings.width && settings.height) {
                             pipeline = pipeline.resize(settings.width, settings.height, {
-                                fit: 'inside',
+                                fit: settings.fit || 'inside',
+                                position: settings.position || 'center',
                                 withoutEnlargement: true
                             });
                         }

@@ -590,7 +590,7 @@ Serve optimized images with dynamic compression, resizing, and format conversion
 ### URL Format
 
 ```
-/api/drive?action=serve&id={fileId}&quality={preset}&display={context}&size={scale}&format={format}
+/api/drive?action=serve&id={fileId}&quality={preset}&display={context}&size={scale}&fit={mode}&position={anchor}&format={format}
 ```
 
 ### Parameters
@@ -598,18 +598,42 @@ Serve optimized images with dynamic compression, resizing, and format conversion
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `quality` | `low` / `medium` / `high` / `1-100` | Compression level |
-| `display` | string | Sets aspect ratio, base dimensions, and quality factor |
+| `display` | string | Sets aspect ratio, base dimensions, quality factor, and default fit |
 | `size` | string | Scale factor (xs/sm/md/lg/xl) or standalone dimension preset |
+| `fit` | `cover` / `contain` / `fill` / `inside` / `outside` | How image fits into dimensions |
+| `position` | `center` / `top` / `bottom` / `left` / `right` / `attention` / `entropy` | Crop anchor point (for cover/contain) |
 | `format` | `jpeg` / `webp` / `avif` / `png` | Output format |
+
+### Fit Options
+
+| Fit | Behavior | Use Case |
+|-----|----------|----------|
+| `cover` | Crop to fill exact dimensions | Thumbnails, avatars, cards |
+| `contain` | Fit within dimensions (may letterbox) | Logos, icons |
+| `fill` | Stretch to exact dimensions (may distort) | Background fills |
+| `inside` | Fit within, no upscaling *(default)* | Article images |
+| `outside` | Cover minimum dimensions | Backgrounds |
+
+### Position Options (for cover/contain)
+
+| Position | Anchor Point |
+|----------|--------------|
+| `center` | Center *(default)* |
+| `top` | Top center |
+| `bottom` | Bottom center |
+| `left` | Left center |
+| `right` | Right center |
+| `attention` | Focus on most "interesting" area (AI-based) |
+| `entropy` | Focus on highest entropy area |
 
 ### How Display + Size Work Together
 
-When **display** is specified, it defines the aspect ratio and base dimensions. The **size** parameter then scales those dimensions:
+When **display** is specified, it defines the aspect ratio, base dimensions, and default fit. The **size** parameter then scales those dimensions:
 
 ```
-display=article-image + size=sm  → 400×225  (16:9, half size)
-display=article-image + size=md  → 800×450  (16:9, default)
-display=article-image + size=lg  → 1200×675 (16:9, 1.5x)
+display=article-image + size=sm  → 400×225  (16:9, half size, fit=inside)
+display=thumbnail + size=md     → 150×150  (1:1, fit=cover)
+display=avatar + fit=contain    → 128×128  (override default cover to contain)
 ```
 
 When **no display** is specified, size uses standalone presets (fixed dimensions).
@@ -625,25 +649,25 @@ When **no display** is specified, size uses standalone presets (fixed dimensions
 
 > Quality is dynamically adjusted based on file size. Larger files get more aggressive compression.
 
-### Display Presets (Aspect Ratio + Dimensions)
+### Display Presets (Aspect Ratio + Dimensions + Fit)
 
-| Display | Aspect Ratio | Base Size | Quality Factor |
-|---------|--------------|-----------|----------------|
-| `article-header` | 16:9 | 1200×675 | 0.9 |
-| `article-image` | 16:9 | 800×450 | 0.85 |
-| `thumbnail` | 1:1 | 150×150 | 0.7 |
-| `avatar` | 1:1 | 128×128 | 0.8 |
-| `logo` | 2:1 | 200×100 | 0.95 |
-| `card` | 4:3 | 400×300 | 0.8 |
-| `gallery` | 1:1 | 600×600 | 0.85 |
-| `og` | ~1.9:1 | 1200×630 | 0.9 |
-| `icon` | 1:1 | 48×48 | 0.75 |
-| `cover` | 16:9 | 1920×1080 | 0.9 |
-| `story` | 9:16 | 1080×1920 | 0.85 |
-| `video` | 16:9 | 1280×720 | 0.85 |
-| `banner` | 3:1 | 1200×400 | 0.9 |
-| `portrait` | 3:4 | 600×800 | 0.85 |
-| `landscape` | 4:3 | 800×600 | 0.85 |
+| Display | Aspect Ratio | Base Size | Quality | Default Fit |
+|---------|--------------|-----------|---------|-------------|
+| `article-header` | 16:9 | 1200×675 | 0.9 | inside |
+| `article-image` | 16:9 | 800×450 | 0.85 | inside |
+| `thumbnail` | 1:1 | 150×150 | 0.7 | cover |
+| `avatar` | 1:1 | 128×128 | 0.8 | cover |
+| `logo` | 2:1 | 200×100 | 0.95 | contain |
+| `card` | 4:3 | 400×300 | 0.8 | cover |
+| `gallery` | 1:1 | 600×600 | 0.85 | cover |
+| `og` | ~1.9:1 | 1200×630 | 0.9 | cover |
+| `icon` | 1:1 | 48×48 | 0.75 | cover |
+| `cover` | 16:9 | 1920×1080 | 0.9 | cover |
+| `story` | 9:16 | 1080×1920 | 0.85 | cover |
+| `video` | 16:9 | 1280×720 | 0.85 | cover |
+| `banner` | 3:1 | 1200×400 | 0.9 | cover |
+| `portrait` | 3:4 | 600×800 | 0.85 | inside |
+| `landscape` | 4:3 | 800×600 | 0.85 | inside |
 
 ### Size Scale (with Display)
 
@@ -676,23 +700,26 @@ When no display is specified, use these fixed dimension presets:
 ### Examples
 
 ```html
-<!-- Article image, smaller variant (400×225) -->
+<!-- Article image, smaller variant (400×225, fit=inside) -->
 <img src="/api/drive?action=serve&id=123&display=article-image&size=sm&format=webp">
 
-<!-- Article image, default size (800×450) -->
-<img src="/api/drive?action=serve&id=123&display=article-image&format=webp">
-
-<!-- Article image, larger variant (1200×675) -->
-<img src="/api/drive?action=serve&id=123&display=article-image&size=lg&format=webp">
-
-<!-- Thumbnail (150×150 square) -->
+<!-- Thumbnail with cover fit (crops to fill 150×150 square) -->
 <img src="/api/drive?action=serve&id=123&display=thumbnail&format=webp">
 
-<!-- Avatar, smaller (64×64) -->
-<img src="/api/drive?action=serve&id=123&display=avatar&size=sm&format=webp">
+<!-- Avatar with top-focused crop (for face photos) -->
+<img src="/api/drive?action=serve&id=123&display=avatar&fit=cover&position=top&format=webp">
+
+<!-- Gallery with AI-based attention crop -->
+<img src="/api/drive?action=serve&id=123&display=gallery&fit=cover&position=attention&format=webp">
+
+<!-- Card image, override default cover to contain -->
+<img src="/api/drive?action=serve&id=123&display=card&fit=contain&format=webp">
+
+<!-- Banner with custom position -->
+<img src="/api/drive?action=serve&id=123&display=banner&position=bottom&format=webp">
 
 <!-- Standalone size, no display -->
-<img src="/api/drive?action=serve&id=123&size=landscape&format=webp">
+<img src="/api/drive?action=serve&id=123&size=landscape&fit=cover&format=webp">
 
 <!-- Just quality, no resize -->
 <img src="/api/drive?action=serve&id=123&quality=medium&format=webp">
