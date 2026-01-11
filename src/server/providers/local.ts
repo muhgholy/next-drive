@@ -9,6 +9,32 @@ import type { IDatabaseDriveDocument } from '@/server/database/mongoose/schema/d
 import ffmpeg from 'fluent-ffmpeg';
 import sharp from 'sharp';
 
+/**
+ * Generate a placeholder thumbnail for unsupported file types
+ * Creates a simple 300x300 gray image with file type label
+ */
+const generatePlaceholderThumbnail = async (outputPath: string, mimeType: string): Promise<void> => {
+    // Extract file type from mime (e.g., "image/x-icon" -> "ICO", "video/mp4" -> "MP4")
+    const typeParts = mimeType.split('/');
+    const subtype = typeParts[1] || 'file';
+    const label = subtype.replace(/^x-/, '').toUpperCase().slice(0, 6); // Max 6 chars
+
+    // Create a simple SVG placeholder and convert to WebP
+    const svg = `
+        <svg width="300" height="300" xmlns="http://www.w3.org/2000/svg">
+            <rect width="300" height="300" fill="#e5e7eb"/>
+            <text x="150" y="140" text-anchor="middle" font-family="system-ui, sans-serif" font-size="48" fill="#6b7280">${label}</text>
+            <text x="150" y="180" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16" fill="#9ca3af">Preview unavailable</text>
+        </svg>
+    `;
+
+    await sharp(Buffer.from(svg))
+        .resize(300, 300)
+        .toFormat('webp', { quality: 80 })
+        .toFile(outputPath);
+};
+
+
 export const LocalStorageProvider: TStorageProvider = {
     name: 'LOCAL',
 
@@ -91,21 +117,33 @@ export const LocalStorageProvider: TStorageProvider = {
         if (!fs.existsSync(thumbDir)) fs.mkdirSync(thumbDir, { recursive: true });
 
         if (item.information.mime.startsWith('image/')) {
-            await sharp(originalPath).resize(300, 300, { fit: 'inside' }).toFormat('webp', { quality: 80 }).toFile(thumbPath);
+            try {
+                await sharp(originalPath).resize(300, 300, { fit: 'inside' }).toFormat('webp', { quality: 80 }).toFile(thumbPath);
+            } catch (err) {
+                // Unsupported format (ICO, HEIC, SVG, etc.) - generate placeholder
+                console.warn(`[next-drive] Thumbnail generation failed for ${item.information.mime}, using placeholder`);
+                await generatePlaceholderThumbnail(thumbPath, item.information.mime);
+            }
         } else if (item.information.mime.startsWith('video/')) {
-            await new Promise((resolve, reject) => {
-                ffmpeg(originalPath)
-                    .screenshots({
-                        count: 1,
-                        folder: path.dirname(thumbPath),
-                        filename: path.basename(thumbPath),
-                        size: '300x?',
-                    })
-                    .on('end', resolve)
-                    .on('error', reject);
-            });
+            try {
+                await new Promise((resolve, reject) => {
+                    ffmpeg(originalPath)
+                        .screenshots({
+                            count: 1,
+                            folder: path.dirname(thumbPath),
+                            filename: path.basename(thumbPath),
+                            size: '300x?',
+                        })
+                        .on('end', resolve)
+                        .on('error', reject);
+                });
+            } catch (err) {
+                console.warn(`[next-drive] Video thumbnail generation failed, using placeholder`);
+                await generatePlaceholderThumbnail(thumbPath, item.information.mime);
+            }
         } else {
-            throw new Error('Unsupported mime type for thumbnail');
+            // Unsupported type - generate placeholder
+            await generatePlaceholderThumbnail(thumbPath, item.information.mime);
         }
 
         return fs.createReadStream(thumbPath);
