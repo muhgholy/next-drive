@@ -1,3 +1,10 @@
+## [4.10.1](https://github.com/muhgholy/next-drive/compare/v4.10.0...v4.10.1) (2026-01-11)
+
+
+### Bug Fixes
+
+* ensure storage path falls back to tempdir if missing ([f879278](https://github.com/muhgholy/next-drive/commit/f879278f3140ccd628d30c4f73fc45902edc94cf))
+
 # [4.10.0](https://github.com/muhgholy/next-drive/compare/v4.9.1...v4.10.0) (2026-01-11)
 
 
