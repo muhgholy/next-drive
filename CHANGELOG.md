@@ -1,3 +1,10 @@
+## [4.9.1](https://github.com/muhgholy/next-drive/compare/v4.9.0...v4.9.1) (2026-01-11)
+
+
+### Bug Fixes
+
+* add placeholder thumbnail for unsupported formats (ICO, HEIC, SVG) ([6ecffca](https://github.com/muhgholy/next-drive/commit/6ecffcaef58c95877ef72a9b19efac46e03d8afa))
+
 # [4.9.0](https://github.com/muhgholy/next-drive/compare/v4.8.0...v4.9.0) (2026-01-11)
 
 
