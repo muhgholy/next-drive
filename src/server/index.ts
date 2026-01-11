@@ -191,6 +191,7 @@ export const driveAPIHandler = async (req: NextApiRequest, res: NextApiResponse)
                 const isImage = mime.startsWith('image/');
                 const shouldTransform = isImage && (format || quality || display || sizePreset);
 
+
                 res.setHeader('Content-Disposition', `inline; filename="${safeFilename}"`);
 
                 if (config.cors?.enabled) {
@@ -202,8 +203,13 @@ export const driveAPIHandler = async (req: NextApiRequest, res: NextApiResponse)
                         // Get all dynamic settings based on file size, quality, display, and size
                         const settings = getImageSettings(fileSize, quality, display, sizePreset);
 
+                        // Determine target format - ensure we handle common aliases
                         let targetFormat = format || mime.split('/')[1];
                         if (targetFormat === 'jpg') targetFormat = 'jpeg';
+                        // Handle cases like 'svg+xml' -> just use jpeg/webp for output
+                        if (!['jpeg', 'png', 'webp', 'avif'].includes(targetFormat)) {
+                            targetFormat = format || 'webp'; // Default to format param or webp
+                        }
 
                         // ** Cache Logic - Include all parameters in cache key
                         const cacheDir = path.join(config.storage.path, 'file', drive._id.toString(), 'cache');
@@ -235,6 +241,7 @@ export const driveAPIHandler = async (req: NextApiRequest, res: NextApiResponse)
                         // 2. Transform & Cache
                         if (!fs.existsSync(cacheDir)) fs.mkdirSync(cacheDir, { recursive: true });
 
+                        // Create sharp pipeline with input stream
                         let pipeline = sharp();
 
                         // Apply resize if dimensions specified
@@ -253,14 +260,22 @@ export const driveAPIHandler = async (req: NextApiRequest, res: NextApiResponse)
                             pipeline = pipeline.png({ compressionLevel: settings.pngCompression, adaptiveFiltering: true });
                             res.setHeader('Content-Type', 'image/png');
                         } else if (targetFormat === 'webp') {
-                            pipeline = pipeline.webp({ quality: settings.quality, effort: settings.effort });
+                            // WebP effort is 0-6, not 0-9
+                            const webpEffort = Math.min(settings.effort, 6);
+                            pipeline = pipeline.webp({ quality: settings.quality, effort: webpEffort });
                             res.setHeader('Content-Type', 'image/webp');
                         } else if (targetFormat === 'avif') {
+                            // AVIF effort is 0-9
                             pipeline = pipeline.avif({ quality: settings.quality, effort: settings.effort });
                             res.setHeader('Content-Type', 'image/avif');
                         }
 
                         res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+
+                        // Handle pipeline errors
+                        pipeline.on('error', (err) => {
+                            console.error('[next-drive] Pipeline error:', err);
+                        });
 
                         // Pipe stream -> pipeline
                         stream.pipe(pipeline);

@@ -60,70 +60,69 @@ export interface ImageSettings {
 }
 
 /**
- * Display presets - affects quality factor based on use case context
+ * Display presets - defines aspect ratio, base dimensions, and quality factor
  */
-const DISPLAY_PRESETS: Record<string, number> = {
-    'article-header': 0.9,   // Hero/banner images - high quality
-    'article-image': 0.85,   // In-content images
-    'thumbnail': 0.7,        // Small previews - lower quality ok
-    'avatar': 0.8,           // Profile pictures
-    'logo': 0.95,            // Branding - needs clarity
-    'card': 0.8,             // Card components
-    'gallery': 0.85,         // Gallery/grid images
-    'og': 0.9,               // Open Graph/social sharing
-    'icon': 0.75,            // Small icons
-    'cover': 0.9,            // Full-width covers
-    'story': 0.85,           // Story/vertical format
+const DISPLAY_PRESETS: Record<string, { ratio: [number, number]; baseWidth: number; qualityFactor: number }> = {
+    'article-header': { ratio: [16, 9], baseWidth: 1200, qualityFactor: 0.9 },
+    'article-image': { ratio: [16, 9], baseWidth: 800, qualityFactor: 0.85 },
+    'thumbnail': { ratio: [1, 1], baseWidth: 150, qualityFactor: 0.7 },
+    'avatar': { ratio: [1, 1], baseWidth: 128, qualityFactor: 0.8 },
+    'logo': { ratio: [2, 1], baseWidth: 200, qualityFactor: 0.95 },
+    'card': { ratio: [4, 3], baseWidth: 400, qualityFactor: 0.8 },
+    'gallery': { ratio: [1, 1], baseWidth: 600, qualityFactor: 0.85 },
+    'og': { ratio: [1200, 630], baseWidth: 1200, qualityFactor: 0.9 },
+    'icon': { ratio: [1, 1], baseWidth: 48, qualityFactor: 0.75 },
+    'cover': { ratio: [16, 9], baseWidth: 1920, qualityFactor: 0.9 },
+    'story': { ratio: [9, 16], baseWidth: 1080, qualityFactor: 0.85 },
+    'video': { ratio: [16, 9], baseWidth: 1280, qualityFactor: 0.85 },
+    'banner': { ratio: [3, 1], baseWidth: 1200, qualityFactor: 0.9 },
+    'portrait': { ratio: [3, 4], baseWidth: 600, qualityFactor: 0.85 },
+    'landscape': { ratio: [4, 3], baseWidth: 800, qualityFactor: 0.85 },
 };
 
 /**
- * Size presets - predefined dimensions (no custom sizes to prevent abuse)
+ * Size scale factors - multiplies the display's baseWidth
  */
-const SIZE_PRESETS: Record<string, { width: number; height: number }> = {
-    // Square sizes
+const SIZE_SCALES: Record<string, number> = {
+    'xs': 0.25,
+    'sm': 0.5,
+    'md': 1.0,
+    'lg': 1.5,
+    'xl': 2.0,
+    '2xl': 2.5,
+};
+
+/**
+ * Standalone size presets - used when no display is specified
+ */
+const STANDALONE_SIZES: Record<string, { width: number; height: number }> = {
     'xs': { width: 64, height: 64 },
     'sm': { width: 128, height: 128 },
     'md': { width: 256, height: 256 },
     'lg': { width: 512, height: 512 },
     'xl': { width: 1024, height: 1024 },
     '2xl': { width: 1600, height: 1600 },
-
-    // Named squares
     'icon': { width: 48, height: 48 },
     'thumb': { width: 150, height: 150 },
     'square': { width: 600, height: 600 },
     'avatar-sm': { width: 64, height: 64 },
     'avatar-md': { width: 128, height: 128 },
     'avatar-lg': { width: 256, height: 256 },
-
-    // Landscape (16:9)
     'landscape-sm': { width: 480, height: 270 },
     'landscape': { width: 800, height: 450 },
     'landscape-lg': { width: 1280, height: 720 },
     'landscape-xl': { width: 1920, height: 1080 },
-
-    // Portrait (9:16)
     'portrait-sm': { width: 270, height: 480 },
     'portrait': { width: 450, height: 800 },
     'portrait-lg': { width: 720, height: 1280 },
-
-    // Wide/Banner (OG, social)
-    'wide': { width: 1200, height: 630 },      // Open Graph standard
-    'banner': { width: 1200, height: 400 },    // Banner/header
+    'wide': { width: 1200, height: 630 },
+    'banner': { width: 1200, height: 400 },
     'banner-sm': { width: 800, height: 200 },
-
-    // Classic photo ratios
-    'photo-4x3': { width: 800, height: 600 },  // 4:3
-    'photo-3x2': { width: 900, height: 600 },  // 3:2
-
-    // Story/vertical (9:16)
+    'photo-4x3': { width: 800, height: 600 },
+    'photo-3x2': { width: 900, height: 600 },
     'story': { width: 1080, height: 1920 },
-
-    // Video thumbnails
     'video': { width: 1280, height: 720 },
     'video-sm': { width: 640, height: 360 },
-
-    // Card sizes
     'card-sm': { width: 300, height: 200 },
     'card': { width: 400, height: 300 },
     'card-lg': { width: 600, height: 400 },
@@ -134,8 +133,8 @@ const SIZE_PRESETS: Record<string, { width: number; height: number }> = {
  * 
  * @param fileSizeInBytes - Original file size in bytes
  * @param qualityPreset - Quality preset ('low', 'medium', 'high') or number (1-100)
- * @param display - Display context preset for quality adjustment
- * @param size - Size preset for dimensions
+ * @param display - Display context preset (sets aspect ratio + quality factor)
+ * @param size - Size scale (xs/sm/md/lg/xl) or standalone dimension preset
  * @returns Complete image settings including quality, effort, and optional dimensions
  */
 export const getImageSettings = (
@@ -154,9 +153,33 @@ export const getImageSettings = (
         if (!isNaN(n)) baseQuality = Math.min(100, Math.max(1, n));
     }
 
-    // 2. Apply display quality factor
-    const displayFactor = display && DISPLAY_PRESETS[display] ? DISPLAY_PRESETS[display] : 1.0;
-    baseQuality = Math.round(baseQuality * displayFactor);
+    // 2. Calculate dimensions and quality factor
+    let width: number | undefined;
+    let height: number | undefined;
+    let qualityFactor = 1.0;
+
+    const displayPreset = display ? DISPLAY_PRESETS[display] : undefined;
+
+    if (displayPreset) {
+        // Display is specified - use its aspect ratio
+        qualityFactor = displayPreset.qualityFactor;
+        const [ratioW, ratioH] = displayPreset.ratio;
+
+        // Apply size scale if it's a scale factor (xs/sm/md/lg/xl)
+        const scale = size && SIZE_SCALES[size] ? SIZE_SCALES[size] : 1.0;
+        width = Math.round(displayPreset.baseWidth * scale);
+        height = Math.round(width * ratioH / ratioW);
+    } else if (size) {
+        // No display, check standalone sizes
+        const standalone = STANDALONE_SIZES[size];
+        if (standalone) {
+            width = standalone.width;
+            height = standalone.height;
+        }
+    }
+
+    // Apply quality factor from display
+    baseQuality = Math.round(baseQuality * qualityFactor);
 
     // 3. Apply file size dynamic adjustment
     let quality = baseQuality;
@@ -189,14 +212,11 @@ export const getImageSettings = (
         }
     }
 
-    // 4. Get dimensions from size preset
-    const dimensions = size && SIZE_PRESETS[size] ? SIZE_PRESETS[size] : undefined;
-
     return {
         quality: Math.max(1, Math.min(100, quality)),
         effort,
         pngCompression,
-        ...(dimensions && { width: dimensions.width, height: dimensions.height }),
+        ...(width && height && { width, height }),
     };
 };
 

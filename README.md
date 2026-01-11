@@ -590,7 +590,7 @@ Serve optimized images with dynamic compression, resizing, and format conversion
 ### URL Format
 
 ```
-/api/drive?action=serve&id={fileId}&quality={preset}&display={context}&size={preset}&format={format}
+/api/drive?action=serve&id={fileId}&quality={preset}&display={context}&size={scale}&format={format}
 ```
 
 ### Parameters
@@ -598,9 +598,21 @@ Serve optimized images with dynamic compression, resizing, and format conversion
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `quality` | `low` / `medium` / `high` / `1-100` | Compression level |
-| `display` | string | Context-based quality adjustment |
-| `size` | string | Predefined dimensions preset |
+| `display` | string | Sets aspect ratio, base dimensions, and quality factor |
+| `size` | string | Scale factor (xs/sm/md/lg/xl) or standalone dimension preset |
 | `format` | `jpeg` / `webp` / `avif` / `png` | Output format |
+
+### How Display + Size Work Together
+
+When **display** is specified, it defines the aspect ratio and base dimensions. The **size** parameter then scales those dimensions:
+
+```
+display=article-image + size=sm  → 400×225  (16:9, half size)
+display=article-image + size=md  → 800×450  (16:9, default)
+display=article-image + size=lg  → 1200×675 (16:9, 1.5x)
+```
+
+When **no display** is specified, size uses standalone presets (fixed dimensions).
 
 ### Quality Presets
 
@@ -613,88 +625,74 @@ Serve optimized images with dynamic compression, resizing, and format conversion
 
 > Quality is dynamically adjusted based on file size. Larger files get more aggressive compression.
 
-### Display Presets (Quality Context)
+### Display Presets (Aspect Ratio + Dimensions)
 
-| Display | Quality Factor | Use Case |
-|---------|----------------|----------|
-| `article-header` | 0.9 | Hero/banner images |
-| `article-image` | 0.85 | In-content images |
-| `thumbnail` | 0.7 | Small previews |
-| `avatar` | 0.8 | Profile pictures |
-| `logo` | 0.95 | Branding/logos |
-| `card` | 0.8 | Card components |
-| `gallery` | 0.85 | Gallery/grid |
-| `og` | 0.9 | Open Graph/social |
-| `icon` | 0.75 | Small icons |
-| `cover` | 0.9 | Full-width covers |
-| `story` | 0.85 | Story/vertical |
+| Display | Aspect Ratio | Base Size | Quality Factor |
+|---------|--------------|-----------|----------------|
+| `article-header` | 16:9 | 1200×675 | 0.9 |
+| `article-image` | 16:9 | 800×450 | 0.85 |
+| `thumbnail` | 1:1 | 150×150 | 0.7 |
+| `avatar` | 1:1 | 128×128 | 0.8 |
+| `logo` | 2:1 | 200×100 | 0.95 |
+| `card` | 4:3 | 400×300 | 0.8 |
+| `gallery` | 1:1 | 600×600 | 0.85 |
+| `og` | ~1.9:1 | 1200×630 | 0.9 |
+| `icon` | 1:1 | 48×48 | 0.75 |
+| `cover` | 16:9 | 1920×1080 | 0.9 |
+| `story` | 9:16 | 1080×1920 | 0.85 |
+| `video` | 16:9 | 1280×720 | 0.85 |
+| `banner` | 3:1 | 1200×400 | 0.9 |
+| `portrait` | 3:4 | 600×800 | 0.85 |
+| `landscape` | 4:3 | 800×600 | 0.85 |
 
-### Size Presets (Dimensions)
+### Size Scale (with Display)
 
-**Square Sizes:**
-| Size | Dimensions |
-|------|------------|
-| `xs` | 64×64 |
-| `sm` | 128×128 |
-| `md` | 256×256 |
-| `lg` | 512×512 |
-| `xl` | 1024×1024 |
-| `2xl` | 1600×1600 |
-| `icon` | 48×48 |
-| `thumb` | 150×150 |
-| `square` | 600×600 |
-| `avatar-sm` | 64×64 |
-| `avatar-md` | 128×128 |
-| `avatar-lg` | 256×256 |
+When used with a display preset, size scales the dimensions:
 
-**Landscape (16:9):**
-| Size | Dimensions |
-|------|------------|
-| `landscape-sm` | 480×270 |
-| `landscape` | 800×450 |
-| `landscape-lg` | 1280×720 |
-| `landscape-xl` | 1920×1080 |
+| Size | Scale | Example with `article-image` (800×450) |
+|------|-------|----------------------------------------|
+| `xs` | 0.25× | 200×113 |
+| `sm` | 0.5× | 400×225 |
+| `md` | 1.0× | 800×450 |
+| `lg` | 1.5× | 1200×675 |
+| `xl` | 2.0× | 1600×900 |
+| `2xl` | 2.5× | 2000×1125 |
 
-**Portrait (9:16):**
-| Size | Dimensions |
-|------|------------|
-| `portrait-sm` | 270×480 |
-| `portrait` | 450×800 |
-| `portrait-lg` | 720×1280 |
+### Standalone Size Presets (without Display)
 
-**Wide/Banner:**
-| Size | Dimensions | Ratio |
-|------|------------|-------|
-| `wide` | 1200×630 | OG standard |
-| `banner` | 1200×400 | 3:1 |
-| `banner-sm` | 800×200 | 4:1 |
+When no display is specified, use these fixed dimension presets:
 
-**Other:**
-| Size | Dimensions | Ratio |
-|------|------------|-------|
-| `photo-4x3` | 800×600 | 4:3 |
-| `photo-3x2` | 900×600 | 3:2 |
-| `story` | 1080×1920 | 9:16 |
-| `video` | 1280×720 | 16:9 |
-| `video-sm` | 640×360 | 16:9 |
-| `card-sm` | 300×200 | 3:2 |
-| `card` | 400×300 | 4:3 |
-| `card-lg` | 600×400 | 3:2 |
+| Size | Dimensions | Size | Dimensions |
+|------|------------|------|------------|
+| `xs` | 64×64 | `landscape-sm` | 480×270 |
+| `sm` | 128×128 | `landscape` | 800×450 |
+| `md` | 256×256 | `landscape-lg` | 1280×720 |
+| `lg` | 512×512 | `portrait-sm` | 270×480 |
+| `xl` | 1024×1024 | `portrait` | 450×800 |
+| `icon` | 48×48 | `wide` | 1200×630 |
+| `thumb` | 150×150 | `banner` | 1200×400 |
+| `video` | 1280×720 | `card` | 400×300 |
 
 ### Examples
 
 ```html
-<!-- Article header with OG dimensions -->
-<img src="/api/drive?action=serve&id=123&display=article-header&size=wide&format=webp">
+<!-- Article image, smaller variant (400×225) -->
+<img src="/api/drive?action=serve&id=123&display=article-image&size=sm&format=webp">
 
-<!-- Thumbnail with aggressive compression -->
-<img src="/api/drive?action=serve&id=123&display=thumbnail&size=thumb&format=webp">
+<!-- Article image, default size (800×450) -->
+<img src="/api/drive?action=serve&id=123&display=article-image&format=webp">
 
-<!-- Avatar -->
-<img src="/api/drive?action=serve&id=123&display=avatar&size=avatar-md&format=webp">
+<!-- Article image, larger variant (1200×675) -->
+<img src="/api/drive?action=serve&id=123&display=article-image&size=lg&format=webp">
 
-<!-- Gallery image -->
-<img src="/api/drive?action=serve&id=123&display=gallery&size=landscape&format=webp">
+<!-- Thumbnail (150×150 square) -->
+<img src="/api/drive?action=serve&id=123&display=thumbnail&format=webp">
+
+<!-- Avatar, smaller (64×64) -->
+<img src="/api/drive?action=serve&id=123&display=avatar&size=sm&format=webp">
+
+<!-- Standalone size, no display -->
+<img src="/api/drive?action=serve&id=123&size=landscape&format=webp">
 
 <!-- Just quality, no resize -->
 <img src="/api/drive?action=serve&id=123&quality=medium&format=webp">

@@ -97,9 +97,11 @@ async function compressImage(
             pipeline = pipeline.jpeg({ quality: settings.quality, mozjpeg: true });
             break;
         case 'webp':
-            pipeline = pipeline.webp({ quality: settings.quality, effort: settings.effort });
+            // WebP effort is 0-6, not 0-9
+            pipeline = pipeline.webp({ quality: settings.quality, effort: Math.min(settings.effort, 6) });
             break;
         case 'avif':
+            // AVIF effort is 0-9
             pipeline = pipeline.avif({ quality: settings.quality, effort: settings.effort });
             break;
         case 'png':
