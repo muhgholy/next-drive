@@ -1,3 +1,10 @@
+# [4.8.0](https://github.com/muhgholy/next-drive/compare/v4.7.0...v4.8.0) (2026-01-11)
+
+
+### Features
+
+* refactor display+size system and fix WebP effort range ([ccc5715](https://github.com/muhgholy/next-drive/commit/ccc5715b42eaaa838ca78aae3f73810449b74e20))
+
 # [4.7.0](https://github.com/muhgholy/next-drive/compare/v4.6.0...v4.7.0) (2026-01-11)
 
 
