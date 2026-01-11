@@ -1,6 +1,8 @@
 // ** Server Config Wrapper
 import type { NextApiRequest } from 'next';
 import mongoose from 'mongoose';
+import path from 'path';
+import os from 'os';
 import type { TDriveConfiguration, TDriveConfigInformation } from '@/types/server';
 import { runMigrations } from '@/server/utils/migration';
 
@@ -21,6 +23,10 @@ export const driveConfiguration = async (config: TDriveConfiguration): Promise<T
         return globalConfig;
     }
 
+
+    // Resolve storage path with fallback to temp dir
+    const resolvedPath = config.storage?.path || path.join(os.tmpdir(), 'next-drive-data');
+
     const mode = config.mode || 'NORMAL';
 
     // ** Set globalConfig FIRST (before migrations) so it's available during migration
@@ -28,6 +34,10 @@ export const driveConfiguration = async (config: TDriveConfiguration): Promise<T
         globalConfig = {
             ...config,
             mode: 'ROOT',
+            storage: {
+                ...config.storage,
+                path: resolvedPath,
+            },
             security: config.security || {
                 maxUploadSizeInBytes: 1024 * 1024 * 1024 * 10, // 10GB default for ROOT
                 allowedMimeTypes: ['*/*'],
@@ -41,6 +51,10 @@ export const driveConfiguration = async (config: TDriveConfiguration): Promise<T
         globalConfig = {
             ...config,
             mode: 'NORMAL',
+            storage: {
+                ...config.storage,
+                path: resolvedPath,
+            },
             security: {
                 maxUploadSizeInBytes: config.security?.maxUploadSizeInBytes ?? 10 * 1024 * 1024,
                 allowedMimeTypes: config.security?.allowedMimeTypes ?? ['*/*'],
@@ -56,7 +70,7 @@ export const driveConfiguration = async (config: TDriveConfiguration): Promise<T
 
     // ** Run migrations once (all concurrent callers share the same promise)
     if (!migrationPromise) {
-        migrationPromise = runMigrations(config.storage.path);
+        migrationPromise = runMigrations(resolvedPath);
     }
     await migrationPromise;
 
