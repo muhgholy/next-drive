@@ -269,15 +269,25 @@ Upload files programmatically from server-side code:
 ```typescript
 import { driveUpload } from "@muhgholy/next-drive/server";
 
-// Upload from file path
+// Upload to specific folder by ID
 const file = await driveUpload(
 	"/tmp/photo.jpg",
 	{ userId: "123" },
 	{
 		name: "photo.jpg",
-		parentId: "folderId", // Optional: folder ID or null for root
+		folder: { id: "folderId" }, // Optional: folder ID
 		accountId: "LOCAL", // Optional: storage account ID
 		enforce: false, // Optional: bypass quota check
+	}
+);
+
+// Upload to folder by path (creates folders if not exist)
+const file = await driveUpload(
+	"/tmp/photo.jpg",
+	{ userId: "123" },
+	{
+		name: "photo.jpg",
+		folder: { path: "images/2024/january" }, // Creates folders recursively
 	}
 );
 
@@ -307,13 +317,14 @@ const file = await driveUpload(
 
 **Options:**
 
-| Option      | Type             | Required | Description                                              |
-| ----------- | ---------------- | -------- | -------------------------------------------------------- |
-| `name`      | `string`         | Yes      | File name with extension                                 |
-| `parentId`  | `string \| null` | No       | Parent folder ID (null or 'root' for root)               |
-| `accountId` | `string`         | No       | Storage account ID ('LOCAL' for local storage)           |
-| `mime`      | `string`         | No       | MIME type (auto-detected from extension if not provided) |
-| `enforce`   | `boolean`        | No       | Bypass quota check (default: false)                      |
+| Option       | Type                              | Required | Description                                              |
+| ------------ | --------------------------------- | -------- | -------------------------------------------------------- |
+| `name`       | `string`                          | Yes      | File name with extension                                 |
+| `folder.id`  | `string`                          | No       | Parent folder ID                                         |
+| `folder.path`| `string`                          | No       | Folder path (e.g., `images/2024`) - creates if not exist |
+| `accountId`  | `string`                          | No       | Storage account ID ('LOCAL' for local storage)           |
+| `mime`       | `string`                          | No       | MIME type (auto-detected from extension if not provided) |
+| `enforce`    | `boolean`                         | No       | Bypass quota check (default: false)                      |
 
 ### Get Signed URL
 

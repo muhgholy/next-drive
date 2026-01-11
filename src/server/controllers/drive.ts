@@ -439,18 +439,92 @@ export const driveDelete = async (
 };
 
 /**
+ * Resolve a folder path to a folder ID, creating folders recursively if they don't exist.
+ * @param folderPath - Path like 'images/2024/january' or '/images/2024'
+ * @param owner - Owner key for the folders
+ * @param accountId - Storage account ID
+ * @returns Promise with the resolved folder ID
+ * @example
+ * ```typescript
+ * const folderId = await resolveFolderByPath('assets/images/avatars', { userId: '123' });
+ * ```
+ */
+export const resolveFolderByPath = async (
+    folderPath: string,
+    owner: Record<string, unknown> | null,
+    accountId?: string
+): Promise<string> => {
+    // Normalize path: remove leading/trailing slashes, split by /
+    const normalizedPath = folderPath.replace(/^\/+|\/+$/g, '');
+    if (!normalizedPath) {
+        throw new Error('Folder path cannot be empty');
+    }
+
+    const segments = normalizedPath.split('/').filter(s => s.length > 0);
+    if (segments.length === 0) {
+        throw new Error('Invalid folder path');
+    }
+
+    // Determine provider
+    let providerName: 'LOCAL' | 'GOOGLE' = 'LOCAL';
+    if (accountId && accountId !== 'LOCAL') {
+        const account = await Drive.db.model('StorageAccount').findOne({ _id: accountId, owner });
+        if (!account) {
+            throw new Error('Invalid Storage Account');
+        }
+        if (account.metadata.provider === 'GOOGLE') {
+            providerName = 'GOOGLE';
+        }
+    }
+
+    let currentParentId: string | null = null;
+
+    // Traverse/create each segment of the path
+    for (const segmentName of segments) {
+        // Look for existing folder with this name under current parent
+        const existingFolder: IDatabaseDriveDocument | null = await Drive.findOne({
+            owner,
+            'provider.type': providerName,
+            storageAccountId: accountId || null,
+            parentId: currentParentId,
+            name: segmentName,
+            'information.type': 'FOLDER',
+            trashedAt: null,
+        });
+
+        if (existingFolder) {
+            // Folder exists, move to next level
+            currentParentId = String(existingFolder._id);
+        } else {
+            // Create the folder
+            const provider = providerName === 'GOOGLE' ? GoogleDriveProvider : LocalStorageProvider;
+            const newFolder = await provider.createFolder(segmentName, currentParentId, owner, accountId);
+            currentParentId = newFolder.id;
+        }
+    }
+
+    return currentParentId!;
+};
+
+/**
  * Upload a file to the drive system from a file path or readable stream.
  * @param source - File path (string) or Readable stream
  * @param key - Owner key (must match the authenticated user's key)
- * @param options - Upload options including name, parentId, accountId, mime, and enforce flag
+ * @param options - Upload options including name, folder (id or path), accountId, mime, and enforce flag
  * @returns Promise with the created drive file object
  * @example
  * ```typescript
- * // Upload from file path
+ * // Upload to specific folder by ID
  * const file = await driveUpload('/tmp/photo.jpg', { userId: '123' }, {
  *   name: 'photo.jpg',
- *   parentId: 'folderId',
+ *   folder: { id: 'folderId' },
  *   enforce: false
+ * });
+ * 
+ * // Upload to folder by path (creates folders if not exist)
+ * const file = await driveUpload('/tmp/photo.jpg', { userId: '123' }, {
+ *   name: 'photo.jpg',
+ *   folder: { path: 'images/2024/january' }
  * });
  * 
  * // Upload from stream with custom MIME type
@@ -474,6 +548,8 @@ export const driveUpload = async (
     key: Record<string, unknown> | null,
     options: {
         name: string;
+        folder?: { id?: string; path?: string };
+        /** @deprecated Use folder.id instead */
         parentId?: string | null;
         accountId?: string;
         mime?: string;
@@ -595,13 +671,26 @@ export const driveUpload = async (
             }
         }
 
+        // Resolve folder ID from folder.path, folder.id, or legacy parentId
+        let resolvedParentId: string | null = null;
+
+        if (options.folder?.path) {
+            // Create folders recursively if needed
+            resolvedParentId = await resolveFolderByPath(options.folder.path, key, accountId);
+        } else if (options.folder?.id && options.folder.id !== 'root') {
+            resolvedParentId = options.folder.id;
+        } else if (options.parentId && options.parentId !== 'root') {
+            // Legacy support
+            resolvedParentId = options.parentId;
+        }
+
         // Create Drive Document
         const drive = new Drive({
             owner: key,
             storageAccountId: accountId || null,
             provider: { type: provider.name },
             name: options.name,
-            parentId: options.parentId === 'root' || !options.parentId ? null : options.parentId,
+            parentId: resolvedParentId,
             order: await getNextOrderValue(key),
             information: { type: 'FILE', sizeInBytes: fileSize, mime: mimeType, path: '' },
             status: 'UPLOADING',
