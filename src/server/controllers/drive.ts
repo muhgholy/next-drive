@@ -548,7 +548,7 @@ export const driveUpload = async (
     key: Record<string, unknown> | null,
     options: {
         name: string;
-        folder?: { id?: string; path?: string };
+        folder?: { id: string } | { path: string };
         /** @deprecated Use folder.id instead */
         parentId?: string | null;
         accountId?: string;
@@ -674,10 +674,10 @@ export const driveUpload = async (
         // Resolve folder ID from folder.path, folder.id, or legacy parentId
         let resolvedParentId: string | null = null;
 
-        if (options.folder?.path) {
+        if (options.folder && 'path' in options.folder) {
             // Create folders recursively if needed
             resolvedParentId = await resolveFolderByPath(options.folder.path, key, accountId);
-        } else if (options.folder?.id && options.folder.id !== 'root') {
+        } else if (options.folder && 'id' in options.folder && options.folder.id !== 'root') {
             resolvedParentId = options.folder.id;
         } else if (options.parentId && options.parentId !== 'root') {
             // Legacy support
