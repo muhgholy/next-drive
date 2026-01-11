@@ -1,3 +1,10 @@
+# [4.10.0](https://github.com/muhgholy/next-drive/compare/v4.9.1...v4.10.0) (2026-01-11)
+
+
+### Features
+
+* transparent background for contain fit and optimize logo preset ([fa50da1](https://github.com/muhgholy/next-drive/commit/fa50da192103ee16b6a93db5d1f407fabf5f7df0))
+
 ## [4.9.1](https://github.com/muhgholy/next-drive/compare/v4.9.0...v4.9.1) (2026-01-11)
 
 
