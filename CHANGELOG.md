@@ -1,3 +1,10 @@
+# [4.7.0](https://github.com/muhgholy/next-drive/compare/v4.6.0...v4.7.0) (2026-01-11)
+
+
+### Features
+
+* **driveUpload:** add folder.path option for recursive folder creation ([738b785](https://github.com/muhgholy/next-drive/commit/738b78519032dacd433d679c746c9930fa551621))
+
 # [4.6.0](https://github.com/muhgholy/next-drive/compare/v4.5.0...v4.6.0) (2026-01-11)
 
 
