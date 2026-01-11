@@ -253,7 +253,9 @@ export const driveAPIHandler = async (req: NextApiRequest, res: NextApiResponse)
                             pipeline = pipeline.resize(settings.width, settings.height, {
                                 fit: settings.fit || 'inside',
                                 position: settings.position || 'center',
-                                withoutEnlargement: true
+                                withoutEnlargement: true,
+                                // Use transparent background for 'contain' fit to preserve transparency
+                                background: { r: 0, g: 0, b: 0, alpha: 0 }
                             });
                         }
 

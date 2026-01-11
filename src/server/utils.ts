@@ -84,7 +84,7 @@ const DISPLAY_PRESETS: Record<string, {
     'article-image': { ratio: [16, 9], baseWidth: 800, qualityFactor: 0.85, defaultFit: 'inside' },
     'thumbnail': { ratio: [1, 1], baseWidth: 150, qualityFactor: 0.7, defaultFit: 'cover' },
     'avatar': { ratio: [1, 1], baseWidth: 128, qualityFactor: 0.8, defaultFit: 'cover' },
-    'logo': { ratio: [2, 1], baseWidth: 200, qualityFactor: 0.95, defaultFit: 'contain' },
+    'logo': { ratio: [2, 1], baseWidth: 200, qualityFactor: 0.95, defaultFit: 'inside' },
     'card': { ratio: [4, 3], baseWidth: 400, qualityFactor: 0.8, defaultFit: 'cover' },
     'gallery': { ratio: [1, 1], baseWidth: 600, qualityFactor: 0.85, defaultFit: 'cover' },
     'og': { ratio: [1200, 630], baseWidth: 1200, qualityFactor: 0.9, defaultFit: 'cover' },
