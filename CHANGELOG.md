@@ -1,3 +1,10 @@
+# [4.6.0](https://github.com/muhgholy/next-drive/compare/v4.5.0...v4.6.0) (2026-01-11)
+
+
+### Features
+
+* add display and size parameters for image optimization ([7fffc6c](https://github.com/muhgholy/next-drive/commit/7fffc6cf9f9895b3300ec8a021f22680576aa4fb))
+
 # [4.5.0](https://github.com/muhgholy/next-drive/compare/v4.4.0...v4.5.0) (2026-01-10)
 
 
