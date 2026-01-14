@@ -362,7 +362,7 @@ const MobileSidebarSheet = () => {
 // MAIN FILE CHOOSER COMPONENT
 // ============================================================================
 export const DriveFileChooser = (props: Readonly<{
-    value: TDriveFile | TDriveFile[] | null;
+    value?: TDriveFile | TDriveFile[] | null;
     onChange: (files: TDriveFile | TDriveFile[] | null) => void;
     multiple?: boolean;
     accept?: string;
@@ -374,7 +374,7 @@ export const DriveFileChooser = (props: Readonly<{
 }>) => {
     // ** Deconstruct Props
     const {
-        value, onChange, multiple = false, accept, placeholder = 'Choose files...',
+        value = null, onChange, multiple = false, accept, placeholder = 'Choose files...',
         className, disabled = false, error, helperText
     } = props;
 
@@ -445,17 +445,17 @@ export const DriveFileChooser = (props: Readonly<{
             ) : (
                 /* Selected Files Display */
                 <div className={cn("nd:rounded-lg nd:border", error ? "nd:border-destructive" : "nd:border-border", disabled && "nd:opacity-50")}>
-                    {!multiple && displayFiles[0] && (
+                    {!multiple && displayFiles[0] && displayFiles[0].file && (
                         <div className="nd:flex nd:items-center nd:gap-3 nd:p-2.5">
                             <div className="nd:size-12 nd:rounded-lg nd:overflow-hidden nd:bg-muted/30 nd:flex nd:items-center nd:justify-center nd:shrink-0">
-                                {displayFiles[0].file.mime.startsWith('image/') ? (
-                                    <img src={createUrl(displayFiles[0])} alt={displayFiles[0].file.name} className="nd:size-full nd:object-cover" />
+                                {displayFiles[0].file.mime?.startsWith('image/') ? (
+                                    <img src={createUrl(displayFiles[0])} alt={displayFiles[0].file.name || ''} className="nd:size-full nd:object-cover" />
                                 ) : (
-                                    getFileIcon(displayFiles[0].file.mime, false, "nd:size-6 nd:text-muted-foreground")
+                                    getFileIcon(displayFiles[0].file.mime || '', false, "nd:size-6 nd:text-muted-foreground")
                                 )}
                             </div>
                             <div className="nd:flex-1 nd:min-w-0">
-                                <p className="nd:text-sm nd:font-medium nd:truncate">{displayFiles[0].file.name}</p>
+                                <p className="nd:text-sm nd:font-medium nd:truncate">{displayFiles[0].file.name || 'Unknown'}</p>
                                 <p className="nd:text-xs nd:text-muted-foreground">{displayFiles[0].file.mime || 'File'}</p>
                             </div>
                             <div className="nd:flex nd:items-center nd:gap-1 nd:shrink-0">
@@ -479,16 +479,16 @@ export const DriveFileChooser = (props: Readonly<{
                                 </div>
                             </div>
                             <div className="nd:max-h-40 nd:overflow-y-auto nd:divide-y nd:divide-border/50">
-                                {displayFiles.map((file) => (
+                                {displayFiles.filter(file => file?.file).map((file) => (
                                     <div key={file.id} className="nd:flex nd:items-center nd:gap-2.5 nd:px-3 nd:py-2 nd:hover:bg-muted/20">
                                         <div className="nd:size-8 nd:rounded nd:overflow-hidden nd:bg-muted/30 nd:flex nd:items-center nd:justify-center nd:shrink-0">
-                                            {file.file.mime.startsWith('image/') ? (
-                                                <img src={createUrl(file)} alt={file.file.name} className="nd:size-full nd:object-cover" />
+                                            {file.file.mime?.startsWith('image/') ? (
+                                                <img src={createUrl(file)} alt={file.file.name || ''} className="nd:size-full nd:object-cover" />
                                             ) : (
-                                                getFileIcon(file.file.mime, false, "nd:size-4 nd:text-muted-foreground")
+                                                getFileIcon(file.file.mime || '', false, "nd:size-4 nd:text-muted-foreground")
                                             )}
                                         </div>
-                                        <span className="nd:flex-1 nd:text-sm nd:truncate">{file.file.name}</span>
+                                        <span className="nd:flex-1 nd:text-sm nd:truncate">{file.file.name || 'Unknown'}</span>
                                         {!disabled && (
                                             <Button type="button" variant="ghost" size="icon" className="nd:size-7 nd:shrink-0" onClick={() => handleRemove(file.id)}>
                                                 <X className="nd:size-3.5" />
