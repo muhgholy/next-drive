@@ -1,3 +1,10 @@
+# [4.11.0](https://github.com/muhgholy/next-drive/compare/v4.10.1...v4.11.0) (2026-01-14)
+
+
+### Features
+
+* add default value and defensive checks to FileChooser component ([7dded7b](https://github.com/muhgholy/next-drive/commit/7dded7b64db5056c52e1f718337160e2026463b2))
+
 ## [4.10.1](https://github.com/muhgholy/next-drive/compare/v4.10.0...v4.10.1) (2026-01-11)
 
 
