@@ -1,3 +1,10 @@
+# [4.12.0](https://github.com/muhgholy/next-drive/compare/v4.11.0...v4.12.0) (2026-01-15)
+
+
+### Features
+
+* update documentation for root mode and db connection ([ab15eaf](https://github.com/muhgholy/next-drive/commit/ab15eaf2a7ed5e352c279b0833552d78c113aef1))
+
 # [4.11.0](https://github.com/muhgholy/next-drive/compare/v4.10.1...v4.11.0) (2026-01-14)
 
 
