@@ -90,6 +90,9 @@ import "@muhgholy/next-drive/client/styles.css";
 
 Create `lib/drive.ts` to configure storage, security, and authentication:
 
+> [!IMPORTANT]
+> You **must** connect to your database (e.g., Mongoose) **before** calling `driveConfiguration`. The configuration initialization will fail if the database connection is not ready.
+
 ```typescript
 // lib/drive.ts
 import { driveConfiguration } from "@muhgholy/next-drive/server";
@@ -539,6 +542,40 @@ cors: {
 | `maxAge`         | `number`             | `86400`                                                     | Preflight cache duration (secs) |
 
 > When `credentials: true`, you must specify explicit origins (not `'*'`).
+
+### Drive Modes
+
+Next Drive supports two operation modes:
+
+1.  **NORMAL** (Default): Requires `information` callback to identify the user and set quota. Enforces security limits.
+2.  **ROOT**: System/Admin mode. No authentication required by default (unless you provide `information`).
+
+> [!WARNING]
+> In both modes, ensure your database connection is active before initializing the configuration.
+
+**Root Mode Configuration:**
+
+```typescript
+driveConfiguration({
+    mode: 'ROOT', // Enable root mode
+    database: 'MONGOOSE',
+    apiUrl: '/api/drive',
+    storage: { path: '/var/data/drive' },
+    // Optional: Security defaults to 10GB limit and all mime types if omitted
+    security: {
+        maxUploadSizeInBytes: 10 * 1024 * 1024 * 1024, // 10GB
+        allowedMimeTypes: ['*/*']
+    }
+});
+```
+
+**Key differences in ROOT mode:**
+- `information` callback is **optional**.
+- If `information` is omitted:
+    - `key` is `null` (files owned by system).
+    - `quota` is unlimited.
+- Default `security.maxUploadSizeInBytes` is **10GB**.
+- Default `security.allowedMimeTypes` is `['*/*']` (all files allowed).
 
 ---
 
