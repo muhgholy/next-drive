@@ -1,3 +1,10 @@
+# [4.13.0](https://github.com/muhgholy/next-drive/compare/v4.12.0...v4.13.0) (2026-01-21)
+
+
+### Features
+
+* add Tailwind v3 compatibility by post-processing CSS to remove [@layer](https://github.com/layer) and [@property](https://github.com/property) directives ([a609020](https://github.com/muhgholy/next-drive/commit/a609020ed74652ea931823665a5bdd7bc068b180))
+
 # [4.12.0](https://github.com/muhgholy/next-drive/compare/v4.11.0...v4.12.0) (2026-01-15)
 
 
