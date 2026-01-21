@@ -20,10 +20,20 @@ export default defineConfig({
         options.jsx = 'automatic';
     },
     onSuccess: async () => {
-        // Compile Tailwind CSS v4 and overwrite the tsup-generated CSS
-        execSync(`npx @tailwindcss/cli -i src/client/styles.build.css -o dist/client/index.css --minify`, {
+        const tempCss = 'dist/client/index.temp.css';
+
+        // Step 1: Compile with Tailwind v4 (generates utility classes from components)
+        execSync(`npx @tailwindcss/cli -i src/client/styles.build.css -o ${tempCss}`, {
             stdio: 'inherit',
         });
+
+        // Step 2: Process with PostCSS to remove v4-specific syntax and minify
+        execSync(`node scripts/process-css.cjs ${tempCss} dist/client/index.css`, {
+            stdio: 'inherit',
+        });
+
+        // Clean up temp file
+        execSync(`rm ${tempCss}`);
 
         // Inject CSS import at the top of the JS files so styles auto-load
         const esmFile = 'dist/client/index.js';
@@ -39,6 +49,6 @@ export default defineConfig({
             writeFileSync(cjsFile, `require('./index.css');\n${cjsContent}`);
         }
 
-        console.log('✓ Compiled Tailwind CSS and injected imports');
+        console.log('✓ Compiled Tailwind CSS with v3 compatibility');
     },
 });
