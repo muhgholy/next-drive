@@ -1,3 +1,10 @@
+# [4.14.0](https://github.com/muhgholy/next-drive/compare/v4.13.0...v4.14.0) (2026-01-23)
+
+
+### Features
+
+* implement component-scoped CSS injection for Tailwind v3 compatibility ([95271a5](https://github.com/muhgholy/next-drive/commit/95271a50567b9da816d359e00148cf44c666edc1))
+
 # [4.13.0](https://github.com/muhgholy/next-drive/compare/v4.12.0...v4.13.0) (2026-01-21)
 
 
