@@ -11,31 +11,33 @@ The build process now:
 1. **Compiles** CSS with Tailwind v4 CLI (to generate utility classes)
 2. **Post-processes** the CSS with a PostCSS plugin to remove v4-specific syntax
 3. **Minifies** the output with cssnano
-4. **Auto-imports** the CSS in the exported JavaScript modules
+4. **Auto-injects** the CSS **only when the `DriveFileChooser` component is used**.
 
 ## Implementation
 
 ### Files Created/Modified
 
-1. **`scripts/postcss-v3-compat.cjs`** - PostCSS plugin that removes:
-   - All `@layer` directives (empty and wrapped)
-   - All `@property` declarations
+1. **`scripts/post-process-css.js`** (Obsolete) -> **`scripts/postcss-v3-compat.cjs`** / **`scripts/process-css.cjs`**
+   - Strips v4 syntax (`@layer`, `@property`).
 
-2. **`scripts/process-css.cjs`** - Node.js script that orchestrates PostCSS processing
+2. **`src/client/style-injector.ts`**
+   - React hook that injects the CSS into `<head>` at runtime.
 
-3. **`tsup.config.ts`** - Updated build pipeline:
-   ```
-   Tailwind v4 CLI → Temp CSS → PostCSS Processing → Final CSS (v3-compatible)
-   ```
+3. **`src/client/file-chooser.tsx`**
+   - Calls the injector hook.
+
+4. **`tsup.config.ts`**
+   - Compiles CSS.
+   - Reads the CSS content.
+   - **Replaces a placeholder** in the compiled JS bundles with the actual CSS string.
+   - This embeds the styles directly into the component code.
 
 ## Result
 
-The exported `dist/client/index.css`:
-- ✅ **49KB minified** (down from 63KB uncompressed)
-- ✅ **0 `@layer` directives**
-- ✅ **0 `@property` declarations**
-- ✅ **v3-compatible** - works in both v3 and v4 projects
-- ✅ **Auto-imported** - consumers get styles automatically
+- ✅ **Component-Scoped**: Styles only load when you use `DriveFileChooser`.
+- ✅ **Zero Config**: No need to import a CSS file manually.
+- ✅ **v3-Compatible**: The injected CSS is clean and won't break Tailwind v3.
+- ✅ **Clean Global Scope**: No global side-effects unless the component is mounted.
 
 ## Why This Approach?
 

@@ -1,6 +1,6 @@
 import { defineConfig } from 'tsup';
 import { execSync } from 'child_process';
-import { readFileSync, writeFileSync } from 'fs';
+import { readFileSync, writeFileSync, readdirSync } from 'fs';
 
 export default defineConfig({
     entry: {
@@ -35,20 +35,26 @@ export default defineConfig({
         // Clean up temp file
         execSync(`rm ${tempCss}`);
 
-        // Inject CSS import at the top of the JS files so styles auto-load
-        const esmFile = 'dist/client/index.js';
-        const cjsFile = 'dist/client/index.cjs';
+        // Read the processed CSS content
+        const cssContent = readFileSync('dist/client/index.css', 'utf-8');
+        const escapedCss = JSON.stringify(cssContent);
 
-        const esmContent = readFileSync(esmFile, 'utf-8');
-        if (!esmContent.includes('./index.css')) {
-            writeFileSync(esmFile, `import './index.css';\n${esmContent}`);
-        }
+        // Inject CSS via placeholder replacement in ALL JS bundles (main and chunks)
+        const distDir = 'dist/client';
+        readdirSync(distDir).forEach((file) => {
+            if (file.endsWith('.js') || file.endsWith('.cjs')) {
+                const filePath = `${distDir}/${file}`;
+                const content = readFileSync(filePath, 'utf-8');
+                // Check if file contains placeholder before replacing
+                if (content.includes('__ND_STYLES_PLACEHOLDER__')) {
+                    // Replace placeholder (handles both single and double quoted strings from tsup)
+                    const newContent = content.replace(/['"]__ND_STYLES_PLACEHOLDER__['"]/, escapedCss);
+                    writeFileSync(filePath, newContent);
+                    console.log(`✓ Injected styles into ${file}`);
+                }
+            }
+        });
 
-        const cjsContent = readFileSync(cjsFile, 'utf-8');
-        if (!cjsContent.includes('./index.css')) {
-            writeFileSync(cjsFile, `require('./index.css');\n${cjsContent}`);
-        }
-
-        console.log('✓ Compiled Tailwind CSS with v3 compatibility');
+        console.log('✓ Compiled Tailwind CSS with v3 compatibility AND injected component-scoped styles');
     },
 });

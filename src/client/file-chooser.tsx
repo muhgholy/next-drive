@@ -5,6 +5,7 @@ import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import type { TDriveFile } from '@/types/client';
 import { useDrive } from '@/client/context';
 import { cn, getFileIcon } from '@/client/utils';
+import { useStyleInjector } from './style-injector';
 
 // ** UI Components
 import { Button } from '@/client/components/ui/button';
@@ -379,6 +380,7 @@ export const DriveFileChooser = (props: Readonly<{
     } = props;
 
     const { items, selectedFileIds, setSelectedFileIds, createUrl, triggerFetch } = useDrive();
+    useStyleInjector();
     const [isOpen, setIsOpen] = useState(false);
 
     // Sync selection on open and trigger fetch
