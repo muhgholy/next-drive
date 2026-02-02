@@ -519,7 +519,7 @@ export const driveAPIHandler = async (req: NextApiRequest, res: NextApiResponse)
                 let plainItems = await Promise.all(items.map(item => item.toClient()));
 
                 // Add signed URL tokens if enabled
-                if (config.security?.signedUrls?.enabled) {
+                if (config.security?.signedUrls?.enabled && config.security.signedUrls.secret) {
                     const { secret, expiresIn } = config.security.signedUrls;
                     plainItems = plainItems.map(item => {
                         const expiryTimestamp = Math.floor(Date.now() / 1000) + expiresIn;
@@ -566,7 +566,7 @@ export const driveAPIHandler = async (req: NextApiRequest, res: NextApiResponse)
                 let plainItems = await Promise.all(items.map(i => i.toClient()));
 
                 // Add signed URL tokens if enabled
-                if (config.security?.signedUrls?.enabled) {
+                if (config.security?.signedUrls?.enabled && config.security.signedUrls.secret) {
                     const { secret, expiresIn } = config.security.signedUrls;
                     plainItems = plainItems.map(item => {
                         const expiryTimestamp = Math.floor(Date.now() / 1000) + expiresIn;
@@ -927,7 +927,7 @@ export const driveAPIHandler = async (req: NextApiRequest, res: NextApiResponse)
                 let plainItems = await Promise.all(items.map(item => item.toClient()));
 
                 // Add signed URL tokens if enabled
-                if (config.security?.signedUrls?.enabled) {
+                if (config.security?.signedUrls?.enabled && config.security.signedUrls.secret) {
                     const { secret, expiresIn } = config.security.signedUrls;
                     plainItems = plainItems.map(item => {
                         const expiryTimestamp = Math.floor(Date.now() / 1000) + expiresIn;
