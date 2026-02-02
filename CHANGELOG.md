@@ -1,3 +1,10 @@
+## [4.15.1](https://github.com/muhgholy/next-drive/compare/v4.15.0...v4.15.1) (2026-02-02)
+
+
+### Bug Fixes
+
+* validate signedUrls secret before generating tokens ([4bfad17](https://github.com/muhgholy/next-drive/commit/4bfad17ca986c4192a5d073af12f17002db7dc21))
+
 # [4.15.0](https://github.com/muhgholy/next-drive/compare/v4.14.0...v4.15.0) (2026-02-02)
 
 
