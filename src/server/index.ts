@@ -516,7 +516,17 @@ export const driveAPIHandler = async (req: NextApiRequest, res: NextApiResponse)
                 if (afterId) query._id = { $lt: afterId }; // Pagination
 
                 const items = await Drive.find(query, {}, { sort: { order: 1, _id: -1 }, limit });
-                const plainItems = await Promise.all(items.map(item => item.toClient()));
+                let plainItems = await Promise.all(items.map(item => item.toClient()));
+
+                // Add signed URL tokens if enabled
+                if (config.security?.signedUrls?.enabled) {
+                    const { secret, expiresIn } = config.security.signedUrls;
+                    plainItems = plainItems.map(item => {
+                        const expiryTimestamp = Math.floor(Date.now() / 1000) + expiresIn;
+                        const signature = crypto.createHmac('sha256', secret).update(`${item.id}:${expiryTimestamp}`).digest('hex');
+                        return { ...item, token: Buffer.from(`${expiryTimestamp}:${signature}`).toString('base64url') };
+                    });
+                }
 
                 res.status(200).json({ status: 200, message: 'Items retrieved', data: { items: plainItems, hasMore: items.length === limit } });
                 return;
@@ -553,7 +563,17 @@ export const driveAPIHandler = async (req: NextApiRequest, res: NextApiResponse)
                 if (folderId && folderId !== 'root') query.parentId = folderId;
 
                 const items = await Drive.find(query, {}, { limit, sort: { createdAt: -1 } });
-                const plainItems = await Promise.all(items.map(i => i.toClient()));
+                let plainItems = await Promise.all(items.map(i => i.toClient()));
+
+                // Add signed URL tokens if enabled
+                if (config.security?.signedUrls?.enabled) {
+                    const { secret, expiresIn } = config.security.signedUrls;
+                    plainItems = plainItems.map(item => {
+                        const expiryTimestamp = Math.floor(Date.now() / 1000) + expiresIn;
+                        const signature = crypto.createHmac('sha256', secret).update(`${item.id}:${expiryTimestamp}`).digest('hex');
+                        return { ...item, token: Buffer.from(`${expiryTimestamp}:${signature}`).toString('base64url') };
+                    });
+                }
 
                 return res.status(200).json({ status: 200, message: 'Results', data: { items: plainItems } });
             }
@@ -904,7 +924,17 @@ export const driveAPIHandler = async (req: NextApiRequest, res: NextApiResponse)
                 };
 
                 const items = await Drive.find(query, {}, { sort: { trashedAt: -1 } });
-                const plainItems = await Promise.all(items.map(item => item.toClient()));
+                let plainItems = await Promise.all(items.map(item => item.toClient()));
+
+                // Add signed URL tokens if enabled
+                if (config.security?.signedUrls?.enabled) {
+                    const { secret, expiresIn } = config.security.signedUrls;
+                    plainItems = plainItems.map(item => {
+                        const expiryTimestamp = Math.floor(Date.now() / 1000) + expiresIn;
+                        const signature = crypto.createHmac('sha256', secret).update(`${item.id}:${expiryTimestamp}`).digest('hex');
+                        return { ...item, token: Buffer.from(`${expiryTimestamp}:${signature}`).toString('base64url') };
+                    });
+                }
 
                 return res.status(200).json({
                     status: 200,
