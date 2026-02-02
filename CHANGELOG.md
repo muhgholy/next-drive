@@ -1,3 +1,10 @@
+# [4.15.0](https://github.com/muhgholy/next-drive/compare/v4.14.0...v4.15.0) (2026-02-02)
+
+
+### Features
+
+* add signed URL tokens to list/search/trash responses for preview thumbnails ([b1b06c1](https://github.com/muhgholy/next-drive/commit/b1b06c16d409a113ff9f0400079ee0be35f55161))
+
 # [4.14.0](https://github.com/muhgholy/next-drive/compare/v4.13.0...v4.14.0) (2026-01-23)
 
 
