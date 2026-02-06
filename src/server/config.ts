@@ -38,9 +38,11 @@ export const driveConfiguration = async (config: TDriveConfiguration): Promise<T
                 ...config.storage,
                 path: resolvedPath,
             },
-            security: config.security || {
-                maxUploadSizeInBytes: 1024 * 1024 * 1024 * 10, // 10GB default for ROOT
-                allowedMimeTypes: ['*/*'],
+            security: {
+                maxUploadSizeInBytes: config.security?.maxUploadSizeInBytes ?? 1024 * 1024 * 1024 * 10, // 10GB default for ROOT
+                allowedMimeTypes: config.security?.allowedMimeTypes ?? ['*/*'],
+                signedUrls: config.security?.signedUrls,
+                trash: config.security?.trash,
             },
         };
     } else {

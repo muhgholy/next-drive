@@ -43,6 +43,25 @@ const getProvider = async (req: NextApiRequest, owner: Record<string, unknown> |
     return { provider: LocalStorageProvider };
 };
 
+// ** Helper to add signed URL token to a single item
+const addSignedUrlToken = (item: TDatabaseDrive, config: ReturnType<typeof getDriveConfig>): TDatabaseDrive => {
+    if (!config.security?.signedUrls?.enabled || !config.security.signedUrls.secret) {
+        return item;
+    }
+    const { secret, expiresIn } = config.security.signedUrls;
+    const expiryTimestamp = Math.floor(Date.now() / 1000) + expiresIn;
+    const signature = crypto.createHmac('sha256', secret).update(`${item.id}:${expiryTimestamp}`).digest('hex');
+    return { ...item, token: Buffer.from(`${expiryTimestamp}:${signature}`).toString('base64url') };
+};
+
+// ** Helper to add signed URL tokens to an array of items
+const addSignedUrlTokens = (items: TDatabaseDrive[], config: ReturnType<typeof getDriveConfig>): TDatabaseDrive[] => {
+    if (!config.security?.signedUrls?.enabled || !config.security.signedUrls.secret) {
+        return items;
+    }
+    return items.map(item => addSignedUrlToken(item, config));
+};
+
 // ** Helper to apply CORS headers
 const applyCorsHeaders = (req: NextApiRequest, res: NextApiResponse, config: ReturnType<typeof getDriveConfig>): boolean => {
     const cors = config.cors;
@@ -516,17 +535,7 @@ export const driveAPIHandler = async (req: NextApiRequest, res: NextApiResponse)
                 if (afterId) query._id = { $lt: afterId }; // Pagination
 
                 const items = await Drive.find(query, {}, { sort: { order: 1, _id: -1 }, limit });
-                let plainItems = await Promise.all(items.map(item => item.toClient()));
-
-                // Add signed URL tokens if enabled
-                if (config.security?.signedUrls?.enabled && config.security.signedUrls.secret) {
-                    const { secret, expiresIn } = config.security.signedUrls;
-                    plainItems = plainItems.map(item => {
-                        const expiryTimestamp = Math.floor(Date.now() / 1000) + expiresIn;
-                        const signature = crypto.createHmac('sha256', secret).update(`${item.id}:${expiryTimestamp}`).digest('hex');
-                        return { ...item, token: Buffer.from(`${expiryTimestamp}:${signature}`).toString('base64url') };
-                    });
-                }
+                const plainItems = addSignedUrlTokens(await Promise.all(items.map(item => item.toClient())), config);
 
                 res.status(200).json({ status: 200, message: 'Items retrieved', data: { items: plainItems, hasMore: items.length === limit } });
                 return;
@@ -563,17 +572,7 @@ export const driveAPIHandler = async (req: NextApiRequest, res: NextApiResponse)
                 if (folderId && folderId !== 'root') query.parentId = folderId;
 
                 const items = await Drive.find(query, {}, { limit, sort: { createdAt: -1 } });
-                let plainItems = await Promise.all(items.map(i => i.toClient()));
-
-                // Add signed URL tokens if enabled
-                if (config.security?.signedUrls?.enabled && config.security.signedUrls.secret) {
-                    const { secret, expiresIn } = config.security.signedUrls;
-                    plainItems = plainItems.map(item => {
-                        const expiryTimestamp = Math.floor(Date.now() / 1000) + expiresIn;
-                        const signature = crypto.createHmac('sha256', secret).update(`${item.id}:${expiryTimestamp}`).digest('hex');
-                        return { ...item, token: Buffer.from(`${expiryTimestamp}:${signature}`).toString('base64url') };
-                    });
-                }
+                const plainItems = addSignedUrlTokens(await Promise.all(items.map(i => i.toClient())), config);
 
                 return res.status(200).json({ status: 200, message: 'Results', data: { items: plainItems } });
             }
@@ -799,7 +798,7 @@ export const driveAPIHandler = async (req: NextApiRequest, res: NextApiResponse)
                                 fs.rmSync(uploadDir, { recursive: true, force: true });
 
                                 const newQuota = await provider.getQuota(meta.owner, meta.accountId, information.storage.quotaInBytes);
-                                res.status(200).json({ status: 200, message: 'Upload complete', data: { type: 'UPLOAD_COMPLETE', driveId: String(drive._id), item }, statistic: { storage: newQuota } });
+                                res.status(200).json({ status: 200, message: 'Upload complete', data: { type: 'UPLOAD_COMPLETE', driveId: String(drive._id), item: addSignedUrlToken(item, config) }, statistic: { storage: newQuota } });
                             } catch (err) {
                                 // Upload to provider failed
                                 await Drive.deleteOne({ _id: drive._id });
@@ -855,7 +854,7 @@ export const driveAPIHandler = async (req: NextApiRequest, res: NextApiResponse)
                 if (!folderData.success) return res.status(400).json({ status: 400, message: folderData.error.errors[0].message });
                 const { name, parentId } = folderData.data;
 
-                const item = await provider.createFolder(name, parentId ?? null, owner, accountId);
+                const item = addSignedUrlToken(await provider.createFolder(name, parentId ?? null, owner, accountId), config);
                 return res.status(201).json({ status: 201, message: 'Folder created', data: { item } });
             }
 
@@ -924,17 +923,7 @@ export const driveAPIHandler = async (req: NextApiRequest, res: NextApiResponse)
                 };
 
                 const items = await Drive.find(query, {}, { sort: { trashedAt: -1 } });
-                let plainItems = await Promise.all(items.map(item => item.toClient()));
-
-                // Add signed URL tokens if enabled
-                if (config.security?.signedUrls?.enabled && config.security.signedUrls.secret) {
-                    const { secret, expiresIn } = config.security.signedUrls;
-                    plainItems = plainItems.map(item => {
-                        const expiryTimestamp = Math.floor(Date.now() / 1000) + expiresIn;
-                        const signature = crypto.createHmac('sha256', secret).update(`${item.id}:${expiryTimestamp}`).digest('hex');
-                        return { ...item, token: Buffer.from(`${expiryTimestamp}:${signature}`).toString('base64url') };
-                    });
-                }
+                const plainItems = addSignedUrlTokens(await Promise.all(items.map(item => item.toClient())), config);
 
                 return res.status(200).json({
                     status: 200,
@@ -1006,7 +995,7 @@ export const driveAPIHandler = async (req: NextApiRequest, res: NextApiResponse)
                     }
                 }
 
-                return res.status(200).json({ status: 200, message: 'Moved', data: { items } });
+                return res.status(200).json({ status: 200, message: 'Moved', data: { items: addSignedUrlTokens(items, config) } });
             }
 
             // ** 8. RENAME **
@@ -1014,7 +1003,7 @@ export const driveAPIHandler = async (req: NextApiRequest, res: NextApiResponse)
                 const renameData = schemas.renameBodySchema.safeParse({ id: req.query.id, ...req.body });
                 if (!renameData.success) return res.status(400).json({ status: 400, message: 'Invalid data' });
                 const { id, newName } = renameData.data;
-                const item = await provider.rename(id, newName, owner, accountId);
+                const item = addSignedUrlToken(await provider.rename(id, newName, owner, accountId), config);
                 return res.status(200).json({ status: 200, message: 'Renamed', data: { item } });
             }
 
