@@ -1,3 +1,10 @@
+# [4.16.0](https://github.com/muhgholy/next-drive/compare/v4.15.1...v4.16.0) (2026-02-06)
+
+
+### Features
+
+* add signed URL token support to all API endpoints ([3a0dd65](https://github.com/muhgholy/next-drive/commit/3a0dd655e65016740d366947a847a09b2550b14e))
+
 ## [4.15.1](https://github.com/muhgholy/next-drive/compare/v4.15.0...v4.15.1) (2026-02-02)
 
 
