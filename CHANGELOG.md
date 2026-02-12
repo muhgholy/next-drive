@@ -1,3 +1,10 @@
+# [4.17.0](https://github.com/muhgholy/next-drive/compare/v4.16.0...v4.17.0) (2026-02-12)
+
+
+### Features
+
+* use globalThis for config storage to persist across SSR chunks ([556d96d](https://github.com/muhgholy/next-drive/commit/556d96d5c415e8925537992ab10832d58a5a8db5))
+
 # [4.16.0](https://github.com/muhgholy/next-drive/compare/v4.15.1...v4.16.0) (2026-02-06)
 
 
