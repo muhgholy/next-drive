@@ -1,9 +1,8 @@
 // ** Server Config Wrapper
-import type { NextApiRequest } from 'next';
 import mongoose from 'mongoose';
 import path from 'path';
 import os from 'os';
-import type { TDriveConfiguration, TDriveConfigInformation } from '@/types/server';
+import type { TDriveConfiguration, TDriveConfigInformation, TDriveInformationInput } from '@/types/server';
 import { runMigrations } from '@/server/utils/migration';
 
 // ** Use globalThis to persist config across all module instances
@@ -107,22 +106,22 @@ export const getDriveConfig = (): TDriveConfiguration => {
     return g.config;
 };
 
-// ** Get drive information (quota, owner) - Returns null key in ROOT mode
-export const getDriveInformation = async (req: NextApiRequest): Promise<TDriveConfigInformation> => {
+// ** Get drive information (quota, owner) - Accepts REQUEST (from API handler) or KEY (from server-side code)
+export const getDriveInformation = async (input: TDriveInformationInput): Promise<TDriveConfigInformation> => {
     const config = getDriveConfig();
 
     // In ROOT mode, return null key if information callback is not provided
     if (config.mode === 'ROOT') {
         if (!config.information) {
             return {
-                key: null,
+                key: input.method === 'KEY' ? input.key : null,
                 storage: { quotaInBytes: Number.MAX_SAFE_INTEGER } // Unlimited quota in ROOT mode
             };
         }
-        return config.information(req);
+        return config.information(input);
     }
 
     // NORMAL mode - information is guaranteed to exist
-    return config.information(req);
+    return config.information(input);
 };
 

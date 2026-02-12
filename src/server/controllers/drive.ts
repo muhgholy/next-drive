@@ -4,7 +4,7 @@ import os from 'os';
 import crypto from 'crypto';
 import type { Readable } from 'stream';
 import Drive from '@/server/database/mongoose/schema/drive';
-import { getDriveConfig } from '@/server/config';
+import { getDriveConfig, getDriveInformation } from '@/server/config';
 import { computeFileHash, extractImageMetadata, validateMimeType } from '@/server/utils';
 import type { IDatabaseDriveDocument } from '@/server/database/mongoose/schema/drive';
 import type { TDatabaseDrive } from '@/types/lib/database/drive';
@@ -665,10 +665,8 @@ export const driveUpload = async (
         // Quota Check (skip in ROOT mode or if enforce is true)
         const isRootMode = config.mode === 'ROOT';
         if (!options.enforce && !isRootMode) {
-            // driveUpload is a server-side API without a req object, so it can't
-            // call the information callback. Use MAX_SAFE_INTEGER as fallback quota
-            // since programmatic uploads are trusted server-side operations.
-            const quota = await provider.getQuota(key, accountId, Number.MAX_SAFE_INTEGER);
+            const information = await getDriveInformation({ method: 'KEY', key });
+            const quota = await provider.getQuota(key, accountId, information.storage.quotaInBytes);
             if (quota.usedInBytes + fileSize > quota.quotaInBytes) {
                 throw new Error('Storage quota exceeded');
             }

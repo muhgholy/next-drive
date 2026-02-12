@@ -20,9 +20,19 @@ export const driveConfigPromise = driveConfiguration({
     },
 
     // ** Custom Information Callback
-    information: async () => {
+    information: async (input) => {
+        // ** REQUEST method — called from API handler with req
+        if (input.method === 'REQUEST') {
+            // const auth = await verifyAuth(input.req);
+            return {
+                key: { userId: 'user-123' },
+                storage: { quotaInBytes: 102004 * 1024 * 1024 }, // 1GB
+            };
+        }
+
+        // ** KEY method — called from server-side code (driveUpload, etc.)
         return {
-            key: { userId: 'user-123' },
+            key: input.key,
             storage: { quotaInBytes: 102004 * 1024 * 1024 }, // 1GB
         };
     },

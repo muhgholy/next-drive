@@ -111,11 +111,20 @@ driveConfiguration({
 			expiresIn: 3600, // 1 hour
 		},
 	},
-	information: async (req): Promise<TDriveConfigInformation> => {
-		const auth = await verifyAuth(req);
-		if (!auth) throw new Error("Unauthenticated");
+	information: async (input): Promise<TDriveConfigInformation> => {
+		// REQUEST method — called from API handler with req
+		if (input.method === "REQUEST") {
+			const auth = await verifyAuth(input.req);
+			if (!auth) throw new Error("Unauthenticated");
+			return {
+				key: { userId: auth.userId },
+				storage: { quotaInBytes: 1024 * 1024 * 1024 }, // 1GB
+			};
+		}
+
+		// KEY method — called from server-side code (driveUpload, etc.)
 		return {
-			key: { userId: auth.userId },
+			key: input.key,
 			storage: { quotaInBytes: 1024 * 1024 * 1024 }, // 1GB
 		};
 	},
@@ -198,11 +207,17 @@ driveConfigurationExpress({
 		maxUploadSizeInBytes: 50 * 1024 * 1024,
 		allowedMimeTypes: ["image/*", "video/*", "application/pdf"],
 	},
-	information: async (req): Promise<TDriveConfigInformation> => {
-		const auth = await verifyAuth(req);
-		if (!auth) throw new Error("Unauthenticated");
+	information: async (input): Promise<TDriveConfigInformation> => {
+		if (input.method === "REQUEST") {
+			const auth = await verifyAuth(input.req);
+			if (!auth) throw new Error("Unauthenticated");
+			return {
+				key: { userId: auth.userId },
+				storage: { quotaInBytes: 1024 * 1024 * 1024 },
+			};
+		}
 		return {
-			key: { userId: auth.userId },
+			key: input.key,
 			storage: { quotaInBytes: 1024 * 1024 * 1024 },
 		};
 	},

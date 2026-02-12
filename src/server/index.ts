@@ -337,7 +337,7 @@ export const driveAPIHandler = async (req: NextApiRequest, res: NextApiResponse)
 
     try {
         const mode = config.mode || 'NORMAL';
-        const information = await getDriveInformation(req);
+        const information = await getDriveInformation({ method: 'REQUEST', req });
         const { key: owner } = information;
         const STORAGE_PATH = config.storage.path;
 

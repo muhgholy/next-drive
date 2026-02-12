@@ -7,6 +7,11 @@ export type TDriveDatabase = 'MONGOOSE';
 // ** Drive mode
 export type TDriveMode = 'NORMAL' | 'ROOT';
 
+// ** Information resolution input (how to resolve owner + quota)
+export type TDriveInformationInput =
+    | { method: 'REQUEST'; req: NextApiRequest }
+    | { method: 'KEY'; key: Record<string, unknown> | null };
+
 // ** Information returned from configuration callback
 export type TDriveConfigInformation = {
     key: Record<string, unknown> | null;
@@ -58,14 +63,14 @@ type TDriveConfigurationBase = {
 type TDriveConfigurationNormal = TDriveConfigurationBase & {
     mode?: 'NORMAL';
     security: TDriveSecurityConfig;
-    information: (request: NextApiRequest) => Promise<TDriveConfigInformation>;
+    information: (input: TDriveInformationInput) => Promise<TDriveConfigInformation>;
 };
 
 // ** Root mode configuration (no authentication, no limits)
 type TDriveConfigurationRoot = TDriveConfigurationBase & {
     mode: 'ROOT';
     security?: TDriveSecurityConfig;
-    information?: (request: NextApiRequest) => Promise<TDriveConfigInformation>;
+    information?: (input: TDriveInformationInput) => Promise<TDriveConfigInformation>;
 };
 
 // ** Main configuration type (discriminated union)

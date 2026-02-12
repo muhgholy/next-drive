@@ -2,7 +2,7 @@
 import type { Request } from 'express';
 
 // ** Re-export common types
-export type { TDriveConfigInformation, TDriveSecurityConfig, TDriveStorageConfig, TDriveDatabase, TDriveCorsConfig, TDriveMode } from './config';
+export type { TDriveConfigInformation, TDriveInformationInput, TDriveSecurityConfig, TDriveStorageConfig, TDriveDatabase, TDriveCorsConfig, TDriveMode } from './config';
 
 // ** Base Express configuration
 type TDriveConfigurationExpressBase = {
