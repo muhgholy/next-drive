@@ -1,3 +1,10 @@
+# [4.18.0](https://github.com/muhgholy/next-drive/compare/v4.17.1...v4.18.0) (2026-02-12)
+
+
+### Features
+
+* information callback accepts REQUEST/KEY discriminated union ([0cf2f8c](https://github.com/muhgholy/next-drive/commit/0cf2f8c51f2acbb8dff96a7e32d6391c9defaf07))
+
 ## [4.17.1](https://github.com/muhgholy/next-drive/compare/v4.17.0...v4.17.1) (2026-02-12)
 
 
