@@ -6,21 +6,42 @@ import os from 'os';
 import type { TDriveConfiguration, TDriveConfigInformation } from '@/types/server';
 import { runMigrations } from '@/server/utils/migration';
 
-let globalConfig: TDriveConfiguration | null = null;
-let migrationPromise: Promise<void> | null = null;
-let configInitialized = false;
+// ** Use globalThis to persist config across all module instances
+// Next.js (especially with Turbopack) creates separate SSR chunks for
+// Pages Router, App Router, and Server Actions — module-level variables
+// are NOT shared between them. globalThis is process-wide.
+type TNextDriveGlobal = {
+    config: TDriveConfiguration | null;
+    migrationPromise: Promise<void> | null;
+    initialized: boolean;
+};
+
+const GLOBAL_KEY = '__nextDrive' as const;
+
+const getGlobal = (): TNextDriveGlobal => {
+    if (!(globalThis as any)[GLOBAL_KEY]) {
+        (globalThis as any)[GLOBAL_KEY] = {
+            config: null,
+            migrationPromise: null,
+            initialized: false,
+        };
+    }
+    return (globalThis as any)[GLOBAL_KEY];
+};
 
 // ** Initialize configuration
 export const driveConfiguration = async (config: TDriveConfiguration): Promise<TDriveConfiguration> => {
+    const g = getGlobal();
+
     // ** Check database connection
     if (mongoose.connection.readyState !== 1) {
         throw new Error('Database not connected. Please connect to Mongoose before initializing next-drive.');
     }
 
     // ** If already initialized, just wait for migration and return
-    if (configInitialized && globalConfig) {
-        if (migrationPromise) await migrationPromise;
-        return globalConfig;
+    if (g.initialized && g.config) {
+        if (g.migrationPromise) await g.migrationPromise;
+        return g.config;
     }
 
 
@@ -29,9 +50,9 @@ export const driveConfiguration = async (config: TDriveConfiguration): Promise<T
 
     const mode = config.mode || 'NORMAL';
 
-    // ** Set globalConfig FIRST (before migrations) so it's available during migration
+    // ** Set config FIRST (before migrations) so it's available during migration
     if (mode === 'ROOT') {
-        globalConfig = {
+        g.config = {
             ...config,
             mode: 'ROOT',
             storage: {
@@ -50,7 +71,7 @@ export const driveConfiguration = async (config: TDriveConfiguration): Promise<T
             throw new Error('information callback is required in NORMAL mode');
         }
 
-        globalConfig = {
+        g.config = {
             ...config,
             mode: 'NORMAL',
             storage: {
@@ -68,21 +89,22 @@ export const driveConfiguration = async (config: TDriveConfiguration): Promise<T
     }
 
     // ** Mark as initialized immediately to prevent race conditions
-    configInitialized = true;
+    g.initialized = true;
 
     // ** Run migrations once (all concurrent callers share the same promise)
-    if (!migrationPromise) {
-        migrationPromise = runMigrations(resolvedPath);
+    if (!g.migrationPromise) {
+        g.migrationPromise = runMigrations(resolvedPath);
     }
-    await migrationPromise;
+    await g.migrationPromise;
 
-    return globalConfig;
+    return g.config;
 };
 
 // ** Get current configuration
 export const getDriveConfig = (): TDriveConfiguration => {
-    if (!globalConfig) throw new Error('Drive configuration not initialized');
-    return globalConfig;
+    const g = getGlobal();
+    if (!g.config) throw new Error('Drive configuration not initialized');
+    return g.config;
 };
 
 // ** Get drive information (quota, owner) - Returns null key in ROOT mode
@@ -103,3 +125,4 @@ export const getDriveInformation = async (req: NextApiRequest): Promise<TDriveCo
     // NORMAL mode - information is guaranteed to exist
     return config.information(req);
 };
+
