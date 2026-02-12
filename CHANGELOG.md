@@ -1,3 +1,10 @@
+## [4.17.1](https://github.com/muhgholy/next-drive/compare/v4.17.0...v4.17.1) (2026-02-12)
+
+
+### Bug Fixes
+
+* pass MAX_SAFE_INTEGER as fallback quota in driveUpload ([e29e3c2](https://github.com/muhgholy/next-drive/commit/e29e3c29bc8f6528c6ad781f3ce02e33973414ec))
+
 # [4.17.0](https://github.com/muhgholy/next-drive/compare/v4.16.0...v4.17.0) (2026-02-12)
 
 
