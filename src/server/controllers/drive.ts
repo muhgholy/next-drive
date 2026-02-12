@@ -665,7 +665,10 @@ export const driveUpload = async (
         // Quota Check (skip in ROOT mode or if enforce is true)
         const isRootMode = config.mode === 'ROOT';
         if (!options.enforce && !isRootMode) {
-            const quota = await provider.getQuota(key, accountId, undefined);
+            // driveUpload is a server-side API without a req object, so it can't
+            // call the information callback. Use MAX_SAFE_INTEGER as fallback quota
+            // since programmatic uploads are trusted server-side operations.
+            const quota = await provider.getQuota(key, accountId, Number.MAX_SAFE_INTEGER);
             if (quota.usedInBytes + fileSize > quota.quotaInBytes) {
                 throw new Error('Storage quota exceeded');
             }
