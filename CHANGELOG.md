@@ -1,3 +1,10 @@
+# [4.20.0](https://github.com/muhgholy/next-drive/compare/v4.19.0...v4.20.0) (2026-02-18)
+
+
+### Features
+
+* namespace Tailwind internal --tw- variables to --nd-tw- for full CSS isolation ([80c33c6](https://github.com/muhgholy/next-drive/commit/80c33c674eb949469b673d6ec7e877c02e710e72))
+
 # [4.19.0](https://github.com/muhgholy/next-drive/compare/v4.18.0...v4.19.0) (2026-02-16)
 
 
