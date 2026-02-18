@@ -20,7 +20,9 @@ const css = fs.readFileSync(inputFile, 'utf-8');
 postcss([postcssV3Compat(), cssnano({ preset: 'default' })])
     .process(css, { from: inputFile, to: outputFile })
     .then((result) => {
-        fs.writeFileSync(outputFile, result.css);
+        // Replace Tailwind internal --tw- variables with --nd-tw- for full isolation
+        const processedCss = result.css.replace(/--tw-/g, '--nd-tw-');
+        fs.writeFileSync(outputFile, processedCss);
         if (result.map) {
             fs.writeFileSync(outputFile + '.map', result.map.toString());
         }
